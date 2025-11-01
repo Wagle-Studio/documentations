@@ -6,9 +6,9 @@ export default async function FolderLayout({
   params,
 }: Readonly<{
   children: React.ReactNode;
-  params: {
+  params: Promise<{
     folder: string;
-  };
+  }>;
 }>) {
   const { folder } = await params;
   const menu = MenuManager.buildMenuLesson(folder);
