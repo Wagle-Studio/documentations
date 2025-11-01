@@ -4,8 +4,7 @@ import "primereact/resources/themes/saga-blue/theme.css";
 import type { Metadata } from "next";
 import { Inter, Rubik } from "next/font/google";
 import { PrimeReactProvider } from "primereact/api";
-import MenuManager from "@/core/MenuManager";
-import { MenuSide } from "@/ui/organismes/menu-side/MenuSide";
+import { MenuSide } from "@/ui";
 
 const rubik = Rubik({
   subsets: ["latin"],
@@ -30,14 +29,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const menu = MenuManager.buildMenuSide();
-
   return (
     <html lang="fr" className={`${rubik.variable} ${inter.variable}`}>
       <body>
         <main className="app">
-          <MenuSide menu={menu} />
-          <PrimeReactProvider>{children}</PrimeReactProvider>
+          <PrimeReactProvider>
+            <MenuSide />
+            {children}
+          </PrimeReactProvider>
         </main>
       </body>
     </html>
