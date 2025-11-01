@@ -3,17 +3,21 @@ import { MenuItem } from "primereact/menuitem";
 export default class MenuManager {
   private constructor() {}
 
-  static buildMenuSide = (courses: string[]): MenuItem[] => {
+  static buildMenuSide = (router: any, courses: string[]): MenuItem[] => {
     return courses.map((course) => ({
       label: course,
-      url: `/documentation/${course}`,
+      command: () => router.push(`/documentation/${course}`),
     }));
   };
 
-  static buildMenuLesson = (course: string, lessons: string[]): MenuItem[] => {
+  static buildMenuLesson = (
+    router: any,
+    course: string,
+    lessons: string[]
+  ): MenuItem[] => {
     return lessons.map((lesson) => ({
       label: lesson,
-      url: `/documentation/${course}/${lesson}`,
+      command: () => router.push(`/documentation/${course}/${lesson}`),
     }));
   };
 }
