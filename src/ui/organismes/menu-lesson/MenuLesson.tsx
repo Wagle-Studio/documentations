@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Menu } from "primereact/menu";
 import { MenuItem } from "primereact/menuitem";
 import { useGetFetch } from "@/core/hooks";
@@ -11,6 +12,8 @@ interface MenuLessonProps {
 }
 
 export const MenuLesson = ({ course }: MenuLessonProps) => {
+  const router = useRouter();
+
   const { result, isLoading, isError } = useGetFetch<Lesson[]>(
     `documentation/${course}`
   );
@@ -20,7 +23,9 @@ export const MenuLesson = ({ course }: MenuLessonProps) => {
   const menu: MenuItem[] = [
     {
       label: course,
-      items: isReady ? MenuManager.buildMenuLesson(course, result.data) : [],
+      items: isReady
+        ? MenuManager.buildMenuLesson(router, course, result.data)
+        : [],
     },
   ];
 
