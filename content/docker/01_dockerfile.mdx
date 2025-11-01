@@ -1,0 +1,152 @@
+# Dockerfile
+
+## Présentation du Dockerfile
+
+---
+
+🔗 [Documentation officielle - Dockerfile reference](https://docs.docker.com/reference/dockerfile/)
+
+Un Dockerfile est un fichier texte qui contient une série d'instructions permettant de créer une image Docker de manière automatisée et reproductible. Il sert de plan de construction pour définir l'environnement, les dépendances et les configurations nécessaires à l'exécution d'une application.
+
+De cette manière vous pouvez créer des images Docker personnalisées, pour répondre à un besoin spécifique.
+
+Le fichier `Dockerfile` se trouve généralement à la racine de votre projet. Le document suivant illustrera la construction d’un Dockerfile pour une application Next.js.
+
+## L’image de base
+
+---
+
+En premier lieu, il est nécessaire de spécifier l’environnement que l’on souhaite utiliser comme base. L’image de base va définir cet environnement, incluant les dépendances et les composants nécessaires à son fonctionnement. L’installation de ces composants est déjà prise en charge par l’image de base, vous n’avez donc rien à faire de ce côté.
+
+Une application Next.js nécessite un environnement Node.js. L’image de base devra donc être une image de Node.js. Ces images sont disponibles sur [Docker Hub](https://hub.docker.com/), un registre où vous pouvez chercher et télécharger des environnements pré-configurés adaptés à vos besoins.
+
+```docker
+FROM node:24-alpine3.21
+```
+
+Bien que vous puissiez créer un conteneur directement à partir de cette image, celui-ci serait vide et inutilisable sans y ajouter vos fichiers et configurations.
+
+## Configuration applicatif
+
+---
+
+Le Dockerfile est un script exécuté par Docker. Il est donc nécessaire d’indiquer les commandes à exécuter pour configurer l’environnement créé par l’image. Cette partie est propre à la nature de votre projet, ici nous continuerons avec l’exemple du Dockerfile pour une application Next.js.
+
+Dans un premier temps, il est nécessaire de créer un dossier `app` dans le container pour l’utiliser comme dossier de travail :
+
+```docker
+WORKDIR /app
+```
+
+L’exploitation de l’application Next.js nécessite l’installation des dépendances listées dans les fichiers `package.json` et `package-lock.json`. Pour que ces dépendances soient installées dans le container, il est nécessaire de copier ces deux fichiers dans le container puis de lancer l’installation des dépendances.
+
+La commande suivante crée une copie dans le dossier racine du container (le dossier `app` créé précédemment) :
+
+```docker
+COPY package*.json ./
+
+RUN npm install
+```
+
+Puis il sera nécessaire de copier le reste du projet dans le container :
+
+```docker
+COPY . .
+```
+
+Il est dorénavant possible de construire l’application Next.js au sein du container pour un futur démarrage  :
+
+```docker
+RUN npm run build
+```
+
+**Récapitulatif des actions listées dans le Dockerfile :**
+
+
+1. Utiliser l’image Node comme base.
+
+2. Créer un dossier `app` dans le container et l’utiliser comme dossier racine.
+
+3. Copier les fichiers `package.json` et `package-lock.json` dans le container.
+
+4. Exécuter l’installation des librairies.
+
+5. Copier le reste du projet dans le container.
+
+6. Construire le projet Next.js.
+
+## **Rendre l’application accessible**
+
+---
+
+L’environnement du container ainsi que celui de l’application sont en place. Il ne reste plus qu’à démarrer l’application Next.js et l’exposer.
+
+Les services exploités par Docker utilisent les mêmes ports que ceux des services de votre machine (par exemple, Next.js utilise le port 3000 sur votre machine, Next.js fait de même dans son container Docker). Pour mapper le port 3000 du container à celui de votre machine, il est nécessaire d’indiquer le port à exposer dans le script Dockerfile.
+
+La commande suivante va exposer le port 3000 du container pour qu’il puisse être mappé sur celui de votre machine, rendant l’application exécutée dans le container consultable :
+
+```docker
+EXPOSE 3000
+```
+
+Il ne manque plus qu’une chose pour que la magie opère : la commande de démarrage du projet ! La commande suivante va indiquer à Docker quelle commande il doit exécuter lorsque le container démarre, c’est-à-dire lorsqu’il a fini d’exécuter le script.
+
+```docker
+CMD ["npm", "run", "dev"]
+```
+
+## Exemple Dockerfile Next.js
+
+---
+
+```docker
+FROM node:24-alpine3.21
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]
+```
+
+## Créer et exécuter un container
+
+---
+
+Voir [Commandes Docker](https://www.notion.so/Commandes-Docker-1942080267e580cf9fe2ca889fa99713?pvs=21) pour une liste des commandes ainsi que des explications supplémentaires Docker disponibles
+
+Dans un terminal, à la racine du votre projet, là où se trouve le Dockerfile, exécuter la commande suivante pour construire votre image.
+
+```bash
+docker build -t <nom_pour_votre_image> .
+```
+
+L’image est construite, exécutez la commande suivante pour démarrer un container basé sur l’image : 
+
+```bash
+docker run -p 3000:3000 <nom_de_votre_image_cree_precedemment>
+```
+
+Vous devriez avoir accès à votre application Next.js à l’URL suivante 🔗[http://localhost:3000](http://localhost:3000).
+
+## Les volumes
+
+---
+
+Les volumes permettent de persister et de partager des données entre le système hôte (votre machine) et les containers, ou entre différents containers. C’est ce dont vous avez besoin pour  que le container précédemment créé exploite les fichiers de l’application Next.js local et ainsi appliquer les changements en direct.
+
+La commande suivante est la même qu’utilisé précédemment pour lancer le container mais le paramètre `-v <chemin_du_contenu_a_persister>:/app` demande la création d’un volume avec le contenu que vous souhaitez persister dans le répertoire de travail du container.
+
+Le `$(pwd):/app` permet d’indiquer la source et la destination de la persistance. Ici `$(pwd)` correspondant à tout le contenu du dossier où vous vous trouver, et que vous souhaitez persister dans le dossier `/app` du container.
+
+```bash
+docker run -p 3000:3000 -v $(pwd):/app <nom_de_votre_image_cree_precedemment>
+```
