@@ -1,25 +1,39 @@
 import { MenuItem } from "primereact/menuitem";
+import { CoreResult, CoreResultSuccess, Course } from "@/core/types";
 import RegisterManager from "./RegisterManager";
 
 export default class MenuManager {
   private constructor() {}
 
-  static buildMenuSide = (router: any): MenuItem[] => {
-    return RegisterManager.getCourses().map((course) => ({
+  static buildMenuSide = (router: any): CoreResultSuccess<MenuItem[]> => {
+    const menuItems = RegisterManager.getCourses().data.map((course) => ({
       label: course.label,
       command: () => router.push(`/documentation/${course.slug}`),
     }));
+
+    return {
+      success: true,
+      data: menuItems,
+    };
   };
 
-  static buildMenuLesson = (router: any, slug: string): MenuItem[] => {
-    const course = RegisterManager.findCourseBySlug(slug);
+  static buildMenuLesson = (
+    router: any,
+    course: Course
+  ): CoreResult<MenuItem[]> => {
+    const findLessonsResult = RegisterManager.findLessonsByCourseId(course.id);
 
-    if (!course) return [];
+    if (!findLessonsResult.success) throw new Error(findLessonsResult.message);
 
-    return RegisterManager.findLessonsByCourseId(course.id).map((lesson) => ({
+    const menuItems = findLessonsResult.data.map((lesson) => ({
       label: lesson.label,
       command: () =>
         router.push(`/documentation/${course.slug}/${lesson.slug}`),
     }));
+
+    return {
+      success: true,
+      data: menuItems,
+    };
   };
 }

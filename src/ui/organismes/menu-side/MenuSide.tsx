@@ -11,7 +11,7 @@ export const MenuSide = () => {
   const menu: MenuItem[] = [
     {
       label: "Documentations",
-      items: MenuManager.buildMenuSide(router),
+      items: MenuManager.buildMenuSide(router).data,
     },
   ];
 

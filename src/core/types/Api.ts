@@ -5,14 +5,12 @@ export type Register = {
 
 export type Course = {
   id: number;
-  index: number;
   label: string;
   slug: string;
 };
 
 export type Lesson = {
   id: number;
-  index: number;
   paths: string[];
   label: string;
   slug: string;

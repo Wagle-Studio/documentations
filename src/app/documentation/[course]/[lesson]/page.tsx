@@ -1,20 +1,22 @@
 import { RenderMdx } from "@/ui";
-import data from "@/register";
 import FileManager from "@/core/managers/FileManager";
 import RegisterManager from "@/core/managers/RegisterManager";
 
 export async function generateStaticParams() {
   const lessonsPaths: { course: string; lesson: string }[] = [];
 
-  data.lessons.map((lesson) => {
-    const course = RegisterManager.findCourseById(lesson.course_id);
-    if (!course) return;
-    lessonsPaths.push({ course: course?.slug, lesson: lesson.slug });
+  RegisterManager.getLessons().data.map((lesson) => {
+    const findCourseResult = RegisterManager.findCourseById(lesson.course_id);
+
+    if (!findCourseResult.success) throw new Error(findCourseResult.message);
+
+    lessonsPaths.push({
+      course: findCourseResult.data.slug,
+      lesson: lesson.slug,
+    });
   });
 
-  return lessonsPaths.map((lessonsPath) => {
-    return lessonsPath;
-  });
+  return lessonsPaths;
 }
 
 interface LessonParams {
@@ -28,7 +30,8 @@ export default async function Lesson({ params }: LessonParams) {
 
   return (
     <div className="app__lesson__content">
-      <RenderMdx content={content} />
+      {!content.success && <h1>Une problème est survenue</h1>}
+      {content.success && <RenderMdx content={content.data} />}
     </div>
   );
 }
