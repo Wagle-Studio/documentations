@@ -1,0 +1,181 @@
+# Docker-compose
+
+## Présentation de Docker-compose
+
+---
+
+Voir le document sur le fichier [Dockerfile](https://www.notion.so/Dockerfile-1942080267e5806d8738d4cd76215141?pvs=21) qui introduit certaines bases de Docker. Ici, nous allons approfondir avec des exemples de code issus de ce document.
+
+Une application repose souvent sur plusieurs services : backend PHP, frontend JS, base de données SQL, serveur SMTP pour les emails, etc. Chaque service nécessite un container propre et cela peut devenir fastidieux.
+
+Docker-compose est un outil permettant de définir et gérer plusieurs conteneurs à partir d’un fichier unique : `docker-compose.yml`. Plutôt que de lancer manuellement chaque service, tout est automatisé et orchestré vie un unique fichier.
+
+Ce fichier organisera les configurations des différentes images nécessaires au bon fonctionnement de l’environnement. Le document suivant illustrera la construction d’un environnement Docker-compose pour une application Next.js, le serveur de base de données MySQL et PHPMyAdmin.
+
+Le fichier `docker-compose.yml` se trouve généralement à la racine du projet contenant les différentes parties du projet complet.
+
+```
+my_project/
+├─ nextjs/
+│  ├─ Dockerfile
+│
+├─ PHP/
+│  ├─ Dockerfile
+│
+├─ caddy/
+├─ README.md
+├─ docker-compose.yml 
+```
+
+## Image en lecture seule
+
+---
+
+Contrairement aux images personnalisées, les images en lecture seule ne nécessitent pas de fichier Dockerfile. Elles doivent simplement recevoir quelques configurations pour être pleinement exploitables "out of the box".
+
+Ce fonctionnement est typique pour des images telles que les bases de données, les administrateurs de systèmes de gestion de bases de données (comme PHPMyAdmin), les applications de tests d’intégration, les intercepteurs d’emails, etc.
+
+La plupart du temps, ces images mettent à disposition des services qui gravitent autour de l’application principale, ici l’application Next.js créée lors de la découverte du [Dockerfile](https://www.notion.so/Dockerfile-1942080267e5806d8738d4cd76215141?pvs=21)  et des images custom.
+
+### MySQL
+
+---
+
+Ajouter la configuration suivante dans le fichier `docker-compose.yml`.
+
+```yaml
+services:
+  db:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: my_database
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: root
+    ports:
+      - "3306:3306"
+```
+
+Le container est déclaré avec le nom `db`, le nommage est libre. Ce nom sera celui du container dans le futur environnement. Ce container exploite l’image `mysql` téléchargée sur [Docker Hub](https://hub.docker.com/).
+
+Le port 3306 sera exposé pour accéder au container.
+
+| **Variable** | **Information** |
+| --- | --- |
+| `MYSQL_ROOT_PASSWORD` | Mot de passe de l’utilisateur root de MySQL. |
+| `MYSQL_DATABASE` | Nom de la base de données souhaitée. |
+| `MYSQL_USER` | Nom de l’utilisateur de base de données souhaité. |
+| `MYSQL_PASSWORD` | Mot de passe de l’utilisateur de base de données souhaité. |
+
+Vous pouvez dors-et-déjà exécuter l’environnement pour tester le service MySQL. Rendez-vous au chapitre 📖 [Exécuter l’environnement Docker-compose](https://www.notion.so/Docker-compose-1942080267e58003a8afd8f46a3a779a?pvs=21).
+
+### PHPMyAdmin
+
+---
+
+Ajouter la configuration suivante dans le fichier `docker-compose.yml` (attention, code raccourcis).
+
+```yaml
+version: '3.8'
+
+services:
+  db:
+    image: mysql
+    ...
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_USER: admin
+      PMA_PASSWORD: root
+    ports:
+      - "8080:80"
+```
+
+Avec la définition de ce nouveau container `phpmyadmin`, basé sur l’image de PHPMyAdmin, un container PHPMyAdmin sera accessible sur le port 8080 et permettra d’administrer la base de données créée par le container `db`.
+
+| **Variable** | **Information** |
+| --- | --- |
+| `PMA_HOST` | Le port de la base de données sur laquelle écouter, ici on n’indique pas un port mais bien le nom du container `db` exécutant la base de données MySQL. |
+| `PMA_USER` | Nom de l’utilisateur de base de données exploité par PHPMyAdmin. |
+| `PMA_PASSWORD` | Mot de passe de l’utilisateur de base de données exploité par PHPMyAdmin. |
+
+## Image personnalisée
+
+---
+
+Ajouter la configuration suivante dans le fichier `docker-compose.yml` (pensez à remplacer le nom du dossier dans le `context` et le `build`, code raccourcis).
+
+```yaml
+version: '3.8'
+
+services:
+  db:
+    image: mysql
+    ...
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ...
+    
+	next:
+	    build:
+	      context: nextjs # nom du dossier de votre app Next.js
+	    volumes:
+	      - ./nextjs:/app # nom du dossier de votre app Next.js
+	    ports:
+	      - "3000:3000"
+```
+
+Cette configuration n’a pas pour but d’indiquer comment créer l’image custom, c’est le rôle du Dockerfile. Elle indique à Docker de créer un conteneur basé sur une image, défini dans le paramètre `build` qui reçoit le chemin du dossier contenant le Dockerfile à créer, ici `nextjs`, qui est le nom du dossier de l’application Next.js.
+
+On retrouve un paramètre `volumes` qui va permettre de créer le volume comme il vous a été indiqué lors de la découverte du [Dockerfile](https://www.notion.so/Dockerfile-1942080267e5806d8738d4cd76215141?pvs=21) . 
+
+Il faut donc indiquer le nom du dossier dont on souhaite persister le contenu, ici le dossier `nextjs`, ainsi que sa destination dans le conteneur, ici le dossier app.
+
+## Exécuter l’environnement Docker-compose
+
+---
+
+Voir [Commandes Docker](https://www.notion.so/Commandes-Docker-1942080267e580cf9fe2ca889fa99713?pvs=21) pour une liste plus complètes des commandes Docker disponibles. Ici nous n’exploiterons que le nécessaire pour démarrer l’environnement précédemment configuré.
+
+```bash
+docker-compose up # pour démarrer les containers
+docker-compose stop # pour arrêter les containers
+docker-compose down # pour arrêter et supprimer les containers
+```
+
+Vous rencontrerez peut-être (sans doute) l’erreur `Error starting userland proxy: listen tcp4 0.0.0.0:3306: bind: address already in use`. 
+
+Cela est dû au fait que les services exploités dans les conteneurs, ici MySQL, utilisent les mêmes ports que ceux de votre machine. Le service MySQL de votre machine est sans doute en route et exploite le port 3306, cela provoque un conflit lorsque Docker essaie de mapper le port 3306 du service MySQL du conteneur avec le port 3306 de votre machine, déjà exploité.
+
+Pour cela il est nécessaire de connaître les commandes suivantes (Linux, valable pour tous les services MySQL, Apache…) :
+
+```bash
+sudo service mysql stop # Arrête le service local MySQL
+sudo service mysql start # Démarre le service local MySQL
+sudo service mysql restart # Redémarre le service local MySQL 
+```
+
+Si vous utilisez WAMP ou quelque chose de similaire, éteignez le.
+
+Si l’exécution du container c’est bien déroulé vous pouvez dorénavant accéder au container MySQL.
+
+```bash
+docker-compose exec <nom_du_container> bash # accéder à un container bash
+docker-compose exec <nom_du_container> sh # accéder à un container sh
+
+docker-compose exec db bash # pour notre exemple
+```
+
+Vous voila dans le container MySQL que vous avez créé et démarré, celui-ci contient le logiciel de gestion de base de données SQL MySQL. 
+
+Pour accéder au serveur de base de données la démarche est la même que sur n’importe quelle machine.
+
+```bash
+mysql -u <nom_utilisateur> -p # accéder à MySQL avec un utilisateur + mdp
+
+mysql -u admin -proot # pour notre exemple
+```
