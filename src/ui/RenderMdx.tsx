@@ -1,6 +1,6 @@
 import { MDXRemote } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
-import { TagCode } from "./atoms/tag-code/TagCode";
+import { TagCode } from "./atoms";
 
 interface RenderMdxProps {
   content: string;

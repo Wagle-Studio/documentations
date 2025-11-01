@@ -1,1 +1,0 @@
-export { useGetFetch } from "./useGetFetch";
