@@ -1,0 +1,5 @@
+services:
+  web:
+    image: ${GHCR_NAMESPACE}
+    ports:
+      - 127.0.0.1:${REMOTE_DIST_PORT}:3000
