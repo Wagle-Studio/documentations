@@ -1,17 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Menu } from "primereact/menu";
 import { MenuItem } from "primereact/menuitem";
 import MenuManager from "@/core/managers/MenuManager";
 
 export const MenuSide = () => {
   const router = useRouter();
+  const params = useParams()
 
   const menu: MenuItem[] = [
     {
       label: "Documentations",
-      items: MenuManager.buildMenuSide(router).data,
+      items: MenuManager.buildMenuSide(router, params).data,
     },
   ];
 
