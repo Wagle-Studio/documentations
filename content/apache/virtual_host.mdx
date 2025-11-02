@@ -1,0 +1,142 @@
+## Introduction
+
+---
+
+🔗 [Exemples de VirtualHost - Apache officiel](https://httpd.apache.org/docs/2.2/fr/vhosts/examples.html)
+
+Les Virtual Hosts sont au cœur de la configuration d’Apache lorsqu’il s’agit d’héberger plusieurs sites sur un même serveur.
+
+Ils permettent de définir des environnements indépendants, chacun avec son propre nom de domaine, son dossier racine et ses logs, tout en partageant la même instance Apache.
+
+Cette approche est indispensable pour organiser proprement plusieurs projets web, que ce soit sur un serveur de production ou en environnement local de développement.
+
+Chaque virtual host correspond à une configuration distincte stockée dans le dossier `/etc/apache2/sites-available`, puis activée pour être lue par Apache.
+
+## Sites disponibles et sites actifs
+
+---
+
+Les dossiers `/etc/apache2/sites-available` et `/etc/apache2/sites-enabled` ont un rôle important à connaitre.
+
+### **Sites disponibles**
+
+---
+
+`/etc/apache2/sites-available`
+
+Ce dossier contient l’ensemble des fichiers de configuration des virtual hosts disponibles sur le serveur.
+
+Chaque fichier y définit les paramètres d’un site web (nom de domaine, dossier racine, logs, etc.).
+
+Les fichiers présents ici ne sont pas encore actifs tant qu’ils n’ont pas été explicitement activés.
+
+### **Sites actifs**
+
+---
+
+`/etc/apache2/sites-enabled`
+
+Ce dossier contient uniquement des liens symboliques pointant vers les fichiers de configuration présents dans `sites-available`.
+
+Lorsqu’un site est activé avec la commande `a2ensite nom_du_site.conf`, Apache crée automatiquement ce lien symbolique, rendant ainsi le site actif et chargé au prochain redémarrage du service.
+
+Par défaut, Apache installe des fichiers de configuration de base comme `000-default.conf` et `default-ssl.conf`. Ces fichiers peuvent servir d’exemples, mais il est recommandé de les désactiver pour éviter les conflits avec vos propres configurations.
+.
+
+```bash
+sudo a2dissite 000-default.conf # désactive 000-defaut.conf (HTTP port 80)
+sudo a2dissite default-ssl.conf # désactive default-ssl.conf (HTTPS port 443)
+```
+
+## Créer un virtual host
+
+---
+
+Pour héberger un site avec Apache, il faut créer un virtual host, c’est-à-dire un fichier de configuration dédié à ce site.
+
+Chaque virtual host définit les règles propres à un projet : domaine, dossier racine, logs et droits d’accès.
+
+Créez ce fichier dans le dossier `/etc/apache2/sites-available/`.
+
+Choisissez un nom clair et explicite pour le retrouver facilement, par exemple : `mon_site_dev.conf` pour un environnement de développement ou `mon_site_prod.conf` pour la production.
+
+```bash
+sudo nano /etc/apache2/sites-available/<mon_site>.conf # à compléter
+sudo nano /etc/apache2/sites-available/my_project_dev.conf # exemple
+```
+
+Voici un exemple de configuration simple pour le site web my-project-dev.fr servi sur le port 80 (HTTP) :
+
+```txt
+<VirtualHost *:80>
+    ServerName my-project-dev.fr
+    ServerAlias www.my-project-dev.fr
+    DocumentRoot /var/www/my_project
+
+    <Directory /var/www/my_project>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/my_project_error.log
+    CustomLog ${APACHE_LOG_DIR}/my_project_access.log combined
+</VirtualHost>
+```
+
+- `ServerName` : Indique le domaine principal, ça peut être un nom de domaine ou une adresse IP.
+
+- `ServerAlias` : Variantes du domaine principal.
+
+- `DocumentRoot` : Spécifie le dossier racine du site.
+
+- `Directory` : Définit les règles d’accès pour le dossier spécifié. Dans cet exemple :
+
+    - `Options` `Indexes` `FollowSymLinks` : autorise la navigation dans le répertoire et le suivi des liens symboliques.
+
+    - `AllowOverride All` : permet aux fichiers .htaccess d’appliquer leurs propres règles.
+
+    - `Require all granted` : autorise l’accès à tous les utilisateurs.
+
+- `Log files` : Définissent où enregistrer les erreurs et les logs d’accès pour ce site.
+
+## Activer un virtual host
+
+---
+
+Une fois le fichier de configuration créé, il faut l’activer pour qu’Apache le prenne en compte.
+
+Activez le virtual host, puis redémarrez le service Apache :
+
+```bash
+sudo a2ensite <mon_site>.conf # à compléter
+sudo a2ensite my_project_dev.conf # exemple
+
+sudo systemctl reload apache2 # recharge la configuration sans couper le service
+```
+
+Cette commande crée un lien symbolique entre le fichier `/etc/apache2/sites-available/my_project_dev.conf` et le dossier `/etc/apache2/sites-enabled`.
+
+Apache lit ensuite ce dossier pour charger uniquement les sites activés.
+
+Le site est donc désormais disponible.
+
+## Nom de domaine
+
+---
+
+Chaque virtual host doit être identifié par un nom unique pour qu’Apache sache quelle configuration utiliser lorsqu’il reçoit une requête.  
+
+Ce rôle est assuré par les directives `ServerName` et `ServerAlias`.
+
+- ServerName indique le nom de domaine principal du site, c’est celui que le client (navigateur) enverra dans l’en-tête `Host` de la requête HTTP.
+
+- ServerAlias permet de définir des variantes de ce nom, comme les versions avec ou sans `www`.
+
+Lorsque le navigateur envoie une requête à Apache, celui-ci compare le nom reçu dans l’en-tête `Host` avec les valeurs de `ServerName` et `ServerAlias` de chaque virtual host.
+
+C’est ainsi qu’il détermine quelle configuration charger et donc quel site servir
+
+Si aucun `ServerName` ou `ServerAlias` ne correspond, Apache utilisera le premier virtual host défini (souvent `000-default.conf`).  
+
+Cela peut entraîner l’affichage du mauvais site, ou simplement la page par défaut d’Apache.

@@ -1,8 +1,13 @@
 import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
-import { CoreResult } from "@/core/types";
+import { CoreResult, Lesson } from "@/core/types";
 import RegisterManager from "./RegisterManager";
+
+interface GetContentResult {
+  lesson: Lesson;
+  mdx: string;
+}
 
 export default class FileManager {
   private static readonly workDir = process.cwd();
@@ -10,7 +15,7 @@ export default class FileManager {
 
   private constructor() {}
 
-  static getContent = (slug: string): CoreResult<string, null> => {
+  static getContent = (slug: string): CoreResult<GetContentResult, null> => {
     const findLessonResult = RegisterManager.findLessonBySlug(slug);
 
     if (!findLessonResult.success) throw new Error(findLessonResult.message);
@@ -20,7 +25,10 @@ export default class FileManager {
 
     return {
       success: true,
-      data: matter(source).content,
+      data: {
+        lesson: findLessonResult.data,
+        mdx: matter(source).content,
+      },
     };
   };
 

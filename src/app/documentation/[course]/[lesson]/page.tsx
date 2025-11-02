@@ -1,4 +1,4 @@
-import { RenderMdx } from "@/ui";
+import { HeaderLesson, RenderMdx } from "@/ui";
 import FileManager from "@/core/managers/FileManager";
 import RegisterManager from "@/core/managers/RegisterManager";
 
@@ -26,12 +26,17 @@ interface LessonParams {
 export default async function Lesson({ params }: LessonParams) {
   const { lesson } = await params;
 
-  const content = FileManager.getContent(lesson);
+  const getContentResult = FileManager.getContent(lesson);
 
   return (
     <div className="app__lesson__content">
-      {!content.success && <h1>Une problème est survenue</h1>}
-      {content.success && <RenderMdx content={content.data} />}
+      {!getContentResult.success && <h1>Une problème est survenue</h1>}
+      {getContentResult.success && (
+        <>
+          <HeaderLesson lesson={getContentResult.data.lesson} />
+          <RenderMdx content={getContentResult.data.mdx} />
+        </>
+      )}
     </div>
   );
 }

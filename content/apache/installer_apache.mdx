@@ -1,0 +1,44 @@
+## Introduction
+
+---
+
+🔗 [Documentation Ubuntu pour Apache](https://doc.ubuntu-fr.org/apache2)
+
+Apache est un serveur web open-source largement utilisé pour héberger des sites et des applications web. Il fonctionne sur la plupart des systèmes d’exploitation, notamment Linux, et est un élément clé des environnements LAMP (Linux, Apache, MySQL, PHP).
+
+Apache est un serveur web polyvalent, capable de prendre en charge plusieurs langages de programmation comme PHP, Python ou Perl.
+
+Grâce aux Virtual Hosts, Apache permet d’héberger plusieurs sites sur un même serveur tout en maintenant des configurations distinctes pour chaque projet.
+
+Cette flexibilité est essentielle pour les serveurs hébergeant différents sites web sur une même machine.
+
+Par default c’est dans le dossier `/var/www` que l’on place les instances des projets à distribuer avec Apache.
+
+```bash
+var/
+├─ www/
+│  ├─ my_project/
+│  │  ├─ index.php
+```
+
+## Installation
+
+---
+
+Avant d’installer quoi que ce soit, il est recommandé de mettre à jour les paquets existants.
+
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+Installez Apache.
+
+```bash
+sudo apt install apache2
+```
+
+Vérifiez que le service Apache est actif.
+
+```bash
+systemctl status apache2
+```

@@ -1,0 +1,41 @@
+## Gestion du service
+
+---
+
+| Commande                         | Description                                      |
+| -------------------------------- | ------------------------------------------------ |
+| `sudo systemctl start apache2`   | Démarre le service Apache                        |
+| `sudo systemctl stop apache2`    | Arrête le service Apache                         |
+| `sudo systemctl restart apache2` | Redémarre complètement le service                |
+| `sudo systemctl reload apache2`  | Recharge la configuration sans couper le service |
+| `sudo systemctl status apache2`  | Affiche l’état actuel du service                 |
+
+## Gestion des sites et modules
+
+---
+
+| Commande                          | Description                |
+| --------------------------------- | -------------------------- |
+| `sudo a2ensite nom_du_site.conf`  | Active un site disponible  |
+| `sudo a2dissite nom_du_site.conf` | Désactive un site activé   |
+| `sudo a2enmod nom_du_module`      | Active un module Apache    |
+| `sudo a2dismod nom_du_module`     | Désactive un module Apache |
+
+## Configuration et vérification
+
+---
+
+| Commande                      | Description                                      |
+| ----------------------------- | ------------------------------------------------ |
+| `sudo apache2ctl configtest`  | Vérifie la validité de la configuration          |
+| `apache2 -v && apache2ctl -M` | Affiche la version et les modules chargés        |
+| `apache2ctl -S`               | Liste les hôtes virtuels actifs et leurs chemins |
+
+## Logs et surveillance
+
+---
+
+| Commande                                   | Description                       |
+| ------------------------------------------ | --------------------------------- |
+| `sudo tail -f /var/log/apache2/error.log`  | Affiche les erreurs en temps réel |
+| `sudo tail -f /var/log/apache2/access.log` | Affiche les accès en temps réel   |

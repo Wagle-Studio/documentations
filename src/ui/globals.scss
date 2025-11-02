@@ -164,6 +164,22 @@
       width: 100%;
       padding-bottom: var(--space-10);
 
+      &__header {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+
+        &--subtitles {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-1);
+
+          > p {
+            margin: 0 !important;
+          }
+        }
+      }
+
       h2,
       h3,
       h4 {
@@ -194,6 +210,11 @@
       ul,
       ol {
         margin-top: var(--space-3);
+      }
+
+      ul + p,
+      ol + p {
+        margin-top: var(--space-4);
       }
 
       pre,
