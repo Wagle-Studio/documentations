@@ -7,6 +7,7 @@ export type Course = {
   id: number;
   label: string;
   slug: string;
+  emoji: string;
 };
 
 export type Lesson = {

@@ -1,4 +1,12 @@
 :root {
+  --white: #fdfdfd;
+  --gray-darker: #393939;
+  --gray-dark: #808080;
+  --gray-base: #dcdcdc;
+  --gray-light: #f3f4f6;
+
+  --bg: #fdfdfd;
+
   --coldarkColdCodeBg: #e3eaf2;
   --coldarkColdMenuHover: #f3f4f6;
 
@@ -50,24 +58,80 @@
   --breakpoint-desktop: 1260px;
 }
 
-.menu--selected {
-  background-color: var(--coldarkColdMenuHover);
+.menu_item {
+  &_link {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-1);
+
+    &--header {
+      font-weight: var(--font-weight-medium);
+    }
+  }
 }
 
 .app {
   display: grid;
-  grid-template-columns: max-content 1fr max-content;
-  grid-template-rows: 1fr;
+  grid-template-columns: 200px 1fr 200px;
+  grid-template-rows: 58px 1fr;
   column-gap: var(--space-5);
+  row-gap: var(--space-1);
+
+  &__header {
+    position: sticky;
+    top: 0;
+    grid-column: 1/4;
+    grid-row: 1/2;
+
+    &__wrapper {
+      width: 100%;
+      padding-top: var(--space-1);
+      background-color: var(--bg);
+
+      > div {
+        background-color: var(--white);
+      }
+
+      &--start {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: var(--space-1);
+
+        &--brand {
+          display: flex;
+          flex-direction: row;
+          gap: var(--space-1);
+          align-items: center;
+          line-height: 0;
+          font-weight: var(--font-weight-large);
+          color: var(--black);
+          text-decoration: none;
+        }
+      }
+
+      &--end {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: var(--space-1);
+      }
+    }
+  }
 
   &__side {
     &__menu {
+      position: sticky;
+      top: 66px;
       grid-column: 1/2;
-      grid-row: 1/2;
-      height: 98.5vh;
+      grid-row: 2/3;
+      height: calc(100vh - 66px);
 
       > div {
-        height: 100%;
+        padding: 0;
+        height: calc(100vh - 74px);
+        background-color: var(--white);
       }
     }
   }
@@ -75,19 +139,28 @@
   &__course {
     &__content {
       grid-column: 2/3;
-      grid-row: 1/2;
+      grid-row: 2/3;
     }
   }
 
   &__lesson {
     &__menu {
+      position: sticky;
+      top: 66px;
       grid-column: 3/4;
-      grid-row: 1/2;
+      grid-row: 2/3;
+      height: calc(100vh - 66px);
+
+      > div {
+        padding: 0;
+        height: calc(100vh - 74px);
+        background-color: var(--white);
+      }
     }
 
     &__content {
       grid-column: 2/3;
-      grid-row: 1/2;
+      grid-row: 2/3;
       width: 100%;
       padding-bottom: var(--space-10);
 
@@ -170,6 +243,14 @@
   }
 }
 
+body {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--space-1);
+  background-color: var(--bg);
+  box-sizing: border-box;
+}
+
 h1 {
   font-family: var(--font-primary);
   font-size: var(--font-size-mobile-heading-1);
@@ -206,8 +287,10 @@ h4 {
   letter-spacing: 0;
 }
 
-p {
-  font-family: var(--font-secondary);
+p,
+a,
+label {
+  font-family: var(--font-primary);
   font-size: var(--font-size-base);
   line-height: var(--font-line-height-extra);
   color: var(--gray-deeper);
