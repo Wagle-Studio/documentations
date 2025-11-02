@@ -11,11 +11,11 @@ export const Header = () => {
       <Link className="app__header__wrapper--start--brand" href="/">
         <Image
           src="/emoji/books.png"
-          alt={"Documentation"}
+          alt={"Documentations"}
           width={24}
           height={24}
         />
-        Documentation
+        Documentations
       </Link>
     </div>
   );
