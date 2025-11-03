@@ -64,12 +64,112 @@ sudo nano /etc/apache2/sites-available/<mon_site>.conf # à compléter
 sudo nano /etc/apache2/sites-available/my_project_dev.conf # exemple
 ```
 
-Voici un exemple de configuration simple pour le site web my-project-dev.fr servi sur le port 80 (HTTP) :
+### Exemple générique
+
+---
+
+Un virtual host se compose d’un bloc `<VirtualHost>` qui définit comment Apache doit répondre à un domaine donné.
+
+Chaque bloc précise le port, le domaine, les logs, les permissions, et la manière dont le contenu est servi (fichiers statiques ou proxy vers une application).
+
+```txt
+<VirtualHost *:80>
+    ServerName mon-site.fr
+    ServerAlias www.mon-site.fr
+
+    ErrorLog ${APACHE_LOG_DIR}/mon_site_error.log
+    CustomLog ${APACHE_LOG_DIR}/mon_site_access.log combined
+</VirtualHost>
+```
+
+- `ServerName` : nom de domaine principal du site  
+
+- `ServerAlias` : variantes du domaine principal  
+
+- `ErrorLog` et `CustomLog` : fichiers de logs dédiés à ce site  
+
+### Servir un site statique
+
+---
+
+Dans le cas d’un site statique, Apache distribue directement les fichiers présents dans un dossier local du serveur.
+
+```txt
+<VirtualHost *:80>
+    ServerName my-static-site.fr
+    ServerAlias www.my-static-site.fr
+
+    DocumentRoot /var/www/my_static_site
+
+    <Directory /var/www/my_static_site>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/my_static_site_error.log
+    CustomLog ${APACHE_LOG_DIR}/my_static_site_access.log combined
+</VirtualHost>
+```
+
+- `DocumentRoot` : dossier racine du site  
+
+- `Directory` : permissions et comportements appliqués à ce dossier  
+  
+  - `Options` `Indexes` `FollowSymLinks` : autorise la navigation dans le répertoire et les liens symboliques  
+  
+  - `AllowOverride All` : permet aux fichiers `.htaccess` d’appliquer leurs propres règles  
+  
+  - `Require all granted` : autorise l’accès à tous les visiteurs  
+
+Ce mode est idéal pour des sites statiques, des portfolios ou des exports HTML simples.
+
+### Servir une application via reverse proxy
+
+---
+
+Un reverse proxy publie une application qui écoute sur une URL locale avec un port. C’est le cas pour les applications Node.js ou tout autre serveur web applicatif.
+
+Avant tout, il faut activer les modules nécessaires :
+
+```bash
+sudo a2enmod proxy proxy_http proxy_wstunnel headers
+sudo systemctl restart apache2
+```
+
+Exemple complet pour une application qui tourne sur le port `4174` :
+
+```txt
+<VirtualHost *:80>
+    ServerName my-app-dev.fr
+    ServerAlias www.my-app-dev.fr
+
+    ProxyPreserveHost On
+
+    # redirection du trafic HTTP vers l'app
+    ProxyPass        / http://localhost:4174/ retry=0
+    ProxyPassReverse / http://localhost:4174/
+
+    RequestHeader set X-Forwarded-Proto "http"
+    RequestHeader set X-Forwarded-Port "80"
+
+    ErrorLog ${APACHE_LOG_DIR}/my_app_error.log
+    CustomLog ${APACHE_LOG_DIR}/my_app_access.log combined
+</VirtualHost>
+```
+
+Ce mode permet de faire transiter les requêtes vers une application locale sans exposer directement son port.
+
+### Variante mixte dossier et proxy
+
+---
+
+Il est aussi possible de combiner un dossier statique (pour les ressources publiques) et un proxy pour l’application.
 
 ```txt
 <VirtualHost *:80>
     ServerName my-project-dev.fr
-    ServerAlias www.my-project-dev.fr
+
     DocumentRoot /var/www/my_project
 
     <Directory /var/www/my_project>
@@ -78,26 +178,19 @@ Voici un exemple de configuration simple pour le site web my-project-dev.fr serv
         Require all granted
     </Directory>
 
+    ProxyPreserveHost On
+
+    # ne proxifie pas le sous-dossier public
+    ProxyPass        /public !
+    ProxyPass        / http://localhost:4174/ retry=0
+    ProxyPassReverse / http://localhost:4174/
+
     ErrorLog ${APACHE_LOG_DIR}/my_project_error.log
     CustomLog ${APACHE_LOG_DIR}/my_project_access.log combined
 </VirtualHost>
 ```
 
-- `ServerName` : indique le domaine principal, cela peut être un nom de domaine ou une adresse IP.
-
-- `ServerAlias` : variantes du domaine principal.
-
-- `DocumentRoot` : spécifie le dossier racine du site.
-
-- `Directory` : définit les règles d’accès pour le dossier spécifié. Dans cet exemple :
-
-  - `Options` `Indexes` `FollowSymLinks` : autorise la navigation dans le répertoire et le suivi des liens symboliques.
-
-  - `AllowOverride All` : permet aux fichiers .htaccess d’appliquer leurs propres règles.
-
-  - `Require all granted` : autorise l’accès à tous les utilisateurs.
-
-- `Log files` : définissent où enregistrer les erreurs et les logs d’accès pour ce site.
+Ce type de configuration est souvent utilisé pour des applications modernes dont les assets statiques sont servis par Apache, tandis que le rendu dynamique passe par un serveur applicatif.
 
 ## Activer un virtual host
 
@@ -105,12 +198,9 @@ Voici un exemple de configuration simple pour le site web my-project-dev.fr serv
 
 Une fois le fichier de configuration créé, vous devez l’activer pour qu’Apache le prenne en compte.
 
-Activez le virtual host, puis redémarrez le service Apache :
-
 ```bash
 sudo a2ensite <mon_site>.conf # à compléter
 sudo a2ensite my_project_dev.conf # exemple
-
 sudo systemctl reload apache2 # recharge la configuration sans couper le service
 ```
 
@@ -128,9 +218,9 @@ Chaque virtual host doit être identifié par un nom unique pour qu’Apache sac
 
 Ce rôle est assuré par les directives `ServerName` et `ServerAlias`.
 
-- ServerName indique le nom de domaine principal du site, c’est celui que le client (navigateur) enverra dans l’en-tête `Host` de la requête HTTP.
+- ServerName indique le nom de domaine principal du site, c’est celui que le client (navigateur) enverra dans l’en-tête `Host` de la requête HTTP  
 
-- ServerAlias permet de définir des variantes de ce nom, comme les versions avec ou sans `www`.
+- ServerAlias permet de définir des variantes de ce nom, comme les versions avec ou sans `www`  
 
 Lorsque le navigateur envoie une requête à Apache, celui-ci compare le nom reçu dans l’en-tête `Host` avec les valeurs de `ServerName` et `ServerAlias` de chaque virtual host.
 
