@@ -1,4 +1,4 @@
-import { MenuLesson } from "@/ui";
+import { TemplateCourse } from "@/ui";
 
 interface FolderLayoutProps {
   children: React.ReactNode;
@@ -13,10 +13,5 @@ export default async function CourseLayout({
 }: Readonly<FolderLayoutProps>) {
   const { course } = await params;
 
-  return (
-    <>
-      {children}
-      <MenuLesson course={course} />
-    </>
-  );
+  return <TemplateCourse courseSlug={course}>{children}</TemplateCourse>;
 }

@@ -1,10 +1,7 @@
 import "./../ui/globals.scss";
-import "primereact/resources/primereact.min.css";
-import "primereact/resources/themes/saga-blue/theme.css";
 import type { Metadata } from "next";
 import { Rubik } from "next/font/google";
-import { PrimeReactProvider } from "primereact/api";
-import { Header, MenuSide } from "@/ui";
+import { TemplateApp } from "@/ui";
 
 const rubik = Rubik({
   subsets: ["latin"],
@@ -26,13 +23,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${rubik.variable}`}>
       <body>
-        <main className="app">
-          <PrimeReactProvider>
-            <Header />
-            <MenuSide />
-            {children}
-          </PrimeReactProvider>
-        </main>
+        <TemplateApp>{children}</TemplateApp>
       </body>
     </html>
   );

@@ -1,0 +1,112 @@
+.content {
+  &--lesson {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+  }
+  
+  &__mdx {
+    > :first-child {
+      margin-top: 0;
+    }
+
+    h2,
+    h3,
+    h4 {
+      margin-bottom: var(--space-2);
+    }
+
+    h2 {
+      margin-top: var(--space-8);
+    }
+
+    h3 {
+      margin-top: var(--space-6);
+    }
+
+    h4 {
+      margin-top: var(--space-4);
+    }
+
+    hr {
+      margin-bottom: var(--space-3);
+    }
+
+    p {
+      margin-top: var(--space-2);
+      line-height: var(--space-3);
+    }
+
+    ul,
+    ol {
+      margin-top: var(--space-3);
+    }
+
+    ul + p,
+    ol + p {
+      margin-top: var(--space-4);
+    }
+
+    pre {
+      display: block !important;
+      box-sizing: border-box !important;
+      max-width: 100% !important;
+      overflow-x: hidden !important;
+      margin: var(--space-4) 0;
+    }
+
+    pre code {
+      white-space: pre-wrap !important;
+      overflow-wrap: anywhere !important;
+      word-break: break-word !important;
+      hyphens: auto !important;
+    }
+
+    pre,
+    .code-inline {
+      border-radius: var(--border-radius-base);
+    }
+
+    .code-inline {
+      padding: 3px 5px;
+      background-color: var(--gray-base);
+    }
+
+    blockquote {
+      margin: 0;
+      padding: var(--space-0) var(--space-2);
+      border-radius: var(--border-radius-base);
+      background-color: var(--gray-light);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: var(--space-4) 0;
+      font-size: 0.95rem;
+
+      thead {
+        background-color: rgba(0, 0, 0, 0.04);
+      }
+
+      th,
+      td {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        padding: var(--space-1) var(--space-2);
+        text-align: left;
+      }
+
+      tr:nth-child(even) {
+        background-color: rgba(0, 0, 0, 0.02);
+      }
+
+      th {
+        font-weight: 600;
+      }
+
+      td {
+        vertical-align: top;
+      }
+    }
+  }
+}

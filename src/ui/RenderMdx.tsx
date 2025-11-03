@@ -1,6 +1,7 @@
 import { MDXRemote } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
-import { TagCode } from "./atoms";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { coldarkCold } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 interface RenderMdxProps {
   content: string;
@@ -11,7 +12,29 @@ export const RenderMdx = ({ content }: RenderMdxProps) => {
     <MDXRemote
       source={content}
       options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
-      components={{code: TagCode}}
+      components={{ code: TagCode }}
     />
+  );
+};
+
+interface TagCodeProps {
+  children: React.ReactNode;
+  className?: string;
+  inline?: boolean;
+}
+
+export const TagCode = ({ children, className, inline }: TagCodeProps) => {
+  if (inline || !className) {
+    return <code className="code-inline">{children}</code>;
+  }
+
+  const match = /language-(\w+)/.exec(className);
+  const language = match?.[1];
+  const code = typeof children === "string" ? children : String(children);
+
+  return (
+    <SyntaxHighlighter language={language} style={coldarkCold} wrapLongLines>
+      {code}
+    </SyntaxHighlighter>
   );
 };

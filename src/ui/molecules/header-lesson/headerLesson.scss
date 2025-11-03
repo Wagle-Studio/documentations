@@ -1,0 +1,15 @@
+.header_lesson {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+
+  &__subtitles {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+
+    > p {
+      margin: 0 !important;
+    }
+  }
+}

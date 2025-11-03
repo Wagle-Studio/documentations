@@ -1,6 +1,6 @@
-import { HeaderLesson, RenderMdx } from "@/ui";
 import FileManager from "@/core/managers/FileManager";
 import RegisterManager from "@/core/managers/RegisterManager";
+import { ContentLesson } from "@/ui";
 
 export async function generateStaticParams() {
   const lessonsPaths: { course: string; lesson: string }[] = [];
@@ -26,17 +26,17 @@ interface LessonParams {
 export default async function Lesson({ params }: LessonParams) {
   const { lesson } = await params;
 
+  // TODO : handle error case
   const getContentResult = FileManager.getContent(lesson);
 
   return (
-    <div className="app__lesson__content">
-      {!getContentResult.success && <h1>Une problème est survenue</h1>}
+    <>
       {getContentResult.success && (
-        <>
-          <HeaderLesson lesson={getContentResult.data.lesson} />
-          <RenderMdx content={getContentResult.data.mdx} />
-        </>
+        <ContentLesson
+          lesson={getContentResult.data.lesson}
+          mdx={getContentResult.data.mdx}
+        />
       )}
-    </div>
+    </>
   );
 }

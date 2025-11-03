@@ -1,6 +1,6 @@
+import "./tag.scss";
 import type { ReactNode } from "react";
 import clsx from "clsx";
-import "./tag.scss";
 
 type TagProps = {
   children: ReactNode;

@@ -1,5 +1,6 @@
 import { Course } from "@/core/types";
 import RegisterManager from "@/core/managers/RegisterManager";
+import { ContentCourse } from "@/ui";
 
 export async function generateStaticParams() {
   return RegisterManager.getCourses().data.map((course: Course) => ({
@@ -16,16 +17,14 @@ interface CourseParams {
 export default async function CoursePage({ params }: CourseParams) {
   const { course } = await params;
 
+  // TODO : handle error case
   const findCourseResult = RegisterManager.findCourseBySlug(course);
 
   return (
-    <div className="app__course__content">
-      {!findCourseResult.success && <h1>Une problème est survenue</h1>}
+    <>
       {findCourseResult.success && (
-        <div>
-          <h1>{findCourseResult.data.label}</h1>
-        </div>
+        <ContentCourse course={findCourseResult.data} />
       )}
-    </div>
+    </>
   );
 }

@@ -1,0 +1,41 @@
+.header {
+  position: sticky;
+  top: 0;
+  grid-column: 1/4;
+  grid-row: 1/2;
+  background-color: var(--white);
+
+  &__wrapper {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+    padding: var(--space-1);
+    margin-top: var(--space-1);
+    border: 1px solid var(--gray-base);
+    border-radius: var(--border-radius-small);
+
+    &--end,
+    &--start {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: var(--space-1);
+
+      > a {
+        line-height: 0;
+      }
+    }
+  }
+
+  &__brand {
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-1);
+    align-items: center;
+    line-height: 0;
+    font-weight: var(--font-weight-large);
+    color: var(--black);
+    text-decoration: none;
+  }
+}

@@ -1,26 +1,41 @@
-"use client";
-
-import { Menu } from "primereact/menu";
-import MenuManager from "@/core/managers/MenuManager";
+import "./menuLesson.scss";
+import { MenuLink } from "@/ui";
 import RegisterManager from "@/core/managers/RegisterManager";
-import { useMemo } from "react";
 
 interface MenuLessonProps {
-  course: string;
+  courseSlug: string;
 }
 
-export const MenuLesson = ({ course }: MenuLessonProps) => {
-  const findCourseResult = RegisterManager.findCourseBySlug(course);
+export const MenuLesson = ({ courseSlug }: MenuLessonProps) => {
+  const findCourseResult = RegisterManager.findCourseBySlug(courseSlug);
 
   if (!findCourseResult.success) throw new Error(findCourseResult.message);
 
-  const buildMenuResult = MenuManager.buildMenuLesson(findCourseResult.data);
+  const course = findCourseResult.data;
 
-  if (!buildMenuResult.success) throw new Error(buildMenuResult.message);
+  const findLessonsResult = RegisterManager.findLessonsByCourseId(course.id);
+
+  if (!findLessonsResult.success) throw new Error(findLessonsResult.message);
 
   return (
-    <div className="app__lesson__menu">
-      <Menu model={buildMenuResult.data} />
+    <div className="sidebar--second">
+      <ul className="sidebar__menu">
+        <li>
+          <MenuLink
+            label={course.label}
+            href={`/documentation/${course.slug}`}
+            emoji={course.emoji}
+          />
+        </li>
+        {findLessonsResult.data.map((lesson) => (
+          <li key={lesson.id}>
+            <MenuLink
+              label={lesson.label}
+              href={`/documentation/${course.slug}/${lesson.slug}`}
+            />
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };

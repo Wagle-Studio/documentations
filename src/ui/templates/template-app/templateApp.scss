@@ -1,0 +1,13 @@
+.template {
+  &--app {
+    display: grid;
+    grid-template-columns: 202px 1fr 202px;
+    grid-template-rows: 50px 1fr;
+    column-gap: var(--space-5);
+    row-gap: var(--space-1);
+
+    @media screen and (min-width: 768px) {
+      grid-template-columns: 202px 1fr 202px;
+    }
+  }
+}
