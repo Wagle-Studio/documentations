@@ -2,7 +2,7 @@
 
 ---
 
-🔗 [Exemples de VirtualHost - Apache officiel](https://httpd.apache.org/docs/2.2/fr/vhosts/examples.html)
+🔗 [Exemples de VirtualHost - Apache](https://httpd.apache.org/docs/2.2/fr/vhosts/examples.html)
 
 Les Virtual Hosts sont au cœur de la configuration d’Apache lorsqu’il s’agit d’héberger plusieurs sites sur un même serveur.
 
@@ -16,9 +16,9 @@ Chaque virtual host correspond à une configuration distincte stockée dans le d
 
 ---
 
-Les dossiers `/etc/apache2/sites-available` et `/etc/apache2/sites-enabled` ont un rôle important à connaitre.
+Les dossiers `/etc/apache2/sites-available` et `/etc/apache2/sites-enabled` ont un rôle important à connaître.
 
-### **Sites disponibles**
+### Sites disponibles
 
 ---
 
@@ -30,7 +30,7 @@ Chaque fichier y définit les paramètres d’un site web (nom de domaine, dossi
 
 Les fichiers présents ici ne sont pas encore actifs tant qu’ils n’ont pas été explicitement activés.
 
-### **Sites actifs**
+### Sites actifs
 
 ---
 
@@ -41,10 +41,9 @@ Ce dossier contient uniquement des liens symboliques pointant vers les fichiers 
 Lorsqu’un site est activé avec la commande `a2ensite nom_du_site.conf`, Apache crée automatiquement ce lien symbolique, rendant ainsi le site actif et chargé au prochain redémarrage du service.
 
 Par défaut, Apache installe des fichiers de configuration de base comme `000-default.conf` et `default-ssl.conf`. Ces fichiers peuvent servir d’exemples, mais il est recommandé de les désactiver pour éviter les conflits avec vos propres configurations.
-.
 
 ```bash
-sudo a2dissite 000-default.conf # désactive 000-defaut.conf (HTTP port 80)
+sudo a2dissite 000-default.conf # désactive 000-default.conf (HTTP port 80)
 sudo a2dissite default-ssl.conf # désactive default-ssl.conf (HTTPS port 443)
 ```
 
@@ -52,7 +51,7 @@ sudo a2dissite default-ssl.conf # désactive default-ssl.conf (HTTPS port 443)
 
 ---
 
-Pour héberger un site avec Apache, il faut créer un virtual host, c’est-à-dire un fichier de configuration dédié à ce site.
+Pour héberger un site avec Apache, vous devez créer un virtual host, c’est-à-dire un fichier de configuration dédié à ce site.
 
 Chaque virtual host définit les règles propres à un projet : domaine, dossier racine, logs et droits d’accès.
 
@@ -84,27 +83,27 @@ Voici un exemple de configuration simple pour le site web my-project-dev.fr serv
 </VirtualHost>
 ```
 
-- `ServerName` : Indique le domaine principal, ça peut être un nom de domaine ou une adresse IP.
+- `ServerName` : indique le domaine principal, cela peut être un nom de domaine ou une adresse IP.
 
-- `ServerAlias` : Variantes du domaine principal.
+- `ServerAlias` : variantes du domaine principal.
 
-- `DocumentRoot` : Spécifie le dossier racine du site.
+- `DocumentRoot` : spécifie le dossier racine du site.
 
-- `Directory` : Définit les règles d’accès pour le dossier spécifié. Dans cet exemple :
+- `Directory` : définit les règles d’accès pour le dossier spécifié. Dans cet exemple :
 
-    - `Options` `Indexes` `FollowSymLinks` : autorise la navigation dans le répertoire et le suivi des liens symboliques.
+  - `Options` `Indexes` `FollowSymLinks` : autorise la navigation dans le répertoire et le suivi des liens symboliques.
 
-    - `AllowOverride All` : permet aux fichiers .htaccess d’appliquer leurs propres règles.
+  - `AllowOverride All` : permet aux fichiers .htaccess d’appliquer leurs propres règles.
 
-    - `Require all granted` : autorise l’accès à tous les utilisateurs.
+  - `Require all granted` : autorise l’accès à tous les utilisateurs.
 
-- `Log files` : Définissent où enregistrer les erreurs et les logs d’accès pour ce site.
+- `Log files` : définissent où enregistrer les erreurs et les logs d’accès pour ce site.
 
 ## Activer un virtual host
 
 ---
 
-Une fois le fichier de configuration créé, il faut l’activer pour qu’Apache le prenne en compte.
+Une fois le fichier de configuration créé, vous devez l’activer pour qu’Apache le prenne en compte.
 
 Activez le virtual host, puis redémarrez le service Apache :
 
@@ -125,7 +124,7 @@ Le site est donc désormais disponible.
 
 ---
 
-Chaque virtual host doit être identifié par un nom unique pour qu’Apache sache quelle configuration utiliser lorsqu’il reçoit une requête.  
+Chaque virtual host doit être identifié par un nom unique pour qu’Apache sache quelle configuration utiliser lorsqu’il reçoit une requête.
 
 Ce rôle est assuré par les directives `ServerName` et `ServerAlias`.
 
@@ -135,8 +134,8 @@ Ce rôle est assuré par les directives `ServerName` et `ServerAlias`.
 
 Lorsque le navigateur envoie une requête à Apache, celui-ci compare le nom reçu dans l’en-tête `Host` avec les valeurs de `ServerName` et `ServerAlias` de chaque virtual host.
 
-C’est ainsi qu’il détermine quelle configuration charger et donc quel site servir
+C’est ainsi qu’il détermine quelle configuration charger et donc quel site servir.
 
-Si aucun `ServerName` ou `ServerAlias` ne correspond, Apache utilisera le premier virtual host défini (souvent `000-default.conf`).  
+Si aucun `ServerName` ou `ServerAlias` ne correspond, Apache utilisera le premier virtual host défini (souvent `000-default.conf`).
 
 Cela peut entraîner l’affichage du mauvais site, ou simplement la page par défaut d’Apache.

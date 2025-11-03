@@ -1,0 +1,158 @@
+## Introduction
+
+---
+
+🔗 [Documentation - Docker](https://docs.docker.com/reference/dockerfile/)
+
+Le Dockerfile est un script interprété par Docker. Vous devez y définir les commandes nécessaires pour configurer l’environnement fourni par l’image de base.
+
+L’objectif de ce fichier est de construire une image Docker spécifique, contenant tout ce dont votre application a besoin pour fonctionner.
+
+Une fois cette image créée, elle servira de modèle pour démarrer un ou plusieurs conteneurs capables d’exécuter votre application dans un environnement isolé, reproductible et maîtrisé.
+
+## Contenu du Dockerfile
+
+---
+
+Le fichier `Dockerfile` se trouve généralement à la racine de votre projet.
+
+Le document suivant illustrera la construction d’un Dockerfile pour une application Next.js.
+
+### L'image de base
+
+---
+
+En premier lieu, il est nécessaire de spécifier l’environnement que vous souhaitez utiliser comme base.L’image de base définit cet environnement, incluant les dépendances et les composants nécessaires à son fonctionnement.
+
+L’installation de ces composants est déjà prise en charge par l’image de base, vous n’avez donc rien à faire de ce côté.
+
+> 💡 Bon à savoir : une image Docker est composée d'une succession de couches empilées les unes sur les autres. Chaque couche représente une étape de construction, depuis le système d’exploitation de base jusqu’à la configuration d’un environnement complet ou personnalisé.
+
+Ces images sont disponibles sur 🔗 [Docker Hub](https://hub.docker.com/), un registre où vous pouvez rechercher et télécharger des images adaptées à vos besoins.
+
+Une application Next.js nécessite un environnement Node.js. L’image de base devra donc être une image de Node.js.
+
+```yml
+FROM node:24-alpine3.21
+```
+
+Bien que vous puissiez créer un conteneur directement à partir de cette image, celui-ci serait vide et inutilisable sans y ajouter vos fichiers et configurations.
+
+### Dossier de travail
+
+---
+
+Dans un premier temps, vous devez définir un dossier de travail dans le conteneur, c’est-à-dire l’emplacement où toutes les commandes suivantes seront exécutées par défaut.
+
+Cette commande créer un dossier `app` et le défini comme répertoire de travail.
+
+```yml
+WORKDIR /app
+```
+
+### Installer les dépendances
+
+---
+
+Cette partie dépend de la nature de votre projet. Ici, nous continuerons avec l’exemple d’un Dockerfile pour une application Next.js.
+
+L’exécution de l’application Next.js nécessite l’installation des dépendances listées dans les fichiers `package.json` et `package-lock.json`.
+
+Pour que ces dépendances soient installées dans le conteneur, vous devez copier ces deux fichiers, puis lancer l’installation des dépendances.
+
+La commande suivante crée une copie des fichiers `package*.json` dans le dossier racine du conteneur (le dossier `app` créé précédemment), puis installe les dépendances :
+
+```yml
+COPY package*.json ./
+
+RUN npm install
+```
+
+Ensuite, vous devez copier l’ensemble du projet dans le conteneur afin d’y inclure le code source, les ressources et la structure complète de votre application.
+
+Cette séparation en deux étapes (copie des fichiers `package*.json` puis du reste du projet) permet à Docker de mettre en cache l’installation des dépendances.
+
+Ainsi, si seules les sources de votre projet changent, Docker réutilise les couches précédemment construites sans réinstaller les dépendances, ce qui accélère considérablement les reconstructions.
+
+```yml
+COPY . .
+```
+
+**Récapitulatif des actions listées dans le Dockerfile :**
+
+1. Utiliser l’image Node comme base pour l'environnement.
+
+2. Créer un dossier `app` dans le conteneur et l’utiliser comme dossier racine.
+
+3. Copier les fichiers `package.json` et `package-lock.json` dans le conteneur.
+
+4. Exécuter l’installation des dépendances.
+
+5. Copier le reste du projet dans le conteneur.
+
+### Exposer l’application
+
+---
+
+Le ou les ports utilisés varient selon la nature de votre application (par exemple, Next.js utilise le port 3000). Par défaut, aucun port n’est exposé en dehors du conteneur, ce qui rend l’application inaccessible depuis l’extérieur.
+
+Pour rendre votre application accessible, vous devez mapper le port interne du conteneur (ici le port 3000) à un port de votre machine hôte. Cela nécessite d’indiquer le port à exposer directement dans le script Dockerfile.
+
+La commande suivante expose le port 3000 du conteneur afin qu’il puisse être associé à celui de votre machine, permettant ainsi d’accéder à l’application exécutée dans le conteneur :
+
+```yml
+EXPOSE 3000
+```
+
+Il ne reste plus qu’une étape pour que tout fonctionne : définir la commande de démarrage du projet.
+
+Cette commande indique à Docker quelle instruction exécuter lorsque le conteneur démarre, une fois que toutes les étapes du script ont été terminées.
+
+```yml
+CMD ["npm", "run", "dev"]
+```
+
+### Exemple complet
+
+---
+
+```yml
+FROM node:24-alpine3.21
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]
+```
+
+## Exploiter l'image
+
+---
+
+Une fois votre Dockerfile prêt, vous pouvez créer une image à partir de celui-ci.
+
+Placez-vous dans le terminal à la racine de votre projet, là où se trouve le fichier Dockerfile, puis exécutez la commande suivante :
+
+```bash
+docker build -t <nom_pour_votre_image> .
+```
+
+Cette commande demande à Docker de lire le Dockerfile, d’exécuter chaque instruction et de construire une image complète, prête à être utilisée.
+
+Une fois l’image construite, vous pouvez démarrer un conteneur basé sur celle-ci avec la commande suivante :
+
+```bash
+docker run -p 3000:3000 <nom_de_votre_image_cree_precedemment>
+```
+
+L’option `-p 3000:3000` mappe le port 3000 du conteneur (celui exposé dans le Dockerfile) au port 3000 de votre machine, ce qui permet d’y accéder depuis votre navigateur.
+
+Votre application Next.js est désormais en cours d’exécution et accessible.
+

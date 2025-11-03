@@ -1,0 +1,203 @@
+## Introduction
+
+---
+
+Une application repose souvent sur plusieurs services : backend PHP, frontend JS, base de données SQL, serveur SMTP pour les emails, etc. Chaque service nécessite un container propre et cela peut devenir fastidieux.
+
+Docker-compose est un outil permettant de définir et gérer plusieurs conteneurs à partir d’un fichier unique : `docker-compose.yml`. Plutôt que de lancer manuellement chaque service, tout est automatisé et orchestré vie un unique fichier.
+
+Ce fichier organisera les configurations des différentes images nécessaires au bon fonctionnement de l’environnement.
+
+Le document suivant illustrera la construction d’un environnement Docker-compose pour une application Next.js, le serveur de base de données MySQL et PHPMyAdmin.
+
+Le fichier `docker-compose.yml` se trouve généralement à la racine du projet contenant les différentes parties du projet complet.
+
+```bash
+my_project/
+├─ nextjs/
+│  ├─ Dockerfile
+│
+├─ PHP/
+│  ├─ Dockerfile
+│
+├─ caddy/
+├─ README.md
+├─ docker-compose.yml
+```
+
+## Images en lecture seule
+
+---
+
+Dans l’environnement configuré, deux images sont en lecture seule (MySQL et PHPMyAdmin), tandis que deux autres sont personnalisées : le frontend Next.js et le backend PHP.
+
+### Service MySQL
+
+---
+
+```yaml
+services:
+  db:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: my_database
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: root
+    ports:
+      - 3306:3306
+```
+
+Le service est déclaré sous le nom `db`. Ce nom est libre, mais vous pouvez également définir un nom de conteneur explicite à l’aide de la propriété `container_name`.
+
+Ce nom sera utilisé par Docker comme identifiant du service dans l’environnement.
+
+Le service exploite ici l’image `mysql` téléchargée depuis Docker Hub.
+
+Le port `3306` est exposé afin de permettre l’accès au conteneur depuis l’extérieur.
+
+| Variable              | Description                                        |
+| --------------------- | -------------------------------------------------- |
+| `MYSQL_ROOT_PASSWORD` | Mot de passe de l’utilisateur root de MySQL.       |
+| `MYSQL_DATABASE`      | Nom de la base de données à créer automatiquement. |
+| `MYSQL_USER`          | Nom de l’utilisateur de base de données à créer.   |
+| `MYSQL_PASSWORD`      | Mot de passe associé à cet utilisateur.            |
+
+Vous pouvez à présent exécuter l’environnement pour lancer et tester le service MySQL.
+
+### Service PHPMyAdmin
+
+---
+
+```yaml
+services:
+  db:
+    image: mysql
+    ...
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_USER: admin
+      PMA_PASSWORD: root
+    ports: - 8080:80
+```
+
+Avec cette configuration, un conteneur `phpmyadmin` sera créé à partir de l’image officielle de PHPMyAdmin.
+
+Il sera accessible sur le port `8080` et permettra d’administrer la base de données gérée par le conteneur `db`.
+
+| Variable       | Description                                                                            |
+| -------------- | -------------------------------------------------------------------------------------- |
+| `PMA_HOST`     | Nom du conteneur MySQL sur lequel se connecter. Ici, il s’agit du nom du service `db`. |
+| `PMA_USER`     | Nom de l’utilisateur de base de données utilisé par PHPMyAdmin.                        |
+| `PMA_PASSWORD` | Mot de passe associé à cet utilisateur.                                                |
+
+Vous pouvez désormais lancer l’environnement et accéder à PHPMyAdmin.
+
+## Images personnalisées
+
+---
+
+Dans l’environnement configuré, deux images sont en lecture seule (MySQL et PHPMyAdmin), tandis que deux autres sont personnalisées : le frontend Next.js et le backend PHP.
+
+### Service frontend Next.js
+
+---
+
+```yaml
+services:
+  db:
+    image: mysql
+    ...
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ...
+
+  next:
+    build:
+      context: nextjs # dossier de votre application Next.js
+    volumes:
+      - ./nextjs:/app # dossier local monté dans le conteneur
+    ports:
+      - 3000:3000
+```
+
+Cette configuration ne sert pas à construire directement l’image personnalisée, car cette tâche est gérée par le Dockerfile.
+
+Elle indique simplement à Docker Compose de créer un conteneur basé sur cette image, en précisant le chemin du dossier où se trouve le Dockerfile via le paramètre `build`.
+
+Ici, `context: nextjs` correspond au dossier contenant le projet Next.js et le Dockerfile associé. Lors de l’exécution, Docker construira une image à partir de ce dossier et démarrera un conteneur basé sur celle-ci.
+
+Le paramètre `volumes` permet de créer un volume entre votre machine et le conteneur, afin que les fichiers du projet Next.js soient synchronisés en temps réel. Cela vous permet de voir immédiatement vos modifications sans avoir besoin de reconstruire l’image à chaque fois.
+
+Dans cet exemple, le dossier local `nextjs` est monté dans le dossier `/app` du conteneur, qui correspond au répertoire de travail défini dans le Dockerfile.
+
+Le port 3000 est exposé afin de permettre l’accès au conteneur depuis l’extérieur.
+
+### Service backend PHP
+
+---
+
+La configuration du backend PHP suit exactement le même principe que celle du frontend Next.js.
+
+Elle repose sur une image personnalisée construite à partir d’un Dockerfile spécifique au projet backend.
+
+```yaml
+version: '3.8'
+
+services:
+db:
+image: mysql
+...
+
+phpmyadmin:
+image: phpmyadmin/phpmyadmin
+...
+
+next:
+build:
+context: nextjs
+...
+
+php:
+build:
+context: php # dossier de votre application backend PHP
+volumes: - ./php:/app # dossier local monté dans le conteneur
+ports: - 8000:8000
+```
+
+Comme pour le frontend, le paramètre `build` indique à Docker le chemin vers le dossier contenant le Dockerfile utilisé pour créer l’image du backend.
+
+Ce Dockerfile contient les instructions nécessaires à la configuration de l’environnement PHP (installation des extensions, dépendances, etc.).
+
+Le paramètre `volumes` synchronise le dossier local `php` avec le dossier `/app` du conteneur.
+
+Le port 8000 est exposé afin de permettre l’accès au conteneur depuis l’extérieur.
+
+## Exploiter l’environnement avec Docker Compose
+
+---
+
+Une fois votre fichier `docker-compose.yml` prêt, vous pouvez lancer l’ensemble des services définis (base de données, frontend, backend, etc.) en une seule commande.
+
+Placez-vous dans le terminal à la racine de votre projet, là où se trouve le fichier `docker-compose.yml`, puis exécutez :
+
+```bash
+docker compose up
+```
+
+Docker Compose va lire la configuration, construire les images personnalisées si nécessaire, puis démarrer tous les conteneurs associés.
+
+Pour exécuter les services en arrière-plan, ajoutez le paramètre `-d` :
+
+```bash
+docker compose up -d
+```
+
+Votre environnement complet est maintenant opérationnel.
+
+Les conteneurs communiquent entre eux automatiquement via le réseau créé par Docker Compose, et les ports exposés dans le fichier de configuration permettent d’accéder aux différentes applications depuis votre navigateur.

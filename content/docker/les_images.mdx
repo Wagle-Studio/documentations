@@ -1,0 +1,47 @@
+## Introduction
+
+---
+
+🔗 [Documentation - Images Docker](https://docs.docker.com/engine/reference/commandline/pull/)
+
+Les images Docker sont des modèles prêts à l’emploi, utilisés pour créer des conteneurs exécutables.
+
+Certaines images sont dites en lecture seule, car elles sont téléchargées depuis un registre public (comme Docker Hub) et ne sont pas modifiables directement.
+
+C'est notamment le cas pour les images fournissant des services autonomes comme les bases de données, les outils d’administration (par exemple PHPMyAdmin), les applications de tests d’intégration ou encore les services d’interception d’emails.
+
+### Utiliser une image existante
+
+---
+
+Pour récupérer une image disponible publiquement, utilisez la commande `docker pull` suivie du nom de l’image souhaitée :
+
+```bash
+docker pull node:24-alpine3.21
+```
+
+Cette commande télécharge l’image depuis Docker Hub et la stocke localement sur votre machine.
+
+Vous pouvez ensuite exécuter un conteneur basé sur cette image :
+
+```bash
+docker run -it node:24-alpine3.21
+```
+
+Le conteneur lancé repose sur l’image téléchargée, mais reste isolé et temporaire.
+
+Toute modification faite à l’intérieur disparaîtra lorsque le conteneur sera supprimé, puisque l’image source n’est pas altérée.
+
+### Personnaliser une image
+
+---
+
+Pour adapter une image à votre projet, vous pouvez créer votre propre image à partir d’un Dockerfile.
+
+C’est le même principe que pour les images en lecture seule, mais cette fois, vous définissez explicitement les couches supplémentaires à ajouter (installation de dépendances, configuration, fichiers de projet, etc.).
+
+Ainsi, vous partez d’une image existante, par exemple `node:24-alpine3.21`, puis vous la complétez selon vos besoins.
+
+Le résultat est une image personnalisée, que vous pouvez versionner, partager et réutiliser comme base pour vos conteneurs.
+
+> 💡 Bon à savoir : la plupart des images disponibles sur Docker Hub sont construites de cette manière, à partir d’autres images officielles (appelées images de base) enrichies par des instructions spécifiques à un usage particulier.

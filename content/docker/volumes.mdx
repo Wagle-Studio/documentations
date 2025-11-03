@@ -1,0 +1,41 @@
+## Introduction
+
+---
+
+🔗 [Documentation - Docker](https://docs.docker.com/engine/storage/volumes/)
+
+Les volumes permettent de persister et de partager des données entre votre machine (le système hôte) et un ou plusieurs conteneurs.
+
+Cela permet d’appliquer vos modifications en direct sans avoir à reconstruire l’image à chaque changement.
+
+> 💡 Bon à savoir : les volumes peuvent aussi être utilisés pour partager des données entre plusieurs conteneurs ou pour stocker de manière persistante des fichiers tels que des bases de données, des logs ou des fichiers de configuration.
+
+### Avec un container
+
+---
+
+La commande suivante reprend la même structure que celle utilisée pour exécuter le conteneur Next.js, mais ajoute le paramètre `-v` pour créer un volume :
+
+```bash
+docker run -p 3000:3000 -v $(pwd):/app <nom_de_votre_image_cree_precedemment>
+```
+
+Le paramètre `-v <chemin_du_contenu_a_persister>:/app` indique à Docker de synchroniser le dossier source avec le dossier `/app` du conteneur.
+
+Ici, `$(pwd)` représente le chemin absolu du dossier courant sur votre machine, c’est-à-dire celui où se trouve votre application.
+
+Le contenu de ce dossier est donc monté dans le répertoire `/app` du conteneur, correspondant au dossier de travail défini dans le Dockerfile.
+
+Grâce à ce montage, toute modification effectuée sur vos fichiers locaux est immédiatement visible à l’intérieur du conteneur, et donc dans l’application exécutée.
+
+### Avec Docker Compose
+
+---
+
+Le principe reste le même, mais la déclaration des volumes est simplifiée.
+
+Dans un fichier Docker Compose, les volumes sont définis directement dans la section `volumes:` du service concerné.  
+
+Cela permet de configurer les montages de manière plus claire et centralisée, sans avoir à répéter les options `-v` dans les commandes.
+
+Compose gère automatiquement la création et la suppression de ces volumes selon le cycle de vie des services.

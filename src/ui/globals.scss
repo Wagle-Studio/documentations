@@ -10,6 +10,7 @@
   --coldarkColdCodeBg: #e3eaf2;
   --coldarkColdMenuHover: #f3f4f6;
 
+  --space-0: 4px;
   --space-1: 8px;
   --space-2: 16px;
   --space-3: 24px;
@@ -58,25 +59,35 @@
   --breakpoint-desktop: 1260px;
 }
 
-.menu_item {
-  &_link {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: var(--space-1);
+.p-menubar {
+  background-color: var(--white);
+}
 
-    &--header {
-      font-weight: var(--font-weight-medium);
-    }
-  }
+.p-menubar-button {
+  display: none;
+}
+
+.p-menubar-root-list,
+.p-submenu-list {
+  padding: 0;
+}
+
+.p-menu {
+  padding: 0;
+  height: calc(100vh - 74px);
+  background-color: var(--white);
 }
 
 .app {
   display: grid;
-  grid-template-columns: 200px 1fr 200px;
-  grid-template-rows: 58px 1fr;
+  grid-template-columns: 0px 1fr 0px;
+  grid-template-rows: 57px 1fr;
   column-gap: var(--space-5);
   row-gap: var(--space-1);
+
+  @media screen and (min-width: 768px) {
+    grid-template-columns: 200px 1fr 200px;
+  }
 
   &__header {
     position: sticky;
@@ -88,10 +99,6 @@
       width: 100%;
       padding-top: var(--space-1);
       background-color: var(--bg);
-
-      > div {
-        background-color: var(--white);
-      }
 
       &--start {
         display: flex;
@@ -122,16 +129,15 @@
 
   &__side {
     &__menu {
-      position: sticky;
-      top: 66px;
-      grid-column: 1/2;
-      grid-row: 2/3;
-      height: calc(100vh - 66px);
+      display: none;
 
-      > div {
-        padding: 0;
-        height: calc(100vh - 74px);
-        background-color: var(--white);
+      @media screen and (min-width: 768px) {
+        position: sticky;
+        display: flex;
+        top: 66px;
+        grid-column: 1/2;
+        grid-row: 2/3;
+        height: calc(100vh - 66px);
       }
     }
   }
@@ -145,16 +151,15 @@
 
   &__lesson {
     &__menu {
-      position: sticky;
-      top: 66px;
-      grid-column: 3/4;
-      grid-row: 2/3;
-      height: calc(100vh - 66px);
+      display: none;
 
-      > div {
-        padding: 0;
-        height: calc(100vh - 74px);
-        background-color: var(--white);
+      @media screen and (min-width: 768px) {
+        position: sticky;
+        display: flex;
+        top: 66px;
+        grid-column: 3/4;
+        grid-row: 2/3;
+        height: calc(100vh - 66px);
       }
     }
 
@@ -217,18 +222,36 @@
         margin-top: var(--space-4);
       }
 
+      pre {
+        display: block !important;
+        box-sizing: border-box !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        margin: var(--space-4) 0;
+      }
+
+      pre code {
+        white-space: pre-wrap !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
+        hyphens: auto !important;
+      }
+
       pre,
       .code-inline {
         border-radius: var(--border-radius-base);
       }
 
-      pre {
-        margin: var(--space-4) 0;
-      }
-
       .code-inline {
         padding: 3px 5px;
         background-color: var(--coldarkColdCodeBg);
+      }
+
+      blockquote {
+        margin: 0;
+        padding: var(--space-0) var(--space-2);
+        border-radius: var(--border-radius-base);
+        background-color: var(--coldarkColdMenuHover);
       }
 
       table {
@@ -260,6 +283,19 @@
           vertical-align: top;
         }
       }
+    }
+  }
+}
+
+.menu_item {
+  &_link {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-1);
+
+    &--header {
+      font-weight: var(--font-weight-medium);
     }
   }
 }

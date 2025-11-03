@@ -1,0 +1,69 @@
+## Gestion des services Docker
+
+---
+
+| Commande                        | Description                             |
+| ------------------------------- | --------------------------------------- |
+| `sudo systemctl start docker`   | Démarre le service Docker               |
+| `sudo systemctl stop docker`    | Arrête le service Docker                |
+| `sudo systemctl restart docker` | Redémarre complètement le service       |
+| `sudo systemctl status docker`  | Affiche l’état actuel du service        |
+| `sudo systemctl enable docker`  | Active le démarrage automatique au boot |
+
+## Gestion des conteneurs
+
+---
+
+| Commande                                | Description                                   |
+| --------------------------------------- | --------------------------------------------- |
+| `docker ps`                             | Liste les conteneurs en cours d’exécution     |
+| `docker ps -a`                          | Liste tous les conteneurs (actifs et arrêtés) |
+| `docker start nom_du_conteneur`         | Démarre un conteneur arrêté                   |
+| `docker stop nom_du_conteneur`          | Arrête un conteneur en cours                  |
+| `docker restart nom_du_conteneur`       | Redémarre un conteneur                        |
+| `docker rm nom_du_conteneur`            | Supprime un conteneur arrêté                  |
+| `docker logs -f nom_du_conteneur`       | Affiche les logs en temps réel                |
+| `docker exec -it nom_du_conteneur bash` | Ouvre un terminal bash dans un conteneur      |
+| `docker exec -it nom_du_conteneur sh`   | Ouvre un terminal sh dans un conteneur        |
+| `docker inspect nom_du_conteneur`       | Affiche les détails du conteneur              |
+
+## Gestion des images
+
+---
+
+| Commande                      | Description                                  |
+| ----------------------------- | -------------------------------------------- |
+| `docker images`               | Liste les images disponibles                 |
+| `docker pull nom_image[:tag]` | Télécharge une image depuis Docker Hub       |
+| `docker build -t nom_image .` | Construit une image à partir d’un Dockerfile |
+| `docker rmi nom_image`        | Supprime une image                           |
+| `docker image prune`          | Supprime les images inutilisées              |
+
+## Gestion des volumes et réseaux
+
+---
+
+| Commande                            | Description                           |
+| ----------------------------------- | ------------------------------------- |
+| `docker volume ls`                  | Liste les volumes créés               |
+| `docker volume rm nom_volume`       | Supprime un volume                    |
+| `docker network ls`                 | Liste les réseaux Docker              |
+| `docker network inspect nom_reseau` | Détaille la configuration d’un réseau |
+
+## Gestion avec Docker Compose
+
+---
+
+| Commande                                | Description                                                  |
+| --------------------------------------- | ------------------------------------------------------------ |
+| `docker compose up -d`                  | Lance les conteneurs en arrière-plan                         |
+| `docker compose -f compose.prod.yml up` | Lance les conteneurs avec le fichier compose indiqué         |
+| `docker compose -env-file .env.prod up` | Lance les conteneurs avec le fichier d'environnement indiqué |
+| `docker compose -p mon_prefix up`       | Lance les conteneurs et prefix les noms des containers       |
+| `docker compose down`                   | Stoppe et supprime les conteneurs, réseaux, volumes          |
+| `docker compose build`                  | Construit les images définies dans le compose.yml            |
+| `docker compose restart`                | Redémarre les services du projet                             |
+| `docker compose ps`                     | Liste les services actifs                                    |
+| `docker compose logs -f`                | Affiche les logs en temps réel                               |
+| `docker compose exec service bash`      | Ouvre un shell dans un service                               |
+| `docker compose config`                 | Vérifie et affiche la configuration finale                   |
