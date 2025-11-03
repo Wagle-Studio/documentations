@@ -6,5 +6,5 @@ interface TemplateLessonProps {
 }
 
 export const TemplateLesson = ({ children }: TemplateLessonProps) => {
-  return <div className="template--lesson">{children}</div>;
+  return <div className="template_lesson">{children}</div>;
 };

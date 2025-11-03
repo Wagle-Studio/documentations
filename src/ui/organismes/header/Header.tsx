@@ -8,7 +8,7 @@ export const Header = () => {
     <div className="header">
       <div className="header__wrapper">
         <div className="header__wrapper--start">
-          <Link className="header__brand" href="/">
+          <Link className="header__wrapper__brand" href="/">
             <Image
               src="/emoji/books.png"
               alt={"Documentations"}
@@ -19,7 +19,7 @@ export const Header = () => {
           </Link>
         </div>
         <div className="header__wrapper--end">
-          <Tag>V 1.0</Tag>
+          <Tag>V 1.1</Tag>
           <a
             href="https://github.com/Wagle-Studio/documentations"
             target="_blank"

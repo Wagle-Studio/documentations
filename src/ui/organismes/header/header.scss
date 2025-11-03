@@ -1,8 +1,4 @@
 .header {
-  position: sticky;
-  top: 0;
-  grid-column: 1/4;
-  grid-row: 1/2;
   background-color: var(--white);
 
   &__wrapper {
@@ -15,6 +11,17 @@
     border: 1px solid var(--gray-base);
     border-radius: var(--border-radius-small);
 
+    &__brand {
+      display: flex;
+      flex-direction: row;
+      gap: var(--space-1);
+      align-items: center;
+      line-height: 0;
+      font-weight: var(--font-weight-large);
+      color: var(--black);
+      text-decoration: none;
+    }
+
     &--end,
     &--start {
       display: flex;
@@ -26,16 +33,5 @@
         line-height: 0;
       }
     }
-  }
-
-  &__brand {
-    display: flex;
-    flex-direction: row;
-    gap: var(--space-1);
-    align-items: center;
-    line-height: 0;
-    font-weight: var(--font-weight-large);
-    color: var(--black);
-    text-decoration: none;
   }
 }

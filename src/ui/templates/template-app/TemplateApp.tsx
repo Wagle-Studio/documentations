@@ -1,6 +1,6 @@
 import "./templateApp.scss";
 import { ReactNode } from "react";
-import { Header, MenuSide } from "@/ui";
+import { Header, SidebarMain } from "@/ui";
 
 interface TemplateAppProps {
   children: ReactNode;
@@ -8,10 +8,14 @@ interface TemplateAppProps {
 
 export const TemplateApp = ({ children }: TemplateAppProps) => {
   return (
-    <main className="template--app">
-      <Header />
-      <MenuSide />
-      {children}
+    <main className="template_app">
+      <div className="template_app__header">
+        <Header />
+      </div>
+      <div className="template_app__sidebar">
+        <SidebarMain />
+      </div>
+      <div className="template_app__content">{children}</div>
     </main>
   );
 };

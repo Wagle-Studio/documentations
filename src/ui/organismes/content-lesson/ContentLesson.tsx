@@ -9,9 +9,9 @@ interface ContentLessonProps {
 
 export const ContentLesson = ({ lesson, mdx }: ContentLessonProps) => {
   return (
-    <div className="content--lesson">
+    <div className="content_lesson">
       <HeaderLesson lesson={lesson} />
-      <div className="content__mdx">
+      <div className="content_lesson__mdx">
         <RenderMdx content={mdx} />
       </div>
     </div>

@@ -97,6 +97,12 @@ const courses: Course[] = [
     slug: "docker",
     emoji: "/emoji/whale.png",
   },
+  {
+    id: 3,
+    label: "Git",
+    slug: "git",
+    emoji: "/emoji/octopus.png",
+  },
 ];
 
 const register: Register = { courses, lessons };

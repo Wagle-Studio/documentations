@@ -1,17 +1,23 @@
-import "./menuSide.scss";
+"use client";
+
+import "./sidebarMain.scss";
+import { useParams } from "next/navigation";
 import { MenuLink } from "@/ui";
 import RegisterManager from "@/core/managers/RegisterManager";
 
-export const MenuSide = () => {
+export const SidebarMain = () => {
+  const params = useParams();
+
   return (
-    <div className="sidebar--main">
-      <ul className="sidebar__menu">
+    <div className="sidebar_main">
+      <ul className="sidebar_main__menu">
         {RegisterManager.getCourses().data.map((course) => (
-          <li key={course.id}>
+          <li key={`sidebar_main__course__menu_item--${course.id}`}>
             <MenuLink
               label={course.label}
               emoji={course.emoji}
               href={`/documentation/${course.slug}`}
+              selected={params.course === course.slug}
             />
           </li>
         ))}

@@ -1,0 +1,29 @@
+.teaser_course {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--gray-base);
+  border-radius: var(--border-radius-small);
+  background-color: var(--white);
+  text-decoration: none;
+  transition: 100ms ease-out;
+
+  &:hover {
+    background-color: var(--gray-light);
+  }
+
+  &__header {
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-2);
+    align-items: center;
+
+    > h3 {
+      line-height: 0;
+    }
+  }
+}

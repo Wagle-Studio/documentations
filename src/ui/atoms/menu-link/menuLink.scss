@@ -7,7 +7,13 @@
   text-decoration: none;
   transition: 100ms ease-out;
 
+  &--selected,
   &:hover {
     background-color: var(--gray-light);
+  }
+
+  &--highlight {
+    background-color: var(--gray-base);
+    font-weight: var(--font-weight-medium);
   }
 }

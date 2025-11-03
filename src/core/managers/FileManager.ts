@@ -18,6 +18,7 @@ export default class FileManager {
   static getContent = (slug: string): CoreResult<GetContentResult, null> => {
     const findLessonResult = RegisterManager.findLessonBySlug(slug);
 
+    // TODO : handle error case
     if (!findLessonResult.success) throw new Error(findLessonResult.message);
 
     const contentPath = path.join(...findLessonResult.data.paths);

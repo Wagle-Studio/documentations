@@ -8,6 +8,7 @@ export async function generateStaticParams() {
   RegisterManager.getLessons().data.map((lesson) => {
     const findCourseResult = RegisterManager.findCourseById(lesson.course_id);
 
+    // TODO : handle error case
     if (!findCourseResult.success) throw new Error(findCourseResult.message);
 
     lessonsPaths.push({

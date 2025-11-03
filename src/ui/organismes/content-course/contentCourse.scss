@@ -1,4 +1,11 @@
-.content {
-  &--course {
+.content_course {
+  display: flex;
+  flex-direction: column;
+
+  &__header {
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-2);
+    align-items: center;
   }
 }

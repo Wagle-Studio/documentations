@@ -7,9 +7,9 @@ interface HeaderLessonProps {
 
 export const HeaderLesson = ({ lesson }: HeaderLessonProps) => {
   return (
-    <div className="header_lesson">
+    <div className="content_lesson__header">
       <h1>{lesson.label}</h1>
-      <div className="header_lesson__subtitles">
+      <div className="content_lesson__header__subtitles">
         <p>Créé le {lesson.created}</p>
         <p>Mis à jour le {lesson.updated}</p>
       </div>

@@ -1,6 +1,22 @@
-.template {
-  &--course {
+.template_course {
+  display: grid;
+  grid-template-columns: 1fr 202px;
+  grid-template-rows: 1fr;
+  column-gap: var(--space-5);
+  row-gap: var(--space-1);
+
+  &__content {
+    grid-column: 1/2;
+    grid-row: 1/2;
+  }
+
+  &__sidebar {
     grid-column: 2/3;
-    grid-row: 2/3;
+    grid-row: 1/2;
+    position: sticky;
+    display: flex;
+    top: 58px;
+    width: 100%;
+    height: calc(100vh - 66px);
   }
 }
