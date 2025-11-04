@@ -3,6 +3,7 @@
 import "./sidebarLesson.scss";
 import { useParams } from "next/navigation";
 import { MenuLink } from "@/ui";
+import { useSummaryParser } from "@/core/hooks";
 import RegisterManager from "@/core/managers/RegisterManager";
 
 interface SidebarLessonProps {
@@ -26,6 +27,8 @@ export const SidebarLesson = ({ courseSlug }: SidebarLessonProps) => {
 
   const lessons = findLessonsResult.data;
 
+  const { summaryItems } = useSummaryParser(params.lesson);
+
   return (
     <div className="sidebar_second">
       <ul className="sidebar_second__menu">
@@ -42,9 +45,23 @@ export const SidebarLesson = ({ courseSlug }: SidebarLessonProps) => {
           <li key={`sidebar_second__lesson__menu_item--${lesson.id}`}>
             <MenuLink
               label={lesson.label}
-              href={`/documentation/${course.slug}/${lesson.slug}`}
+              href={`/documentation/${course.slug}/${lesson.slug}#top`}
               selected={params.lesson === lesson.slug}
             />
+            {params.lesson === lesson.slug && summaryItems && (
+              <ul className="sidebar_second__menu__chapters">
+                {summaryItems.map((summaryItem) => (
+                  <li
+                    key={`sidebar_second__lesson__menu_item--${summaryItem.slug}`}
+                  >
+                    <MenuLink
+                      label={summaryItem.label}
+                      href={`#${summaryItem.slug}`}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
           </li>
         ))}
       </ul>

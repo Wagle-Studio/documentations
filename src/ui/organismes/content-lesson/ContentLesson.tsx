@@ -11,7 +11,7 @@ export const ContentLesson = ({ lesson, mdx }: ContentLessonProps) => {
   return (
     <div className="content_lesson">
       <HeaderLesson lesson={lesson} />
-      <div className="content_lesson__mdx">
+      <div id="content_lesson__mdx" className="content_lesson__mdx">
         <RenderMdx content={mdx} />
       </div>
     </div>

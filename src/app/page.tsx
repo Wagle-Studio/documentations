@@ -6,6 +6,7 @@ export default function HomePage() {
 
   return (
     <div className="page--homepage">
+      <h1>Documentation</h1>
       <ListCourses courses={courses} />
     </div>
   );

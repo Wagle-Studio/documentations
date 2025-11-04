@@ -2,6 +2,7 @@ import { MDXRemote } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { coldarkCold } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { Slugifier } from "@/core/services";
 
 interface RenderMdxProps {
   content: string;
@@ -12,7 +13,7 @@ export const RenderMdx = ({ content }: RenderMdxProps) => {
     <MDXRemote
       source={content}
       options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
-      components={{ code: TagCode }}
+      components={{ h2: TagHeading2, code: TagCode }}
     />
   );
 };
@@ -37,4 +38,12 @@ export const TagCode = ({ children, className, inline }: TagCodeProps) => {
       {code}
     </SyntaxHighlighter>
   );
+};
+
+interface TagHeading2Props {
+  children: React.ReactNode;
+}
+
+export const TagHeading2 = ({ children }: TagHeading2Props) => {
+  return <h2 id={Slugifier.slugify(children as string)}>{children}</h2>;
 };

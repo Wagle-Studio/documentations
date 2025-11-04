@@ -19,7 +19,7 @@ export const Header = () => {
           </Link>
         </div>
         <div className="header__wrapper--end">
-          <Tag>V 1.1</Tag>
+          <Tag>V 1.2</Tag>
           <a
             href="https://github.com/Wagle-Studio/documentations"
             target="_blank"

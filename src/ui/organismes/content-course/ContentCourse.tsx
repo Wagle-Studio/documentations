@@ -14,13 +14,22 @@ export const ContentCourse = ({ course }: ContentCourseProps) => {
   // TODO : handle error case
   if (!findLessonsResult.success) throw new Error(findLessonsResult.message);
 
+  const lessons = findLessonsResult.data;
+
   return (
     <div className="content_course">
       <div className="content_course__header">
-        <Image src={course.emoji} alt={course.label} width={32} height={32} />
-        <h1>{course.label}</h1>
+        <div className="content_course__header__title">
+          <Image src={course.emoji} alt={course.label} width={32} height={32} />
+          <h1>{course.label}</h1>
+        </div>
+        <p>
+          {lessons.length} {lessons.length > 0 ? "Documents" : "Document"}
+        </p>
       </div>
-      <ListLessons course={course} lessons={findLessonsResult.data} />
+      <div className="content_couse__body">
+        <ListLessons course={course} lessons={lessons} />
+      </div>
     </div>
   );
 };

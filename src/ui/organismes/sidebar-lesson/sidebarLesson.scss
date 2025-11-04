@@ -11,5 +11,21 @@
     padding: 0;
     margin: 0;
     list-style: none;
+
+    &__chapters {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+      background-color: var(--gray-lighter);
+      border-top: 1px solid var(--gray-base);
+      border-bottom: 1px solid var(--gray-base);
+
+      > li > a {
+        padding-left: var(--space-3);
+      }
+    }
   }
 }
