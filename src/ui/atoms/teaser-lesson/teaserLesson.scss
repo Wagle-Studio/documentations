@@ -1,11 +1,9 @@
 .teaser_lesson {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: var(--space-2);
-  align-items: center;
-  justify-content: space-between;
+  padding: var(--space-2);
   width: 100%;
-  padding: 0 var(--space-2);
   border: 1px solid var(--gray-base);
   border-radius: var(--border-radius-small);
   background-color: var(--white);
@@ -22,8 +20,21 @@
     gap: var(--space-2);
     align-items: center;
 
-    > h3 {
-      line-height: 0;
+    h3 {
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-2);
+    align-items: center;
+
+    p {
+      margin: 0;
+      padding: 0;
     }
   }
 }

@@ -9,17 +9,15 @@ interface ListLessonsProps {
 
 export const ListLessons = ({ course, lessons }: ListLessonsProps) => {
   return (
-    <>
-      <h2>
-        {lessons.length} {lessons.length > 0 ? "Documents" : "Document"}
-      </h2>
-      <ul className="list_lessons">
+    <div className="list_lessons">
+      <h2>Documents</h2>
+      <ul className="list_lessons__list">
         {lessons.map((lesson) => (
           <li key={`list_lessons--${lesson.id}`}>
             <TeaserLesson course={course} lesson={lesson} />
           </li>
         ))}
       </ul>
-    </>
+    </div>
   );
 };

@@ -7,6 +7,8 @@ const lessons: Lesson[] = [
     label: "Commandes utiles",
     slug: "apache_commandes_utiles",
     course_id: 1,
+    description:
+      "Commandes principales pour administrer et configurer le serveur Apache.",
     created: "2 novembre 2025",
     updated: "2 novembre 2025",
   },
@@ -16,6 +18,8 @@ const lessons: Lesson[] = [
     label: "Installer Apache",
     slug: "installer_apache",
     course_id: 1,
+    description:
+      "Procédure d’installation et de vérification d’Apache sur Ubuntu.",
     created: "2 novembre 2025",
     updated: "2 novembre 2025",
   },
@@ -25,15 +29,19 @@ const lessons: Lesson[] = [
     label: "Virtual Host",
     slug: "virtual_host",
     course_id: 1,
+    description:
+      "Guide sur la création et la gestion des Virtual Hosts dans Apache.",
     created: "2 novembre 2025",
     updated: "2 novembre 2025",
   },
   {
     id: 4,
     paths: ["apache", "htpasswd.mdx"],
-    label: "Restiction .htpasswd",
+    label: "Restriction .htpasswd",
     slug: "htpasswd",
     course_id: 1,
+    description:
+      "Mise en place d’une authentification basique avec un fichier .htpasswd.",
     created: "2 novembre 2025",
     updated: "2 novembre 2025",
   },
@@ -43,6 +51,8 @@ const lessons: Lesson[] = [
     label: "Commandes utiles",
     slug: "docker_commandes_utiles",
     course_id: 2,
+    description:
+      "Commandes principales pour administrer Docker et Docker Compose.",
     created: "2 novembre 2025",
     updated: "2 novembre 2025",
   },
@@ -52,6 +62,8 @@ const lessons: Lesson[] = [
     label: "Les images",
     slug: "les_images",
     course_id: 2,
+    description:
+      "Principes et usages des images Docker.",
     created: "2 novembre 2025",
     updated: "2 novembre 2025",
   },
@@ -61,6 +73,7 @@ const lessons: Lesson[] = [
     label: "Les volumes",
     slug: "volumes",
     course_id: 2,
+    description: "Persistance et partage des données avec les volumes Docker.",
     created: "2 novembre 2025",
     updated: "2 novembre 2025",
   },
@@ -70,6 +83,7 @@ const lessons: Lesson[] = [
     label: "Dockerfile",
     slug: "docker_file",
     course_id: 2,
+    description: "Création d’un Dockerfile pas à pas.",
     created: "2 novembre 2025",
     updated: "2 novembre 2025",
   },
@@ -79,6 +93,8 @@ const lessons: Lesson[] = [
     label: "Docker Compose",
     slug: "docker_compose",
     course_id: 2,
+    description:
+      "Orchestration de plusieurs services avec Docker Compose.",
     created: "2 novembre 2025",
     updated: "2 novembre 2025",
   },

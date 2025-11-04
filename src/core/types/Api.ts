@@ -16,6 +16,7 @@ export type Lesson = {
   label: string;
   slug: string;
   course_id: number;
+  description: string
   created: string;
   updated: string;
 };
