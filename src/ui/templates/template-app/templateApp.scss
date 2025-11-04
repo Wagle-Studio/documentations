@@ -3,7 +3,7 @@
   grid-template-columns: 202px 1fr;
   grid-template-rows: 50px 1fr;
   column-gap: var(--space-5);
-  row-gap: var(--space-1);
+  row-gap: var(--space-2);
 
   &__header {
     position: sticky;
@@ -17,9 +17,9 @@
     grid-row: 2/3;
     position: sticky;
     display: flex;
-    top: 58px;
+    top: 66px;
     width: 100%;
-    height: calc(100vh - 66px);
+    height: calc(100vh - 82px);
   }
 
   &__content {

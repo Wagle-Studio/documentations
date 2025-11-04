@@ -1,6 +1,6 @@
 .header {
   padding-top: var(--space-1);
-  background-color: var(--white);
+  background-color: var(--body-bg);
 
   &__wrapper {
     display: flex;
@@ -10,6 +10,7 @@
     padding: var(--space-1);
     border: 1px solid var(--gray-base);
     border-radius: var(--border-radius-small);
+    background-color: var(--white);
 
     &__brand {
       display: flex;

@@ -60,11 +60,11 @@
     pre,
     .code-inline {
       border-radius: var(--border-radius-base);
+      background-color: var(--tag-code);
     }
 
     .code-inline {
       padding: 3px 5px;
-      background-color: var(--gray-base);
     }
 
     blockquote {
