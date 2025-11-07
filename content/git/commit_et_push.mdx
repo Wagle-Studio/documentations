@@ -1,0 +1,124 @@
+## Introduction
+
+---
+
+🔗 [Documentation Git - Premiers pas](https://git-scm.com/book/fr/v2/Les-bases-de-Git-D%C3%A9marrer-un-d%C3%A9p%C3%B4t-Git)
+
+Ce guide explique comment initialiser un projet Git et effectuer vos premiers commits.
+
+Vous apprendrez à créer un dépôt local, le lier à GitHub/GitLab, et gérer vos premières modifications avec les branches.
+
+## Créer un dépôt
+
+---
+
+Pour démarrer un nouveau projet avec Git, vous devez d'abord initialiser un dépôt local puis le lier à un dépôt distant (GitHub/GitLab).
+
+Si vous créez un nouveau dépôt sur GitHub/GitLab, évitez d'initialiser le dépôt avec un fichier `README.md`. Cela simplifiera la synchronisation initiale.
+
+Initialisez votre dépôt local et liez-le au dépôt distant :
+
+```bash
+# Initialise un dépôt Git dans le dossier courant
+git init
+
+# Lie votre dépôt local au dépôt distant (GitHub/GitLab)
+git remote add origin <adresse_ssh_de_votre_projet>
+```
+
+## Premier commit
+
+---
+
+Le premier commit établit l'état initial de votre projet. Choisissez les fichiers à inclure et rédigez un message clair :
+
+```bash
+# Ajoute tous les fichiers du projet au suivi
+git add .
+
+# Crée le commit initial avec un message descriptif
+git commit -m "Initial commit : création du projet"
+```
+
+## Premier push
+
+---
+
+Selon la plateforme (GitHub/GitLab) et sa configuration, la branche principale peut être nommée `main` ou `master`. Adaptez la commande en conséquence :
+
+```bash
+# Pour une branche principale 'main'
+git push --set-upstream origin main
+
+# Pour une branche principale 'master'
+# git push --set-upstream origin master
+```
+
+L'option `--set-upstream` (ou `-u`) configure le suivi de branche. Elle n'est nécessaire que pour le premier push.
+
+## Modifications suivantes
+
+---
+
+Pour les modifications ultérieures, le processus est plus simple :
+
+```bash
+# Ajoute les fichiers modifiés
+git add <fichier>  # ou git add . pour tout ajouter
+
+# Crée un nouveau commit
+git commit -m "Description claire des modifications"
+
+# Pousse les changements vers le dépôt distant
+git push
+```
+
+## Travailler avec les branches
+
+---
+
+Les branches permettent de développer des fonctionnalités sans affecter la branche principale.
+
+Cela vous permet par exemple de développer des fonctionnalités en parallèle.
+
+### Création et basculement
+
+---
+
+Pour créer une nouvelle branche et y basculer immédiatement :
+
+```bash
+git checkout -b <nom_de_la_branche>
+```
+
+Pour revenir à une branche existante :
+
+```bash
+git checkout <nom_de_la_branche>
+```
+
+## Bonnes pratiques
+
+---
+
+Pour maintenir un historique clair et professionnel :
+
+- Rédigez des messages de commit informatifs et cohérents
+
+- Préfixez vos branches selon leur type :
+
+  - `feature/` pour les nouvelles fonctionnalités
+
+  - `fix/` pour les corrections de bugs
+
+  - `docs/` pour la documentation
+
+- Créez un fichier `.gitignore` pour exclure :
+
+  - Les fichiers de configuration locale
+
+  - Les dépendances (`node_modules`, `vendor`, etc.)
+
+  - Les fichiers sensibles (`.env`, clés privées)
+
+  - Les fichiers générés automatiquement

@@ -1,0 +1,83 @@
+## Introduction
+
+---
+
+Ce document regroupe les commandes Git les plus couramment utilisées, organisées par catégorie. Pour une documentation complète, consultez la 🔗 [documentation officielle Git](https://git-scm.com/docs).
+
+## Configuration initiale
+
+---
+
+| Commande | Description |
+| --- | --- |
+| `git config --global user.name "nom"` | Configure le nom d'utilisateur pour les commits |
+| `git config --global user.email "email"` | Configure l'email pour les commits |
+| `git config --global init.defaultBranch main` | Définit la branche par défaut |
+| `git config --list` | Affiche la configuration actuelle |
+
+## Opérations de base
+
+---
+
+| Commande | Description |
+| --- | --- |
+| `git init` | Initialise un nouveau dépôt Git |
+| `git clone <url>` | Clone un dépôt distant |
+| `git status` | Affiche l'état du dépôt |
+| `git add <fichier>` | Ajoute un fichier à l'index |
+| `git add .` | Ajoute tous les fichiers modifiés |
+| `git commit -m "message"` | Crée un commit avec un message |
+| `git log` | Affiche l'historique des commits |
+
+## Gestion des branches
+
+---
+
+| Commande | Description |
+| --- | --- |
+| `git branch` | Liste les branches locales |
+| `git branch <nom>` | Crée une nouvelle branche |
+| `git switch <nom>` | Bascule sur une branche |
+| `git switch -c <nom>` | Crée et bascule sur une nouvelle branche |
+| `git merge <branche>` | Fusionne une branche dans la branche courante |
+| `git branch -d <nom>` | Supprime une branche locale |
+| `git branch -m <nouveau-nom>` | Renomme la branche courante |
+
+## Synchronisation distante
+
+---
+
+| Commande | Description |
+| --- | --- |
+| `git remote -v` | Liste les dépôts distants |
+| `git remote add origin <url>` | Ajoute un dépôt distant |
+| `git fetch` | Récupère les références distantes |
+| `git pull` | Récupère et fusionne les changements distants |
+| `git push` | Envoie les commits vers le dépôt distant |
+| `git push -u origin <branche>` | Pousse et configure le suivi de branche |
+
+## Gestion des modifications
+
+---
+
+| Commande | Description |
+| --- | --- |
+| `git diff` | Affiche les modifications non indexées |
+| `git diff --staged` | Affiche les modifications indexées |
+| `git stash` | Met de côté les modifications en cours |
+| `git stash list` | Liste les modifications mises de côté |
+| `git stash pop` | Réapplique les dernières modifications mises de côté |
+| `git restore <fichier>` | Annule les modifications d'un fichier |
+| `git reset HEAD <fichier>` | Désindexe un fichier |
+| `git rm --cached <fichier>` | Retire un fichier du suivi Git |
+
+## Résolution de conflits
+
+---
+
+| Commande | Description |
+| --- | --- |
+| `git checkout -- <fichier>` | Restaure un fichier à son état initial |
+| `git reset --hard HEAD` | Annule toutes les modifications locales |
+| `git revert <commit>` | Crée un commit qui annule un commit précédent |
+| `git merge --abort` | Annule une fusion en cours |

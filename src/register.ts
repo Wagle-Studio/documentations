@@ -62,8 +62,7 @@ const lessons: Lesson[] = [
     label: "Découverte Docker",
     slug: "decouverte_docker",
     course_id: 2,
-    description:
-      "Introduction aux concepts fondamentaux de Docker.",
+    description: "Introduction aux concepts fondamentaux de Docker.",
     created: "5 novembre 2025",
     updated: "5 novembre 2025",
   },
@@ -118,6 +117,36 @@ const lessons: Lesson[] = [
     created: "2 novembre 2025",
     updated: "2 novembre 2025",
   },
+  {
+    id: 12,
+    paths: ["git", "git_commandes_utiles.mdx"],
+    label: "Commandes utiles",
+    slug: "git_commandes_utiles",
+    course_id: 3,
+    description: "Commandes principales pour administrer Git et son versionnement.",
+    created: "5 novembre 2025",
+    updated: "5 novembre 2025",
+  },
+  {
+    id: 13,
+    paths: ["git", "installer_git.mdx"],
+    label: "Installer Git",
+    slug: "installer_git",
+    course_id: 3,
+    description: "Installation et configuration initiale de Git et mise en place des clés SSH.",
+    created: "5 novembre 2025",
+    updated: "5 novembre 2025",
+  },
+  {
+    id: 14,
+    paths: ["git", "commit_et_push.mdx"],
+    label: "Commit et push",
+    slug: "commit_et_push",
+    course_id: 3,
+    description: "Guide pas à pas pour initialiser un dépôt, effectuer ses premiers commits et gérer les branches.",
+    created: "5 novembre 2025",
+    updated: "5 novembre 2025",
+  },
 ];
 
 const courses: Course[] = [
@@ -138,6 +167,12 @@ const courses: Course[] = [
     label: "Git",
     slug: "git",
     emoji: "/emoji/octopus.png",
+  },
+  {
+    id: 4,
+    label: "PHP",
+    slug: "php",
+    emoji: "/emoji/elephant.png",
   },
 ];
 

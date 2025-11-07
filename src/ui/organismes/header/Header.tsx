@@ -1,7 +1,7 @@
 "use client";
 
 import "./header.scss";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
@@ -13,6 +13,20 @@ export const Header = () => {
   const [menuDisplay, setMenuDisplay] = useState<boolean>(false);
 
   const params = useParams();
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    if (menuDisplay) {
+      document.body.classList.add("header--mobile-open");
+    } else {
+      document.body.classList.remove("header--mobile-open");
+    }
+
+    return () => {
+      document.body.classList.remove("header--mobile-open");
+    };
+  }, [menuDisplay]);
 
   return (
     <div

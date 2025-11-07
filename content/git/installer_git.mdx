@@ -1,0 +1,97 @@
+## Introduction
+
+---
+
+🔗 [Documentation Git (officielle)](https://git-scm.com/doc)
+
+Git est un système de gestion de versions qui enregistre l’évolution d’un projet dans le temps.
+
+Il permet de suivre les modifications du code, travailler à plusieurs sur une même base et revenir à un état antérieur en cas d’erreur.
+
+Chaque changement est sauvegardé sous forme de commit, accompagné d’un message décrivant la modification.
+
+Grâce à son système de branches, Git facilite la collaboration entre développeurs : chacun peut développer une fonctionnalité isolément, avant de fusionner son travail avec le reste du projet. En cas de chevauchement, Git propose des outils pour gérer et résoudre les conflits de code.
+
+## Installation
+
+---
+
+### Ubuntu / Debian
+
+---
+
+Installez Git via APT :
+
+```bash
+sudo apt update
+sudo apt install -y git
+git --version
+```
+
+### macOS
+
+---
+
+Sur macOS, Git peut être installé via Homebrew :
+
+```bash
+brew install git
+```
+
+### Windows
+
+---
+
+Sur Windows, 🔗 [téléchargez l'installateur officiel](https://git-scm.com/download/win) (Git for Windows).
+
+Pendant l'installation, choisissez d'installer "Git Bash" pour avoir une interface de type Unix.
+
+## Configuration
+
+---
+
+Configurez votre identité qui sera associée aux commits :
+
+```bash
+git config --global user.name "Votre Nom"
+git config --global user.email "votre_email@example.com"
+git config --global init.defaultBranch main
+```
+
+Le paramètre `init.defaultBranch` définit la branche par défaut lors d'une initialisation (`git init`).
+
+Ces réglages sont stockés dans `~/.gitconfig`.
+
+### Lier une clé SSH à GitHub / GitLab
+
+---
+
+Pour interagir avec vos dépôts en toute sécurité (cloner, pousser, tirer du code), Git utilise un système d’authentification par clé SSH.
+
+Ce mécanisme évite d’avoir à saisir votre mot de passe à chaque opération.
+
+```bash
+ssh-keygen -t rsa -b 4096 -C "votre_email@example.com"
+```
+
+Appuyez sur Entrée pour accepter l’emplacement par défaut `~/.ssh/id_rsa`, puis choisissez un mot de passe si vous le souhaitez.
+
+Copiez le contenu affiché, la ligne commençant par `ssh-rsa`.
+
+```bash
+cat ~/.ssh/id_rsa.pub
+```
+
+Rendez-vous dans votre compte :
+
+- GitHub → Settings → SSH and GPG keys → New SSH key
+
+- GitLab → Settings → SSH Keys → Add new key
+
+Collez votre clé publique, donnez-lui un nom (par exemple "laptop personnel"), puis validez.
+
+Une fois la clé ajoutée, vous pouvez cloner un dépôt en SSH :
+
+```bash
+git clone git@github.com:utilisateur/mon-projet.git
+```
