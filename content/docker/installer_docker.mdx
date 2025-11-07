@@ -1,0 +1,124 @@
+## Introduction
+
+---
+
+🔗 [Documentation - Docker](https://docs.docker.com)
+
+Docker est une plateforme de conteneurisation qui permet d’exécuter des applications dans des environnements isolés et reproductibles appelés conteneurs.
+
+Chaque conteneur embarque tout ce dont une application a besoin : code, dépendances, librairies, et configuration système.
+
+Docker simplifie ainsi le déploiement en garantissant que l’application fonctionne de la même façon, que ce soit sur un poste de développement ou sur un serveur de production.
+
+Docker Compose, quant à lui, est un outil qui permet de définir et gérer plusieurs conteneurs à l’aide d’un unique fichier `docker-compose.yml`.
+
+Il facilite la création d’environnements complets (backend, base de données, frontend, etc.) en automatisant leur lancement et leur orchestration avec une seule commande.
+
+## Installation
+
+---
+
+Sur Ubuntu, la méthode recommandée consiste à ajouter le dépôt officiel Docker, importer la clé GPG et installer les paquets officiels fournis par Docker.
+
+Les commandes ci-dessous sont à exécuter depuis un terminal avec un compte disposant des droits sudo.
+
+Tout d'abord, mettez le système à jour puis installez les dépendances requises :
+
+```bash
+sudo apt update && sudo apt upgrade -y
+
+sudo apt install -y ca-certificates curl gnupg lsb-release
+```
+
+Ensuite, créez le dossier pour la clé APT, importez la clé officielle et donnez les permissions nécessaires :
+
+```bash
+sudo install -m 0755 -d /etc/apt/keyrings
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo tee /etc/apt/keyrings/docker.gpg > /dev/null
+
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+```
+
+Ajoutez ensuite le dépôt Docker à vos sources APT puis installez Docker Engine et les plugins officiels :
+
+```bash
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update
+
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+### Vérifier que Docker fonctionne
+
+---
+
+Vérifiez que le service Docker est actif :
+
+```bash
+sudo systemctl status docker
+```
+
+Si nécessaire, démarrez le service :
+
+```bash
+sudo systemctl start docker
+```
+
+Testez l'installation avec l'image de démonstration officielle :
+
+```bash
+docker run --rm hello-world
+```
+
+Si vous voyez un message de bienvenue, l'installation est réussie.
+
+### Utiliser Docker sans `sudo`
+
+---
+
+Pour exécuter Docker en tant qu'utilisateur non-root, ajoutez votre compte au groupe `docker`.Cette opération évite d'utiliser `sudo` pour chaque commande Docker.
+
+```bash
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+Vérifiez ensuite que Docker est accessible sans `sudo` :
+
+```bash
+docker compose version
+```
+
+## Windows (Docker Desktop + WSL2)
+
+---
+
+🔗 [Installer Linux sur Windows avec WSL](https://learn.microsoft.com/fr-fr/windows/wsl/install)
+
+Sur Windows, il est nécessaire d'installer WSL2 puis Docker Desktop avec l'intégration WSL activée. WSL2 améliore la compatibilité des volumes et les performances des conteneurs avec votre système d'exploitation.
+
+Installez WSL depuis PowerShell (exécuté en administrateur) :
+
+```powershell
+wsl --install
+```
+
+Redémarrez si nécessaire, puis installez Docker Desktop depuis le site officiel.
+
+Attention, pendant l'installation : activez l'option WSL2.
+
+Après installation, ouvrez Docker Desktop et activez l'intégration WSL pour la distribution souhaitée (Settings > Resources > WSL Integration).
+
+Vérifiez l'installation dans PowerShell :
+
+```powershell
+docker --version
+docker compose version
+```
+
+Si Docker Desktop était installé avant WSL, désinstallez-le puis réinstallez-le après l'installation de WSL pour garantir une intégration correcte.

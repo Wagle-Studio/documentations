@@ -57,13 +57,23 @@ const lessons: Lesson[] = [
     updated: "2 novembre 2025",
   },
   {
+    id: 5,
+    paths: ["docker", "installer_docker.mdx"],
+    label: "Installer Docker",
+    slug: "installer_docker",
+    course_id: 2,
+    description:
+      "Procédure d’installation et de vérification de Docker sur Ubuntu.",
+    created: "5 novembre 2025",
+    updated: "5 novembre 2025",
+  },
+  {
     id: 6,
     paths: ["docker", "les_images.mdx"],
     label: "Les images",
     slug: "les_images",
     course_id: 2,
-    description:
-      "Principes et usages des images Docker.",
+    description: "Principes et usages des images Docker.",
     created: "2 novembre 2025",
     updated: "2 novembre 2025",
   },
@@ -93,8 +103,7 @@ const lessons: Lesson[] = [
     label: "Docker Compose",
     slug: "docker_compose",
     course_id: 2,
-    description:
-      "Orchestration de plusieurs services avec Docker Compose.",
+    description: "Orchestration de plusieurs services avec Docker Compose.",
     created: "2 novembre 2025",
     updated: "2 novembre 2025",
   },
