@@ -21,7 +21,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={`${rubik.variable}`}>
+    <html
+      lang="fr"
+      className={`${rubik.variable}`}
+      data-scroll-behavior="smooth"
+    >
       <body>
         <TemplateApp>{children}</TemplateApp>
       </body>

@@ -12,7 +12,7 @@ export const ListCourses = ({ courses }: ListCoursesProps) => {
       <h2>Thèmes</h2>
       <ul className="list_courses__list">
         {courses.map((course) => (
-          <li key={`list_courses--${course.id}`}>
+          <li key={`list_courses--${course.slug}-${course.id}`}>
             <TeaserCourse course={course} />
           </li>
         ))}

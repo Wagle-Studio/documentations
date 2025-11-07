@@ -13,7 +13,7 @@ export const ListLessons = ({ course, lessons }: ListLessonsProps) => {
       <h2>Documents</h2>
       <ul className="list_lessons__list">
         {lessons.map((lesson) => (
-          <li key={`list_lessons--${lesson.id}`}>
+          <li key={`list_lessons--${lesson.slug}-${lesson.id}`}>
             <TeaserLesson course={course} lesson={lesson} />
           </li>
         ))}

@@ -42,7 +42,9 @@ export const SidebarLesson = ({ courseSlug }: SidebarLessonProps) => {
           />
         </li>
         {lessons.map((lesson) => (
-          <li key={`sidebar_second__lesson__menu_item--${lesson.id}`}>
+          <li
+            key={`sidebar_second__lesson__menu_item--${lesson.slug}-${lesson.id}`}
+          >
             <MenuLink
               label={lesson.label}
               href={`/documentation/${course.slug}/${lesson.slug}#top`}
