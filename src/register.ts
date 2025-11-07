@@ -57,7 +57,18 @@ const lessons: Lesson[] = [
     updated: "2 novembre 2025",
   },
   {
-    id: 5,
+    id: 6,
+    paths: ["docker", "decouverte_docker.mdx"],
+    label: "Découverte Docker",
+    slug: "decouverte_docker",
+    course_id: 2,
+    description:
+      "Introduction aux concepts fondamentaux de Docker.",
+    created: "5 novembre 2025",
+    updated: "5 novembre 2025",
+  },
+  {
+    id: 7,
     paths: ["docker", "installer_docker.mdx"],
     label: "Installer Docker",
     slug: "installer_docker",
@@ -68,7 +79,7 @@ const lessons: Lesson[] = [
     updated: "5 novembre 2025",
   },
   {
-    id: 6,
+    id: 8,
     paths: ["docker", "les_images.mdx"],
     label: "Les images",
     slug: "les_images",
@@ -78,7 +89,7 @@ const lessons: Lesson[] = [
     updated: "2 novembre 2025",
   },
   {
-    id: 7,
+    id: 9,
     paths: ["docker", "volumes.mdx"],
     label: "Les volumes",
     slug: "volumes",
@@ -88,7 +99,7 @@ const lessons: Lesson[] = [
     updated: "2 novembre 2025",
   },
   {
-    id: 8,
+    id: 10,
     paths: ["docker", "docker_file.mdx"],
     label: "Dockerfile",
     slug: "docker_file",
@@ -98,7 +109,7 @@ const lessons: Lesson[] = [
     updated: "2 novembre 2025",
   },
   {
-    id: 9,
+    id: 11,
     paths: ["docker", "docker_compose.mdx"],
     label: "Docker Compose",
     slug: "docker_compose",

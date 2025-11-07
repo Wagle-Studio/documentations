@@ -81,6 +81,8 @@
 
 body {
   background-color: var(--body-bg);
+  max-width: 1280px;
+  margin: 0 auto;
 }
 
 h1 {
@@ -123,6 +125,7 @@ p,
 a,
 td,
 th,
+li,
 label {
   font-family: var(--font-primary);
   font-size: var(--font-size-base);

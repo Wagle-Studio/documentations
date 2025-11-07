@@ -1,0 +1,83 @@
+## Introduction
+
+---
+
+Docker est une plateforme open-source qui automatise le déploiement d'applications dans des conteneurs logiciels légers et portables. Tandis que Docker-compose est un outil complémentaire qui facilite la gestion de plusieurs conteneurs.
+
+Les conteneurs sont des environnements isolés qui incluent l'application et toutes ses dépendances. Cette approche garantit une cohérence entre les différents environnements de développement, de test et de production.
+
+Vous créez une image conteneurisée de votre application une fois, puis vous la déployez sur n'importe quel environnement compatible Docker.
+
+**Docker offre plusieurs avantages clés :**
+
+- L'isolation complète de chaque application dans son propre conteneur évite les conflits de dépendances et de configurations.
+
+- La portabilité des conteneurs permet leur exécution sur toute plateforme compatible.
+
+- La légèreté des conteneurs, plus efficaces que les machines virtuelles traditionnelles.
+
+- Le versionnement des images Docker assure la reproductibilité des déploiements et facilite la gestion des différentes versions.
+
+## Concepts fondamentaux
+
+---
+
+Pour bien comprendre Docker, il est essentiel de maîtriser quelques concepts clés qui forment la base de son fonctionnement.
+
+### Dockerfile
+
+---
+
+Le Dockerfile est un script qui contient les instructions pour construire une image Docker personnalisée. Il définit l'environnement nécessaire pour exécuter une application, en incluant les dépendances et la configuration.
+
+### Image
+
+---
+
+Une image Docker représente un environnement complet et immuable. Elle contient le système d'exploitation, les bibliothèques et les applications nécessaires. Une image sert de modèle pour créer des conteneurs.
+
+### Conteneur
+
+---
+
+Un conteneur est une instance en cours d'exécution d'une image. Il fournit un environnement isolé où l'application s'exécute, avec ses propres ressources système et son réseau.
+
+### Volumes
+
+---
+
+Les volumes permettent de persister et partager des données entre le système hôte et les conteneurs, ou entre différents conteneurs. Ils sont essentiels pour gérer les données qui doivent survivre au cycle de vie d'un conteneur.
+
+### Types d'images
+
+---
+
+Les images officielles, prêtes à l'emploi, sont disponibles gratuitement sur Docker Hub. Elles incluent des systèmes d'exploitation, des serveurs d'applications ou des bases de données, et ne nécessitent qu'une configuration minimale.
+
+Les images personnalisées sont créées par les développeurs via un Dockerfile. Elles permettent de définir précisément l'environnement d'exécution d'une application, avec toutes ses spécificités.
+
+## Fonctionnement
+
+---
+
+> 💡 Bon à savoir : Docker utilise une architecture client-serveur. Le Docker Daemon s'exécute sur l'hôte en tâche de fond et gère les conteneurs, tandis que le client Docker permet aux utilisateurs d'interagir avec ce daemon via le CLI ou une interface graphique.
+
+Le processus de création et d'exécution d'une application conteneurisée se déroule en trois étapes principales :
+
+1. La création d'une image commence par la rédaction d'un Dockerfile. Ce fichier spécifie les dépendances et configurations nécessaires pour votre application. Il décrit, étape par étape, comment construire l'environnement conteneurisé.
+
+2. La construction de l'image est gérée par le Docker Daemon. Il interprète le Dockerfile, télécharge les composants nécessaires, installe les dépendances et configure l'environnement selon vos spécifications.
+
+3. L'exécution du conteneur intervient une fois l'image construite. Docker crée alors un environnement isolé basé sur cette image, où votre application peut s'exécuter.
+
+![Illustration du fonctionnement Docker](/content/docker/docker_fonctionnement_1100_380.png)
+
+## Orchestration avec Docker Compose
+
+---
+
+Docker Compose simplifie la gestion d'applications multi-conteneurs en permettant de définir l'ensemble de l'infrastructure dans un unique fichier YAML nommé `docker-compose.yml`. Ce fichier décrit tous les services, leurs dépendances et leurs configurations.
+
+La gestion centralisée offerte par Docker Compose facilite considérablement le déploiement et la maintenance d'applications. Une seule commande suffit pour démarrer ou arrêter tous les conteneurs.
+
+Docker Compose crée automatiquement un réseau interne dédié, permettant aux conteneurs de communiquer entre eux.

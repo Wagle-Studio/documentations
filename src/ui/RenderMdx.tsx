@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -13,7 +14,7 @@ export const RenderMdx = ({ content }: RenderMdxProps) => {
     <MDXRemote
       source={content}
       options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
-      components={{ h2: TagHeading2, code: TagCode }}
+      components={{ h2: TagHeading2, img: TagImage, code: TagCode }}
     />
   );
 };
@@ -46,4 +47,33 @@ interface TagHeading2Props {
 
 export const TagHeading2 = ({ children }: TagHeading2Props) => {
   return <h2 id={Slugifier.slugify(children as string)}>{children}</h2>;
+};
+
+interface TagImageProps {
+  src: string;
+  alt: string;
+}
+
+export const TagImage = ({ src, alt }: TagImageProps) => {
+  const filename = src.split("/").pop() || "";
+  const dimensions = filename.match(/(\d+)_(\d+)/);
+
+  const width = dimensions ? parseInt(dimensions[1]) : null;
+  const height = dimensions ? parseInt(dimensions[2]) : null;
+
+  if (!width || !height) return null;
+
+  return (
+    <>
+      <Image
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        className="mdx_image"
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 80vw"
+      />
+      <span className="mdx_image__alt">{alt}</span>
+    </>
+  );
 };
