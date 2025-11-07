@@ -1,0 +1,33 @@
+.breadcrumb {
+  padding: var(--space-2) 0;
+  background-color: var(--body-bg);
+
+  @media screen and (min-width: 850px) {
+    padding: 0 0 var(--space-2) 0;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    list-style: none;
+    border: 1px solid var(--gray-base);
+    border-radius: var(--border-radius-small);
+    background-color: var(--white);
+
+    &__item {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: var(--space-1);
+
+      &:first-of-type {
+        > a {
+          height: 18px;
+        }
+      }
+    }
+  }
+}

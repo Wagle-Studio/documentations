@@ -1,9 +1,9 @@
 .template_course {
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: 1fr;
+  grid-template-rows: 42px 1fr;
   column-gap: var(--space-5);
-  row-gap: var(--space-1);
+  row-gap: var(--space-5);
 
   @media screen and (min-width: 850px) {
     grid-template-columns: 1fr 202px;
@@ -11,7 +11,23 @@
 
   &__content {
     grid-column: 1/2;
+    grid-row: 2/3;
+    margin-top: var(--space-3);
+
+    @media screen and (min-width: 850px) {
+      margin-top: 0;
+    }
+  }
+
+  &__breadcrumb {
+    position: sticky;
+    top: 0;
+    grid-column: 1/2;
     grid-row: 1/2;
+
+    @media screen and (min-width: 850px) {
+      top: 74px;
+    }
   }
 
   &__sidebar {
@@ -19,7 +35,7 @@
 
     @media screen and (min-width: 850px) {
       grid-column: 2/3;
-      grid-row: 1/2;
+      grid-row: 1/3;
       position: sticky;
       display: flex;
       top: 74px;
