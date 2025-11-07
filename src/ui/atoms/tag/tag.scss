@@ -69,12 +69,15 @@
     color: color-mix(in oklab, var(--error) 34%, var(--gray-darker));
   }
 
-  &:hover {
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--gray-base) 50%, transparent);
-  }
-
   &__label {
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  @media screen and (min-width: 850px) {
+    &:hover {
+      box-shadow: 0 0 0 3px
+        color-mix(in oklab, var(--gray-base) 50%, transparent);
+    }
   }
 }

@@ -7,9 +7,14 @@
   text-decoration: none;
   transition: 100ms ease-out;
 
-  &--selected,
-  &:hover {
+  &--selected {
     background-color: var(--gray-light);
+  }
+
+  @media screen and (min-width: 850px) {
+    &:hover {
+      background-color: var(--gray-light);
+    }
   }
 
   &--highlight {

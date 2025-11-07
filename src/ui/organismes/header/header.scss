@@ -1,16 +1,37 @@
 .header {
-  padding-top: var(--space-1);
+  padding: var(--space-2);
   background-color: var(--body-bg);
+
+  &--mobile {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #00000050;
+
+    @media screen and (min-width: 850px) {
+      background-color: var(--body-bg);
+    }
+  }
+
+  @media screen and (min-width: 850px) {
+    &--mobile {
+      height: inherit;
+    }
+  }
 
   &__wrapper {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    width: 100%;
+    align-items: center;
     padding: var(--space-1);
     border: 1px solid var(--gray-base);
     border-radius: var(--border-radius-small);
     background-color: var(--white);
+
+    &--mobile {
+      margin-top: auto;
+    }
 
     &__brand {
       display: flex;
@@ -25,13 +46,57 @@
 
     &--end,
     &--start {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: var(--space-1);
+      &--mobile {
+        height: 32px;
 
-      > a {
-        line-height: 0;
+        @media screen and (min-width: 850px) {
+          display: none;
+        }
+      }
+
+      &--desktop {
+        display: none;
+
+        @media screen and (min-width: 850px) {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: var(--space-1);
+
+          > a {
+            line-height: 0;
+          }
+        }
+      }
+    }
+
+    &__menu_mobile {
+      position: absolute;
+      bottom: 87px;
+      left: 16px;
+      width: calc(100% - 32px);
+
+      &__wrapper {
+        padding: var(--space-2);
+        border: 1px solid var(--gray-base);
+        border-radius: var(--border-radius-small);
+        background-color: var(--body-bg);
+
+        > ul {
+          list-style: none;
+        }
+
+        @media screen and (min-width: 850px) {
+          display: none;
+        }
+      }
+
+      &__blur_bg {
+        position: absolute;
+        bottom: 100%;
+        left: -16px;
+        right: -16px;
+        height: 100vh;
       }
     }
   }

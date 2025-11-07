@@ -12,7 +12,9 @@ export const SidebarMain = () => {
     <div className="sidebar_main">
       <ul className="sidebar_main__menu">
         {RegisterManager.getCourses().data.map((course) => (
-          <li key={`sidebar_main__course__menu_item--${course.id}`}>
+          <li
+            key={`sidebar_main__course__menu_item--${course.slug}-${course.id}`}
+          >
             <MenuLink
               label={course.label}
               emoji={course.emoji}

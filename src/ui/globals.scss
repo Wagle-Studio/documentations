@@ -54,7 +54,7 @@
   --border-radius-medium: 12px;
 
   --breakpoint-mobile: 576px;
-  --breakpoint-tablet: 768px;
+  --breakpoint-tablet: 850px;
   --breakpoint-laptop: 992px;
   --breakpoint-desktop: 1260px;
 }
@@ -64,7 +64,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-5);
-    padding-right: var(--space-5);
   }
 }
 
@@ -76,11 +75,7 @@
 }
 
 body {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 var(--space-1);
   background-color: var(--body-bg);
-  box-sizing: border-box;
 }
 
 h1 {
@@ -131,7 +126,7 @@ label {
   font-weight: var(--font-weight-base);
 }
 
-@media screen and (min-width: 768px) {
+@media screen and (min-width: 850px) {
   h1 {
     font-size: var(--font-size-desktop-heading-1);
   }
