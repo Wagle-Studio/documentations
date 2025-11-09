@@ -1,0 +1,142 @@
+## Constructeur
+
+---
+
+PHP permet de déclarer des constructeurs pour les classes.
+
+Les classes qui possèdent une méthode constructeur appellent cette méthode à chaque création d'une nouvelle instance de l'objet, ce qui est utile pour toutes les initialisations dont l'objet a besoin avant d'être utilisé.
+
+Dans les cas d'héritage, les constructeurs parents ne sont pas appelés implicitement si la classe enfant définit un constructeur.
+
+Si vous voulez utiliser le constructeur parent, il est nécessaire de faire appel à `parent::__construct()` depuis le constructeur de l'enfant.
+
+Si la classe enfant ne définit pas de constructeur, elle hérite du constructeur de la classe parente, de la même façon qu'une méthode.
+
+```php
+<?php
+class User {
+    protected \DateTime $connectedAt;
+
+    public function __construct() {
+        $this->connectedAt = new \DateTime();
+    }
+}
+```
+
+### Les arguments d'un constructeur
+
+---
+
+Les constructeurs définissent un nombre arbitraire d'arguments, qui peuvent être requis, avoir un type, et peuvent avoir une valeur par défaut.
+
+```php
+<?php
+class User {
+    protected \DateTime $connectedAt;
+    protected string $username;
+    protected string $theme;
+
+    public function __construct(string $username, string $theme = "light") {
+        $this->connectedAt = new \DateTime();
+        $this->username = $username;
+        $this->theme = $theme;
+    }
+}
+```
+
+### Promotion du constructeur
+
+---
+
+À partir de PHP 8.0, les paramètres du constructeur peuvent être "promus" pour correspondre à une propriété de l'objet.
+
+Il est fréquent que les paramètres d'un constructeur soient simplement affectés à des propriétés sans autre opération. La promotion du constructeur fournit un raccourci pour ce cas d'utilisation.
+
+```php
+<?php
+class User {
+    protected \DateTime $connectedAt;
+
+    public function __construct(
+        protected string $username,
+        protected string $theme = "light"
+    ) {
+        $this->connectedAt = new \DateTime();
+    }
+}
+```
+
+Vous pouvez mélanger arguments promus et non promus.
+
+### Méthode de création statique
+
+---
+
+PHP supporte uniquement un constructeur unique par classe. Il peut toutefois être désirable de permettre à un objet d'être construit de manières différentes selon les entrées.
+
+La façon recommandée de faire ceci est d'utiliser des méthodes statiques comme enveloppe du constructeur.
+
+```php
+<?php
+class User {
+    protected \DateTime $connectedAt;
+
+    private function __construct(
+        protected string $username,
+        protected string $theme = "light"
+    ) {
+        $this->connectedAt = new \DateTime();
+    }
+
+    public static function fromRaw(string $username, string $theme): self {
+        return new self($username, $theme);
+    }
+
+    public static function fromJSON(string $json): self {
+        $data = json_decode($json);
+        return new self($data->username, $data->theme);
+    }
+}
+```
+
+Les constructeurs peuvent être rendus privés ou protégés pour empêcher leur appel depuis l'extérieur de la classe et ainsi forcer l'utilisation des méthodes statiques prévues à cet effet.
+
+## Destructeur
+
+---
+
+PHP possède un concept de destructeur : cette méthode est appelée lorsqu'il n'y a plus de référence à un objet.
+
+Le rôle du destructeur est symétrique à celui du constructeur, mais il est exécuté en fin de cycle de vie de l'objet. Comme pour le constructeur, vous pouvez implémenter le code à exécuter lors de la destruction d'un objet (libération de ressources, fermeture de connexions, etc.).
+
+```php
+<?php
+class User {
+    public function __destruct() {
+        // libérer des ressources, fermer des fichiers, etc.
+    }
+}
+```
+
+Tout comme pour le constructeur, le destructeur parent n'est pas appelé implicitement. Pour exécuter le destructeur parent, appelez explicitement `parent::__destruct()` dans le destructeur de l'enfant. Si une classe enfant ne définit pas de destructeur, elle hérite du destructeur du parent.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -123,7 +123,8 @@ const lessons: Lesson[] = [
     label: "Commandes utiles",
     slug: "git_commandes_utiles",
     course_id: 3,
-    description: "Commandes principales pour administrer Git et son versionnement.",
+    description:
+      "Commandes principales pour administrer Git et son versionnement.",
     created: "5 novembre 2025",
     updated: "5 novembre 2025",
   },
@@ -133,7 +134,8 @@ const lessons: Lesson[] = [
     label: "Installer Git",
     slug: "installer_git",
     course_id: 3,
-    description: "Installation et configuration initiale de Git et mise en place des clés SSH.",
+    description:
+      "Installation et configuration initiale de Git et mise en place des clés SSH.",
     created: "5 novembre 2025",
     updated: "5 novembre 2025",
   },
@@ -143,9 +145,52 @@ const lessons: Lesson[] = [
     label: "Commit et push",
     slug: "commit_et_push",
     course_id: 3,
-    description: "Guide pas à pas pour initialiser un dépôt, effectuer ses premiers commits et gérer les branches.",
+    description:
+      "Guide pas à pas pour initialiser un dépôt, effectuer ses premiers commits et gérer les branches.",
     created: "5 novembre 2025",
     updated: "5 novembre 2025",
+  },
+  {
+    id: 15,
+    paths: ["php_poo", "syntaxe_base.mdx"],
+    label: "Syntaxe de base",
+    slug: "syntaxe_base",
+    course_id: 4,
+    description: "Introduction aux concepts fondamentaux de la POO en PHP.",
+    created: "7 novembre 2025",
+    updated: "7 novembre 2025",
+  },
+  {
+    id: 16,
+    paths: ["php_poo", "auto_chargement.mdx"],
+    label: "Auto-chargement de classes",
+    slug: "auto_chargement",
+    course_id: 4,
+    description: "Guide sur l'auto-chargement des classes en PHP.",
+    created: "9 novembre 2025",
+    updated: "9 novembre 2025",
+  },
+  {
+    id: 17,
+    paths: ["php_poo", "constructeur_descructeur.mdx"],
+    label: "Constructeur et destructeur",
+    slug: "constructeur_descructeur",
+    course_id: 4,
+    description:
+      "Les méthodes constructeur et destructeur dans les classes PHP.",
+    created: "9 novembre 2025",
+    updated: "9 novembre 2025",
+  },
+  {
+    id: 18,
+    paths: ["php_poo", "visibilite.mdx"],
+    label: "Visibilité",
+    slug: "visibilite",
+    course_id: 4,
+    description:
+      "Les différents niveaux de visibilité des propriétés et méthodes en PHP.",
+    created: "9 novembre 2025",
+    updated: "9 novembre 2025",
   },
 ];
 
@@ -170,8 +215,8 @@ const courses: Course[] = [
   },
   {
     id: 4,
-    label: "PHP",
-    slug: "php",
+    label: "PHP POO",
+    slug: "php_poo",
     emoji: "/emoji/elephant.png",
   },
 ];

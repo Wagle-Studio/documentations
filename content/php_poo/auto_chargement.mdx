@@ -1,0 +1,216 @@
+## Introduction
+
+---
+
+Lorsque l'on développe des applications orientées objet, on crée généralement un fichier source par classe.
+
+C'est une très bonne pratique : elle améliore la lisibilité et la maintenabilité du code. En revanche, elle oblige souvent à écrire de longues listes d'imports au début de chaque fichier pour pouvoir utiliser des classes définies dans d'autres fichiers.
+
+Lorsque vous déclarez une classe, une interface, un trait ou une énumération qui n'est pas importé(e), PHP exécute les fonctions d'autochargement (autoload) enregistrées pour tenter de charger le fichier correspondant.
+
+Ce sont ces fonctions d'autochargement qui vous permettront de mettre en place un système de chargement automatique de vos classes et interfaces. Ainsi, vous vous débarrassez de la contrainte de déclarer les imports en haut de chaque fichier.
+
+Depuis PHP 5.1, la fonction `spl_autoload_register` (et auparavant la fonction magique `__autoload`) permet d'autocharger les classes et interfaces. Attention, `__autoload` a été supprimée en PHP 8.0.
+
+Ces fonctions prennent en paramètre une fonction à exécuter lorsque PHP fait appel aux autoloaders.
+
+C'est à vous de fournir la fonction adaptée pour permettre à PHP de retrouver la classe, l'interface, etc. qu'il cherche à partir du nom de la classe ou d'un autre identifiant.
+
+```php
+<?php
+spl_autoload_register(function ($class_name) {
+  include $class_name . '.php';
+});
+```
+
+### Fonctionnement de l'autoload
+
+---
+
+1. Lorsqu'une classe est utilisée (instanciation, héritage, implémentation d'une interface, usage d'un trait) et qu'elle n'est pas encore définie, PHP déclenche la pile des autoloaders enregistrés.
+
+2. Si un autoloader trouve et charge correctement la classe, le processus s'arrête. Si aucun d'entre eux n'y parvient, PHP génère une erreur fatale.
+
+Attention : si un autoloader lève une exception avant la fin de la pile, les autoloaders suivants ne seront pas exécutés. De même, évitez d'utiliser `require_once` ou `include_once` dans un autoloader : ces variantes effectuent une vérification supplémentaire et peuvent dégrader les performances.
+
+## Les namespaces
+
+---
+
+Avant PHP 5.3, tout le code vivait dans le même espace global.
+
+Deux classes avec le même nom entrent en collision : impossible d'avoir deux classes `User` différentes, par exemple.
+
+L'introduction des namespaces a corrigé cela. Les namespaces agissent comme des dossiers logiques dans lesquels organiser ces classes, fonctions, etc.
+
+Les namespaces doivent refléter la structure des dossiers du projet.
+
+`src/Services/Mailer.php`
+
+```php
+namespace App\Services;
+
+class Mailer {
+    public function send() { echo "Email envoyé !"; }
+}
+```
+
+```php
+$mailer = new App\Services\Mailer();
+```
+
+Les namespaces présentent de nombreux avantages :
+
+- Évitent les collisions de noms
+
+- Structurent le code
+
+- Rendent les autoloaders plus efficaces (on retrouve un fichier à partir de son namespace et du nom de la classe)
+
+- Permettent de mélanger son code et celui de tiers (par ex. Composer) sans risque de conflits
+
+### L'alias use
+
+---
+
+Lorsque l'on utilise des namespaces, il est possible d'instancier une classe directement en utilisant son nom totalement qualifié :
+
+```php
+$mailer = new App\Services\Mailer();
+```
+
+Mais cela présente plusieurs inconvénients :
+
+- Les namespaces peuvent être verbeux, ce qui diminue la lisibilité du code.
+
+- Si vous instanciez une même classe dans différentes méthodes d'une classe, vous serez contraint de répéter le namespace plusieurs fois.
+
+Pour pallier ces inconvénients, il est possible de créer un alias avec l'instruction `use` en début de fichier.
+
+Déclarez l'alias `use` au début de votre script en indiquant le nom complet de la classe ou du namespace souhaité. Cela permet d'utiliser la classe dans l'ensemble du fichier uniquement avec son nom court.
+
+PHP se réfèrera aux alias déclarés pour résoudre le chargement des classes.
+
+```php
+use App\Services\Mailer;
+
+$mailer = new Mailer();
+```
+
+Les alias rendent aussi possible le nommage d'import si nécessaire.
+
+```php
+use App\Services\Mailer as MainMailer;
+
+$mailer = new MainMailer();
+```
+
+## La norme PSR4
+
+---
+
+Le PHP-FIG (PHP Framework Interop Group) définit des bonnes pratiques PHP suivies par la majorité des frameworks et bibliothèques.
+
+Les PSR (PHP Standards Recommendations) sont des recommandations indépendantes. Pour l'autoloading, la norme PSR-4 est particulièrement importante.
+
+Anciennement PSR-0 (devenue obsolète et remplacée par PSR-4), la norme PSR-4 définit comment convertir un namespace en chemin de fichier. C'est très pratique pour les autoloaders compatibles PSR-4.
+
+### Exemple sans Composer
+
+---
+
+Voici un autoloader minimal qui mappe un préfixe de namespace vers un dossier de base et remplace les backslashes par des séparateurs de dossiers :
+
+```php
+<?php
+$prefix = 'App\';
+$base_dir = __DIR__ . '/src/';
+
+spl_autoload_register(function ($class) use ($prefix, $base_dir) {
+    $len = strlen($prefix);
+
+    if (strncmp($prefix, $class, $len) !== 0) {
+        return;
+    }
+
+    $relative_class = substr($class, $len);
+
+    $file = $base_dir . str_replace('\\', DIRECTORY_SEPARATOR, $relative_class) . '.php';
+
+    if (file_exists($file)) {
+        require $file;
+    }
+});
+```
+
+Avec cette approche, une classe `App\Services\Mailer` sera recherchée dans `src/Services/Mailer.php`.
+
+### Exemple avec Composer
+
+---
+
+Composer supporte nativement PSR-4. Ajouter dans `composer.json` :
+
+```json
+{
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  }
+}
+```
+
+Structure de fichiers :
+
+```txt
+src/
+  Services/
+    Mailer.php  // namespace App\Services;
+```
+
+Classe exemple (`src/Services/Mailer.php`):
+
+```php
+<?php
+namespace App\Services;
+
+class Mailer {
+    public function send(): void { echo "Email envoyé !"; }
+}
+```
+
+Après avoir ajouté la configuration, exécutez :
+
+```bash
+composer dump-autoload
+```
+
+Puis utilisez la classe normalement :
+
+```php
+$mailer = new App\Services\Mailer();
+$mailer->send();
+```
+
+### Comment respecter la norme PSR-4
+
+---
+
+Pour respecter PSR-4 et tirer pleinement parti des autoloaders (notamment Composer), suivez ces règles simples et pratiques :
+
+- Définissez un préfixe de namespace (par ex. `App\\`) et mappez-le vers un dossier racine (par ex. `src/`) dans `composer.json`.
+
+- Assurez-vous que le namespace de chaque classe reflète l'arborescence des dossiers à partir de ce dossier racine. Par exemple, `App\\Services\\Mailer` → `src/Services/Mailer.php`.
+
+- Chaque classe doit être dans un fichier dont le nom correspond exactement au nom de la classe (sensible à la casse selon le système de fichiers) et se trouver dans le dossier correspondant au namespace.
+
+- Dans vos fichiers PHP, déclarez le namespace en tête du fichier (sans antislash initial) :
+
+- Déclarez la configuration PSR-4 dans `composer.json` (ex. `"App\\": "src/"`) puis exécutez `composer dump-autoload` ou `composer install` pour générer l'autoload.
+
+- En production, utilisez l'option optimisée : `composer install --optimize-autoloader --no-dev` ou `composer dump-autoload -o`.
+
+- Évitez les autoloaders « maison » si un autoloader PSR-4 (Composer) suffit, cela réduit les risques d'erreurs et facilite l'interopérabilité.
+
+- Respectez la casse des noms de fichiers et de namespaces pour éviter des erreurs sur les systèmes sensibles à la casse (Linux).

@@ -1,0 +1,84 @@
+## Introduction
+
+---
+
+La visibilité d'une propriété, d'une méthode ou d'une constante est définie en préfixant sa déclaration avec un mot-clé :
+
+`public` : accessible depuis n'importe où
+
+`protected` : accessible dans la classe et ses classes enfants
+
+`private` : accessible uniquement dans la classe
+
+## Les propriétés
+
+---
+
+Les propriétés déclarées sans mot-clé de visibilité explicite sont automatiquement définies comme publiques.
+
+```php
+class Product {
+    public string $name;                    
+    private int $count = 0;          
+    protected ?string $description = null; 
+}
+```
+
+### Visibilité asymétrique
+
+---
+
+À partir de PHP 8.4, les propriétés peuvent avoir une visibilité asymétrique, avec des droits différents pour la lecture (get) et l'écriture (set).
+
+La visibilité peut être spécifiée séparément pour la lecture et l'écriture, à condition que la visibilité d'écriture ne soit pas plus permissive que celle de lecture.
+
+```php
+class Product {
+    public protected(set) string $name;                   // Lecture publique, écriture protégée
+    private int $count = 0;                               // Lecture et écriture privées       
+    protected private(set) ?string $description = null;   // Lecture protégée, écriture privée
+}
+```
+
+Lorsqu'une classe étend une autre, la classe enfant peut redéfinir toute propriété qui n'est pas marquée `final`. Elle peut alors élargir la visibilité de lecture ou d'écriture, à condition que la nouvelle visibilité soit égale ou plus permissive que celle de la classe parente.
+
+Attention : lorsqu'une propriété `private` est redéfinie, cela ne modifie pas la propriété de la classe parente mais crée une nouvelle propriété distincte avec un nom interne différent.
+
+## Les méthodes
+
+---
+
+Les méthodes suivent les mêmes règles de visibilité que les propriétés. Une méthode sans visibilité explicite est considérée comme publique.
+
+```php
+class Product {
+    public function getName(): string {
+        return $this->name;
+    }
+    
+    private function updateStock(int $quantity): void {
+        $this->count += $quantity;
+    }
+    
+    protected function getFullDescription(): string {
+        return "{$this->name} : {$this->description}";
+    }
+}
+```
+
+## Les constantes
+
+---
+
+Depuis PHP 7.1, les constantes de classe peuvent avoir une visibilité explicite. Par défaut, les constantes sont `public`.
+
+```php
+class Product {
+    public const STATUS_ACTIVE = 'active';
+    private const PRICE_FACTOR = 1.2;
+    protected const MAX_STOCK = 100;
+    
+    public function calculatePrice(float $base): float {
+        return $base * self::PRICE_FACTOR;
+    }
+}
