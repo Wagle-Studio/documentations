@@ -72,6 +72,14 @@
   }
 }
 
+.homepage {
+  &__welcome {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+}
+
 * {
   padding: 0;
   margin: 0;

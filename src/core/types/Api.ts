@@ -12,11 +12,12 @@ export type Course = {
 
 export type Lesson = {
   id: number;
+  index: number;
   paths: string[];
   label: string;
   slug: string;
   course_id: number;
-  description: string
+  description: string;
   created: string;
   updated: string;
 };

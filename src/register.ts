@@ -3,6 +3,7 @@ import { Course, Lesson, Register } from "./core/types";
 const lessons: Lesson[] = [
   {
     id: 1,
+    index: 1,
     paths: ["apache", "apache_commandes_utiles.mdx"],
     label: "Commandes utiles",
     slug: "apache_commandes_utiles",
@@ -14,6 +15,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 2,
+    index: 2,
     paths: ["apache", "installer_apache.mdx"],
     label: "Installer Apache",
     slug: "installer_apache",
@@ -25,6 +27,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 3,
+    index: 3,
     paths: ["apache", "virtual_host.mdx"],
     label: "Virtual Host",
     slug: "virtual_host",
@@ -36,6 +39,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 4,
+    index: 4,
     paths: ["apache", "htpasswd.mdx"],
     label: "Restriction .htpasswd",
     slug: "htpasswd",
@@ -47,6 +51,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 5,
+    index: 1,
     paths: ["docker", "docker_commandes_utiles.mdx"],
     label: "Commandes utiles",
     slug: "docker_commandes_utiles",
@@ -58,6 +63,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 6,
+    index: 2,
     paths: ["docker", "decouverte_docker.mdx"],
     label: "Découverte Docker",
     slug: "decouverte_docker",
@@ -68,6 +74,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 7,
+    index: 3,
     paths: ["docker", "installer_docker.mdx"],
     label: "Installer Docker",
     slug: "installer_docker",
@@ -79,6 +86,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 8,
+    index: 4,
     paths: ["docker", "les_images.mdx"],
     label: "Les images",
     slug: "les_images",
@@ -89,6 +97,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 9,
+    index: 5,
     paths: ["docker", "volumes.mdx"],
     label: "Les volumes",
     slug: "volumes",
@@ -99,6 +108,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 10,
+    index: 6,
     paths: ["docker", "docker_file.mdx"],
     label: "Dockerfile",
     slug: "docker_file",
@@ -109,6 +119,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 11,
+    index: 7,
     paths: ["docker", "docker_compose.mdx"],
     label: "Docker Compose",
     slug: "docker_compose",
@@ -119,6 +130,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 12,
+    index: 1,
     paths: ["git", "git_commandes_utiles.mdx"],
     label: "Commandes utiles",
     slug: "git_commandes_utiles",
@@ -130,6 +142,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 13,
+    index: 2,
     paths: ["git", "installer_git.mdx"],
     label: "Installer Git",
     slug: "installer_git",
@@ -141,6 +154,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 14,
+    index: 3,
     paths: ["git", "commit_et_push.mdx"],
     label: "Commit et push",
     slug: "commit_et_push",
@@ -152,6 +166,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 15,
+    index: 1,
     paths: ["php_poo", "syntaxe_base.mdx"],
     label: "Syntaxe de base",
     slug: "syntaxe_base",
@@ -162,6 +177,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 16,
+    index: 4,
     paths: ["php_poo", "auto_chargement.mdx"],
     label: "Auto-chargement de classes",
     slug: "auto_chargement",
@@ -172,6 +188,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 17,
+    index: 3,
     paths: ["php_poo", "constructeur_descructeur.mdx"],
     label: "Constructeur et destructeur",
     slug: "constructeur_descructeur",
@@ -183,6 +200,7 @@ const lessons: Lesson[] = [
   },
   {
     id: 18,
+    index: 2,
     paths: ["php_poo", "visibilite.mdx"],
     label: "Visibilité",
     slug: "visibilite",

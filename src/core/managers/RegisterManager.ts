@@ -77,9 +77,9 @@ export default class RegisterManager {
   static findLessonsByCourseId = (
     courseId: number
   ): CoreResult<Lesson[], undefined> => {
-    const lessons = this.register.lessons.filter(
-      (lesson) => lesson.course_id === courseId
-    );
+    const lessons = this.register.lessons
+      .filter((lesson) => lesson.course_id === courseId)
+      .sort((a, b) => (a.index < b.index ? -1 : 1));
 
     if (!lessons) {
       return {
