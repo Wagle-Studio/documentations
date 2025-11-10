@@ -1,0 +1,191 @@
+## Introduction
+
+---
+
+L'héritage est l’un des grands principes de la programmation orientée objet (POO), et PHP l’implémente pleinement dans son modèle objet.
+
+Lorsqu’une classe est étendue à l’aide du mot-clé `extends`, la classe enfant hérite de toutes les méthodes publiques et protégées, des propriétés et des constantes de la classe parente. Tant qu’une classe enfant ne redéfinit pas ces méthodes, elles conservent leur fonctionnalité d’origine.
+
+L’héritage est très utile pour définir et abstraire des fonctionnalités communes à plusieurs classes, tout en permettant d’ajouter des fonctionnalités spécifiques dans les classes enfant, sans avoir à réimplémenter toutes les fonctionnalités partagées.
+
+Les méthodes privées d’une classe parente ne sont pas accessibles aux classes enfant. Par conséquent, une classe enfant peut réimplémenter une méthode privée sans se soucier des règles d’héritage habituelles.
+
+La visibilité des méthodes, propriétés et constantes peut être assouplie : une méthode `protected` peut devenir `public` dans la classe enfant. En revanche, il n’est pas possible de restreindre la visibilité : une propriété `public` ne peut pas devenir `protected` ou `private`.
+
+```php
+<?php
+class Animal {
+    public string $type;
+    public string $noise;
+    protected string $name;
+    private \DateTime $createdAt;
+
+    public function __construct(
+        string $type,
+        string $noise,
+        string $name
+    ) {
+        $this->type = $type;
+        $this->noise = $noise;
+        $this->name = $name;
+        $this->createdAt = new \DateTime();
+    }
+
+    public function makeNoise(): void {
+        echo $this->noise;
+    }
+}
+
+class Cat extends Animal {}
+
+class Dog extends Animal {}
+
+$catInstance = new Cat("Cat", "Miaou", "Cooper");
+$dogInstance = new Dog("Dog", "Wouaf", "Saba");
+
+$catInstance->makeNoise(); // Miaou
+$dogInstance->makeNoise(); // Wouaf
+
+echo $catInstance->createdAt; // Error
+echo $dogInstance->createdAt; // Error
+```
+
+## Surcharge
+
+---
+
+En PHP, il est possible de redéfinir (surcharger) les propriétés, méthodes et constantes héritées d'une classe parente dans une classe enfant.
+
+Cette pratique permet d'adapter ou d'étendre le comportement hérité selon les besoins spécifiques de la classe enfant.
+
+La surcharge permet ainsi de personnaliser le comportement et les données des classes enfant tout en conservant la structure héritée.
+
+### Propriétés
+
+---
+
+Une propriété héritée peut être redéfinie dans la classe enfant, la visibilité peut être étendue mais il est recommandé de conserver la même visibilité.
+
+La nouvelle valeur ou le nouveau type remplacera celui de la classe parente.
+
+```php
+class Animal {
+    protected string $habitat = "Terre";
+}
+
+class Fish extends Animal {
+    protected string $habitat = "Eau";
+}
+```
+
+### Méthodes
+
+---
+
+La surcharge de méthode (redéfinition) permet à la classe enfant de modifier ou d'étendre le comportement d'une méthode héritée.
+
+La visibilité des méthodes peut être élargie lors de la redéfinition (par exemple de `protected` à `public`), mais il est généralement recommandé de conserver la même pour garantir la cohérence de l’API.
+
+On utilise le même nom de méthode et la même signature.
+
+```php
+class Animal {
+    public function makeNoise(): void {
+        echo "...";
+    }
+}
+
+class Dog extends Animal {
+    public function makeNoise(): void {
+        echo "Wouaf";
+    }
+}
+```
+
+Pour appeler la version parente dans la méthode surchargée, on utilise `parent::`.
+
+```php
+class Cat extends Animal {
+    public function makeNoise(): void {
+        parent::makeNoise(); // Appelle la version parente
+        echo "Miaou";
+    }
+}
+```
+
+### Constantes
+
+---
+
+Les constantes peuvent également être redéfinies dans la classe enfant, ce qui permet d'adapter leur valeur.
+
+La visibilité des constantes peut être modifiée lors de la redéfinition, mais il est généralement recommandé de conserver la même pour garantir la cohérence du code.
+
+```php
+class Animal {
+    public const KINGDOM = "Animalia";
+}
+
+class Bird extends Animal {
+    public const KINGDOM = "Aves";
+}
+```
+
+## Classes abstraites
+
+---
+
+Les classes abstraites ne sont pas destinées à être directement manipulées dans votre code métier : ce sont des plans qui guident la création des classes enfant qui les étendent.
+
+Ce mécanisme est particulièrement utile lorsque vous souhaitez obliger l’implémentation de certaines propriétés et méthodes dans une classe enfant.
+
+Les méthodes définies comme abstraites se contentent de déclarer la signature et la visibilité. Elles ne peuvent pas fournir d’implémentation.
+
+Depuis PHP 8.4, il est également possible de déclarer des propriétés abstraites.
+
+À noter qu’une classe abstraite ne peut pas être instanciée, et toute classe contenant au moins une méthode ou une propriété abstraite doit elle aussi être déclarée abstraite.
+
+Lors de l’héritage d’une classe abstraite, toutes les méthodes et propriétés marquées comme abstraites dans la classe parente doivent être définies par la classe enfant et respecter les règles d’héritage et de compatibilité de signature.
+
+### Exemple avec méthodes abstraites
+
+---
+
+```php
+abstract class Animal {
+    abstract public function makeNoise(): void;
+}
+
+class Dog extends Animal {
+    public function makeNoise(): void {
+        echo "Wouaf";
+    }
+}
+
+class Cat extends Animal {
+    public function makeNoise(): void {
+        echo "Miaou";
+    }
+}
+
+$dog = new Dog();
+$dog->makeNoise(); // Wouaf
+```
+
+### Exemple avec propriétés abstraites
+
+---
+
+```php
+abstract class Creature {
+    abstract protected string $habitat;
+}
+
+class Fish extends Creature {
+    protected string $habitat = "Eau";
+}
+
+class Bird extends Creature {
+    protected string $habitat = "Air";
+}
+```

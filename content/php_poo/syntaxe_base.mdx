@@ -40,8 +40,6 @@ Par exemple, dans le code ci-dessus, `$this->message` permet d'accéder à la pr
 
 Important : La pseudo-variable `$this` n'est pas disponible dans les contextes suivants :
 
-- Dans les méthodes déclarées comme `static`
-
 - Dans les fonctions en dehors d'une classe
 
 - Dans les closures (fonctions anonymes) sauf si elles sont liées à un objet
@@ -115,8 +113,6 @@ Une propriété est définie en utilisant au moins un modificateur d'accès. Les
 
 - `private` : accessible uniquement dans la classe
 
-- `static` : appartient à la classe et non à l'instance
-
 - `readonly` : (PHP 8.1+) propriété modifiable uniquement une fois
 
 Les propriétés peuvent être typées (recommandé) :
@@ -124,7 +120,6 @@ Les propriétés peuvent être typées (recommandé) :
 ```php
 class Product {
     public string $name;                    // Propriété typée simple
-    private static int $count = 0;          // Propriété statique avec valeur initiale
     public readonly float $price;           // Propriété en lecture seule (typage obligatoire)
     protected ?string $description = null;  // Propriété nullable
 }
@@ -166,6 +161,36 @@ $instance = new MyClass();
 echo ($instance->demo)(); // Affiche : Hello world
 ```
 
+### Les méthodes
+
+---
+
+Une méthode est une fonction définie à l'intérieur d'une classe. Comme pour les propriétés, elle nécessite un modificateur de visibilité :
+
+- `public` : accessible de partout
+
+- `protected` : accessible dans la classe et ses classes enfants
+
+- `private` : accessible uniquement dans la classe
+
+Les méthodes peuvent être typées pour leurs paramètres et leur valeur de retour (recommandé) :
+
+```php
+class Calculator {
+    public function add(int $a, int $b): int {
+        return $a + $b;
+    }
+
+    protected function multiply(float $a, float $b): float {
+        return $a * $b;
+    }
+
+    private function reset(): void {
+        // Logique de réinitialisation
+    }
+}
+```
+
 ### Les constantes
 
 ---
@@ -195,6 +220,119 @@ $instance->showConstant(); // Affiche : valeur constante
 À savoir :
 
 - La constante spéciale ::class permet une résolution de nom de classe pleinement qualifié au moment de la compilation, cela est utile pour les classes dans un espace de nom
+
+## Classes statiques
+
+---
+
+Depuis PHP 5.2, il est possible de déclarer une classe comme étant statique en utilisant le mot-clé `static`.
+
+Une classe statique ne peut pas être instanciée et toutes ses propriétés et méthodes doivent également être déclarées comme statiques.
+
+Il est aussi possible de ne déclarer qu'une seule méthode ou propriété comme statique dans une classe non statique.
+
+Le fait de déclaraer une classe, une propriété ou une méthode comme statique permet de regrouper des fonctionnalités utilitaires ou des constantes sans avoir besoin de créer une instance de la classe.
+
+Attention, comme les méthodes statiques peuvent être appelées sans instance, elles n'ont pas accès à la pseudo-variable `$this`.
+
+### Propriétés statiques
+
+---
+
+Les propriétés statiques sont partagées entre toutes les instances de la classe. Elles sont accessibles via l'opérateur de résolution de portée `::` en utilisant le nom de la classe ou `self::` à l'intérieur de la classe.
+
+```php
+class Counter {
+    public static int $count = 0;
+
+    public static function increment(): void {
+        self::$count++;
+    }
+}
+
+Counter::increment();
+echo Counter::$count; // Affiche : 1
+```
+
+### Méthode statique
+
+---
+
+Les méthodes statiques peuvent être appelées sans créer une instance de la classe. Elles sont également accessibles via l'opérateur de résolution de portée `::`.
+
+```php
+class MathUtils {
+    public static function add(int $a, int $b): int {
+        return $a + $b;
+    }
+}
+
+$result = MathUtils::add(5, 10);
+echo $result; // Affiche : 15
+```
+
+## Classe readonly
+
+---
+
+Depuis PHP 8.2, une classe peut être marquée avec le modificateur `readonly`. Cette fonctionnalité permet de garantir l'immutabilité des objets après leur initialisation.
+
+Une classe marquée `readonly` ne peut être étendue que par une autre classe `readonly`, et toutes ses propriétés sont automatiquement `readonly`.
+
+Il est aussi possible de ne déclarer qu'une seule propriété comme `readonly` dans une classe non `readonly`.
+
+### Propriétés readonly
+
+---
+
+Les propriétés `readonly` ne peuvent être modifiées qu'une seule fois, lors de leur initialisation et sont accessibles via l'opérateur `->`, comme les propriétés normales.
+
+Attention, les propriétés `readonly` doivent être typées explicitement et ne peuvent être initialisées qu'une seule fois, généralement dans le constructeur.
+
+```php
+class Product {
+    public readonly string $id;
+    public readonly float $price;
+
+    public function __construct(string $id, float $price) {
+        $this->id = $id;
+        $this->price = $price;
+    }
+}
+
+$product = new Product('ABC123', 99.99);
+echo $product->id; // Affiche : ABC123
+
+// Erreur : Cannot modify readonly property Product::$id
+$product->id = 'XYZ789';
+```
+
+### Méthodes dans une classe readonly
+
+---
+
+Les méthodes dans une classe `readonly` fonctionnent normalement et ne sont pas affectées par le modificateur `readonly`. Elles peuvent lire les propriétés mais ne peuvent pas les modifier après l'initialisation.
+
+```php
+readonly class User {
+    public function __construct(
+        public string $name,
+        public string $email
+    ) {}
+
+    public function getFullInfo(): string {
+        return "{$this->name} ({$this->email})";
+    }
+
+    public function changeName(string $newName): void {
+        // Erreur : Cannot modify readonly property User::$name
+        $this->name = $newName;
+    }
+}
+
+$user = new User('John Doe', 'john@example.com');
+echo $user->getFullInfo(); // Affiche : John Doe (john@example.com)
+```
 
 ## Assignation d'un objet
 
@@ -245,43 +383,3 @@ Cette déclaration fait de `$reference` un alias de `$instance`.
 Les deux variables sont liées directement, elles désignent la même variable, pas seulement le même objet. Elles ne sont pas indépendantes, toute modification de la variable (pas seulement de l'objet) se répercute sur l'autre.
 
 Si l'on réaffecte `$instance = null`, cela sera aussi le cas pour `$reference`
-
-## Classes en lecture seule (readonly)
-
----
-
-Depuis PHP 8.2, une classe peut être marquée avec le modificateur `readonly`. Cette fonctionnalité permet de garantir l'immutabilité des objets après leur initialisation.
-
-Une classe marquée `readonly` a les caractéristiques suivantes :
-
-- Toutes ses propriétés sont automatiquement `readonly`
-
-- La création de propriétés dynamiques est interdite
-
-- Les propriétés doivent être typées explicitement
-
-- Les propriétés ne peuvent être modifiées qu'une seule fois, dans le constructeur
-
-- Une classe `readonly` ne peut être étendue que par une autre classe `readonly`
-
-- Les propriétés statiques ne peuvent pas être `readonly`
-
-```php
-<?php
-
-readonly class User {
-    public function __construct(
-        public string $name,
-        public string $email
-    ) {}
-}
-
-$user = new User('John Doe', 'john@example.com');
-echo $user->name; // Affiche : John Doe
-
-// Erreur : Cannot modify readonly property User::$name
-$user->name = 'Jane Doe';
-
-// Erreur : Cannot create dynamic property User::$age
-$user->age = 25;
-```

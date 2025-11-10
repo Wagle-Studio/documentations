@@ -1,0 +1,238 @@
+## Introduction
+
+---
+
+Les traits sont des outils puissants pour réutiliser du code dans des classes indépendantes.
+
+Les traits réduisent les limites de l'héritage simple en autorisant le développeur à réutiliser un ensemble de méthodes dans plusieurs classes. La sémantique entre les classes et les traits réduit la complexité et évite les problèmes typiques de l'héritage multiple.
+
+Un trait est semblable à une classe, mais il ne sert qu'à regrouper des fonctionnalités spécifiques que vous souhaitez réutiliser. Les traits ne peuvent pas être instanciés par eux-mêmes.
+
+```php
+<?php
+trait Logger {
+    public function log(string $message): void {
+        echo "[LOG]: " . $message . PHP_EOL;
+    }
+}
+
+class User {
+    use Logger;
+
+    private string $name;
+
+    public function __construct(string $name) {
+        $this->name = $name;
+    }
+
+    public function create(): void {
+        // Logique de création d'utilisateur
+        $this->log("Utilisateur {$this->name} créé.");
+    }
+}
+
+$user = new User("Alice");
+$user->create(); // Affiche : [LOG]: Utilisateur Alice créé.
+```
+
+## Précédence
+
+---
+
+Une méthode héritée depuis une classe mère est écrasée par une méthode provenant d'un trait. L'ordre de précédence fait en sorte que les méthodes de classes courantes écrasent les méthodes issues d'un trait, elles-mêmes écrasant les méthodes héritées d'une classe mère.
+
+- La classe `Admin` hérite de la méthode `create` de la classe `User`.
+
+- Le trait `Authenticator` définit une méthode `create`.
+
+- La classe `Admin` utilise le trait `Authenticator`, donc la méthode `create` du trait écrase celle héritée de `User`.
+
+- La classe `Admin` redéfinit sa propre méthode `create`, qui écrase celle du trait `Authenticator`.
+
+```php
+<?php
+class User {
+    public function create(): void {
+        echo "Création d'un utilisateur." . PHP_EOL;
+    }
+}
+
+trait Authenticator {
+    public function create(): void {
+        echo "Authentification de l'utilisateur." . PHP_EOL;
+    }
+}
+
+class Admin extends User {
+    use Authenticator;
+
+    public function create(): void {
+        echo "Création d'un administrateur." . PHP_EOL;
+    }
+}
+
+$admin = new Admin();
+$admin->create(); // Affiche : Création d'un administrateur.
+```
+
+## Multiples traits
+
+---
+
+Une classe peut utiliser plusieurs traits en les séparant par des virgules.
+
+```php
+<?php
+trait Logger {
+    public function log(string $message): void {
+        echo "[LOG]: " . $message . PHP_EOL;
+    }
+}
+
+trait Notifier {
+    public function notify(string $message): void {
+        echo "[NOTIFY]: " . $message . PHP_EOL;
+    }
+}
+
+class User {
+    use Logger, Notifier;
+
+    private string $name;
+
+    public function __construct(string $name) {
+        $this->name = $name;
+    }
+
+    public function create(): void {
+        $this->log("Utilisateur {$this->name} créé.");
+        $this->notify("Bienvenue, {$this->name}!");
+    }
+}
+
+$user = new User("Bob");
+$user->create();
+// Affiche :
+// [LOG]: Utilisateur Bob créé.
+// [NOTIFY]: Bienvenue, Bob!
+```
+
+### Résolution de conflits
+
+---
+
+Lorsque plusieurs traits utilisés dans une même classe possèdent des méthodes portant le même nom, un conflit survient. PHP offre des mécanismes pour résoudre ces conflits en utilisant les mots-clés `insteadof` et `as`.
+
+```php
+<?php
+trait A {
+    public function hello(): void {
+        echo "Hello from Trait A" . PHP_EOL;
+    }
+}
+
+trait B {
+    public function hello(): void {
+        echo "Hello from Trait B" . PHP_EOL;
+    }
+}
+
+class MyClass {
+    use A, B {
+        A::hello insteadof B; // Utilise la méthode hello de A
+        B::hello as helloFromB; // Alias pour la méthode hello de B
+    }
+}
+
+$instance = new MyClass();
+$instance->hello(); // Affiche : Hello from Trait A
+$instance->helloFromB(); // Affiche : Hello from Trait B
+```
+
+## Héritage des traits
+
+---
+
+Les traits peuvent également utiliser d'autres traits, permettant ainsi de composer des fonctionnalités de manière modulaire.
+
+```php
+<?php
+trait Logger {
+    public function log(string $message): void {
+        echo "[LOG]: " . $message . PHP_EOL;
+    }
+}
+
+trait Notifier {
+    public function notify(string $message): void {
+        echo "[NOTIFY]: " . $message . PHP_EOL;
+    }
+}
+
+trait UserActions {
+    use Logger, Notifier;
+
+    public function createUser(string $name): void {
+        $this->log("Utilisateur {$name} créé.");
+        $this->notify("Bienvenue, {$name}!");
+    }
+}
+
+class User {
+    use UserActions;
+
+    private string $name;
+
+    public function __construct(string $name) {
+        $this->name = $name;
+    }
+
+    public function register(): void {
+        $this->createUser($this->name);
+    }
+}
+
+$user = new User("Charlie");
+$user->register();
+// Affiche :
+// [LOG]: Utilisateur Charlie créé.
+// [NOTIFY]: Bienvenue, Charlie!
+```
+
+## Méthodes abstraites
+
+---
+
+Depuis PHP 8.0, les traits supportent l'utilisation de méthodes abstraites afin d'imposer des contraintes aux classes sous-jacentes. Les méthodes publiques, protégées et privées sont supportées.
+
+```php
+<?php
+trait Logger {
+    abstract protected function getLogPrefix(): string;
+
+    public function log(string $message): void {
+        echo $this->getLogPrefix() . ": " . $message . PHP_EOL;
+    }
+}
+
+class User {
+    use Logger;
+
+    protected function getLogPrefix(): string {
+        return "[USER LOG]";
+    }
+
+    private string $name;
+
+    public function __construct(string $name) {
+        $this->name = $name;
+    }
+
+    public function create(): void {
+        $this->log("Utilisateur {$this->name} créé.");
+    }
+}
+
+$user = new User("Diana");
+$user->create(); // Affiche : [USER LOG]: Utilisateur Diana créé.
+```
