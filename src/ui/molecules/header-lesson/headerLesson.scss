@@ -3,13 +3,41 @@
   flex-direction: column;
   gap: var(--space-2);
 
-  &__subtitles {
+  &__body {
     display: flex;
     flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-1) var(--space-2) var(--space-2);
+    border: 1px solid var(--gray-base);
+    border-radius: var(--border-radius-small);
+    background-color: var(--white);
+
+    &--titles {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    &--subtitles {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-0);
+
+      > p {
+        margin: 0 !important;
+        font-style: italic;
+      }
+    }
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
     gap: var(--space-1);
 
-    > p {
-      margin: 0 !important;
+    @media screen and (min-width: 850px) {
+      flex-direction: row;
     }
   }
 }

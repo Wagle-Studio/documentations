@@ -36,6 +36,7 @@ export default async function Lesson({ params }: LessonParams) {
         <ContentLesson
           lesson={getContentResult.data.lesson}
           mdx={getContentResult.data.mdx}
+          references={getContentResult.data.references}
         />
       )}
     </>

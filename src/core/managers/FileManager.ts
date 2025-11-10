@@ -1,12 +1,13 @@
 import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
-import { CoreResult, Lesson } from "@/core/types";
+import { CoreResult, Lesson, Reference } from "@/core/types";
 import RegisterManager from "./RegisterManager";
 
 interface GetContentResult {
   lesson: Lesson;
   mdx: string;
+  references?: Reference[];
 }
 
 export default class FileManager {
@@ -21,6 +22,10 @@ export default class FileManager {
     // TODO : handle error case
     if (!findLessonResult.success) throw new Error(findLessonResult.message);
 
+    const findReferencesResult = RegisterManager.findReferencesByLessonId(
+      findLessonResult.data.id
+    );
+
     const contentPath = path.join(...findLessonResult.data.paths);
     const source = fs.readFileSync(this.getPath(contentPath), "utf8");
 
@@ -29,6 +34,9 @@ export default class FileManager {
       data: {
         lesson: findLessonResult.data,
         mdx: matter(source).content,
+        references: findReferencesResult.success
+          ? findReferencesResult.data
+          : undefined,
       },
     };
   };

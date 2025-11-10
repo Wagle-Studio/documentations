@@ -66,7 +66,7 @@ export const Header = () => {
             )}
           </div>
           <div className="header__wrapper--end--desktop">
-            <Tag>V 1.2</Tag>
+            <Tag>V 1.3</Tag>
             <a
               href="https://github.com/Wagle-Studio/documentations"
               target="_blank"

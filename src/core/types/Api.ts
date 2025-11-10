@@ -1,6 +1,8 @@
 export type Register = {
   courses: Course[];
   lessons: Lesson[];
+  references: Reference[];
+  lesson_references: LessonReference[];
 };
 
 export type Course = {
@@ -21,3 +23,11 @@ export type Lesson = {
   created: string;
   updated: string;
 };
+
+export type Reference = {
+  id: number;
+  label: string;
+  url: string;
+};
+
+export type LessonReference = { lesson_id: number; reference_id: number };

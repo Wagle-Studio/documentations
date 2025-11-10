@@ -3,6 +3,7 @@ import {
   CoreResultSuccess,
   Course,
   Lesson,
+  Reference,
   Register,
 } from "@/core/types";
 import register from "@/register";
@@ -90,6 +91,30 @@ export default class RegisterManager {
       return {
         success: true,
         data: lessons,
+      };
+    }
+  };
+
+  static findReferencesByLessonId = (
+    lessonId: number
+  ): CoreResult<Reference[], undefined> => {
+    const referenceIds = this.register.lesson_references
+      .filter((lr) => lr.lesson_id === lessonId)
+      .map((lr) => lr.reference_id);
+
+    const references = this.register.references.filter((reference) =>
+      referenceIds.includes(reference.id)
+    );
+
+    if (!references) {
+      return {
+        success: false,
+        message: "Aucune référence correspondante",
+      };
+    } else {
+      return {
+        success: true,
+        data: references,
       };
     }
   };
