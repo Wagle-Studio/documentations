@@ -1,0 +1,147 @@
+## Introduction
+
+---
+
+### Pourquoi les classes et objets ne suffisent pas.
+
+Maintenant que vous maîtrisez la syntaxe propre à la programmation orientée objet (propriétés, méthodes, héritage, etc.), il est indispensable d'en découvrir les concepts théoriques fondamentaux.
+
+Ce sont ces concepts qui vous permettront de mettre en place des architectures solides, garantissant une dette technique maîtrisée et une meilleure évolutivité de votre application.
+
+Concrètement, l'application de ces concepts vous permettra d'éviter les classes fourre-tout, la rigidité du code, la fragilité des données ou encore la duplication de code.
+
+Les classes et les objets sont les briques de votre application. Mais pour construire un édifice qui tienne debout face aux tempêtes (bugs, changements de besoins, évolutions techniques), il vous faut des plans et des principes de construction : ce sont les quatre piliers de la programmation orientée objet.
+
+## Encapsulation
+
+---
+
+Le concept d'encapsulation peut être illustré par l'image d'une "boîte noire" : cela consiste à restreindre l'accès aux données d'une classe en définissant leur visibilité (public, protected, private) et en ne laissant accessible que les méthodes nécessaire à son utilisation.
+
+Plus important encore, cela permet de maîtriser l'état interne d'une classe grâce à l'utilisation d'accesseurs (getters) et de mutateurs (setters).
+
+**Analogie**
+
+Imaginez une machine à café : vous utilisez les boutons (méthodes publiques) sans manipuler la pression ou la température interne (propriétés privées). L'encapsulation est la carrosserie qui protège le mécanisme et n'expose que l'essentiel.
+
+**En pratique**
+
+```php
+<?php
+
+class CoffeeMachine {
+    private $model = 'Expresso Pro';
+    private $temperature = 90; // En degrés Celsius
+
+    public function getModel() {
+        return $this->model;
+    }
+
+    public function getTemperature() {
+        return $this->temperature . '°C';
+    }
+
+    public function setTemperature(int $newTemp) {
+        // On empêche de descendre sous la température de maintien au chaud
+        if ($newTemp < 60) return;
+
+        $this->temperature = $newTemp;
+    }
+}
+```
+
+Dans cet exemple, les propriétés `$model` et `$temperature` sont les composants internes de notre machine, protégés par la "carrosserie" private.
+
+Le modèle n'est accessible qu'en lecture : l'utilisateur peut le consulter, mais pas le renommer. 
+
+La température, elle, illustre parfaitement le contrôle des effets de bord : l'accesseur la formate pour l'affichage (ajout de l'unité), tandis que le mutateur agit comme une sécurité, empêchant de régler une température trop basse.
+
+**Bénéfices**
+
+Cela garantit l'intégrité des données, notamment en permettant d'effectuer des vérifications spécifiques lors de l'appel d'un mutateur, ou encore de transformer une propriété lors de l'utilisation d'un accesseur.
+
+Ainsi l'objet devient une entité autonome et prévisible : vous avez la garantie que ses données ne changeront que via les règles que vous avez vous-même définies.
+
+{/* ## L'Abstraction : Définir le "Quoi" avant le "Comment"
+
+---
+
+### Le concept : Simplification de la réalité et masquage des détails techniques.
+
+---
+
+### Analogie : Conduire une voiture (volant/pédales) sans maîtriser la thermodynamique.
+
+---
+
+### En pratique : Définition de modèles simplifiés.
+
+---
+
+### Bénéfice : Proposer une interface simple pour un système complexe.
+
+---
+
+## L'Héritage : Structurer et spécialiser
+
+---
+
+### Le concept : La transmission de patrimoine (Relation "Est un").
+
+---
+
+### Analogie : Le véhicule (base commune) décliné en voiture ou moto (spécificités).
+
+---
+
+### En pratique : Réutilisation du code et factorisation.
+
+---
+
+### Mise en garde : La hiérarchie vs la composition.
+
+---
+
+## Le Polymorphisme : L'interopérabilité des objets
+
+---
+
+### Le concept : Une interface unique pour des comportements multiples ("Plusieurs formes").
+
+---
+
+### Analogie : Le bouton "Play" universel (YouTube, CD, Podcast).
+
+---
+
+### Les deux types majeurs :
+
+---
+
+### Bénéfice : Rendre le code flexible et évolutif.
+
+---
+
+## Synthèse & Principes de Conception
+
+---
+
+### L'interdépendance : Comment ces piliers travaillent ensemble au quotidien.
+
+---
+
+### Vers SOLID : Lien entre Polymorphisme et OCP (Open/Closed Principle).
+
+---
+
+## Conclusion
+
+---
+
+### Checklist d'auto-évaluation de votre code.
+
+---
+
+### Ouverture vers les Design Patterns.
+
+--- */}

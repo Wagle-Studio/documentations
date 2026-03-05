@@ -249,6 +249,17 @@ const lessons: Lesson[] = [
     created: "10 novembre 2025",
     updated: "10 novembre 2025",
   },
+  {
+    id: 22,
+    index: 6,
+    paths: ["poo", "quatre_piliers_poo.mdx"],
+    label: "Les quatre pilier de la POO",
+    slug: "quatre_pilier_poo",
+    course_id: 5,
+    description: "Les concepts fondamentaux de la programmation orientée objet.",
+    created: "01 mars 2026",
+    updated: "01 mars 2026",
+  },
 ];
 
 const courses: Course[] = [
@@ -275,6 +286,12 @@ const courses: Course[] = [
     label: "PHP POO",
     slug: "php_poo",
     emoji: "/emoji/elephant.png",
+  },
+  {
+    id: 5,
+    label: "POO",
+    slug: "poo",
+    emoji: "/emoji/book.png",
   },
 ];
 
