@@ -52,7 +52,7 @@ class CoffeeMachine {
 
 Dans cet exemple, les propriétés `$model` et `$temperature` sont les composants internes de notre machine, protégés par la "carrosserie" private.
 
-Le modèle n'est accessible qu'en lecture : l'utilisateur peut le consulter, mais pas le renommer. 
+Le modèle n'est accessible qu'en lecture : l'utilisateur peut le consulter, mais pas le renommer.
 
 La température, elle, illustre parfaitement le contrôle des effets de bord : l'accesseur la formate pour l'affichage (ajout de l'unité), tandis que le mutateur agit comme une sécurité, empêchant de régler une température trop basse.
 
@@ -62,27 +62,119 @@ Cela garantit l'intégrité des données, notamment en permettant d'effectuer de
 
 Ainsi l'objet devient une entité autonome et prévisible : vous avez la garantie que ses données ne changeront que via les règles que vous avez vous-même définies.
 
-{/* ## L'Abstraction : Définir le "Quoi" avant le "Comment"
+## Abstraction
 
 ---
 
-### Le concept : Simplification de la réalité et masquage des détails techniques.
+Le concept d'abstraction cherche à simplifier la réalité en masquant les détails techniques : en ne montrant que l'interface publique il est possible d'abstraire le "quoi" (ce qu'elle fait) du "comment" (comment elle le fait). En POO il y a deux mécanismes qui permettent l'abstraction : les classes abstraites et les interfaces.
 
----
+### Les classes abstraites
 
-### Analogie : Conduire une voiture (volant/pédales) sans maîtriser la thermodynamique.
+C'est l'abstraction d'une famille d'objets.
 
----
+Ce type de classe permet, entre autres, de contraindre les sous-classes à l'implémentation de méthodes définies, mais aussi d'implémenter du code fonctionnel commun aux sous-classes héritant de la classe abstraite. Une classe abstraite ne peut pas être instanciée, illustrant d'autant plus son rôle dans la hiérarchie des classes (relation "est-un").
 
-### En pratique : Définition de modèles simplifiés.
+- Ne peuvent pas être instanciées directement
+- Peuvent implémenter du code (constructeur, méthodes, propriétés, etc.) partagé avec les sous-classes (sauf visibilité restreinte)
+- Peuvent déclarer des méthodes abstraites devant être implémentées par les sous-classes
+- Une sous-classe ne peut étendre qu'une seule classe abstraite
 
----
+**Analogie**
 
-### Bénéfice : Proposer une interface simple pour un système complexe.
+Un moule pour couler des pièces métalliques dans une fonderie. Le moule lui-même n'est pas une pièce utilisable, on ne peut pas s'en servir directement, mais il définit la forme que toutes les pièces produites à partir de lui auront en commun. Chaque pièce produite (sous-classes) peut ensuite être affinée différemment, mais elle partage la structure de base imposée par le moule.
 
----
+```php
+<?php
 
-## L'Héritage : Structurer et spécialiser
+abstract class AbstractPayment {
+    protected function getCurrencyExchangeRate(Currency $currency): float {
+        # ... retourne le taux de change de la devise du client
+    }
+
+    abstract public function sendPayment(): void
+}
+
+class PaypalPayment extends AbstractPayment {
+    public function __construct(private Payment $payment) {
+    }
+
+
+    public function sendPayment() {
+        $customerCurrency = $this->payment->getCustomerCurrency();
+        $exchangeRate = $this->getCurrencyExchangeRate($customerCurrency);
+        # ... éxecute le paiement avec Paypal
+    }
+}
+
+class StripePayment extends AbstractPayment {
+    public function __construct(private Payment $payment) {
+    }
+
+    public function sendPayment() {
+        $customerCurrency = $this->payment->getCustomerCurrency();
+        $exchangeRate = $this->getCurrencyExchangeRate($customerCurrency);
+        # ... éxecute le paiement avec Stripe
+    }
+}
+```
+
+Dans cet exemple, la classe abstraite `AbstractPayment` permet de masquer aux sous-classes les détails techniques sur la détermination du prix dans la devise du client (Euro > Dollar, Euro > Yen, etc.). En implémentant elle-même la méthode `getCurrencyExchangeRate`, la classe abstraite `AbstractPayment` permet à ses sous-classes d'appeler cette méthode indispensable à la procédure de paiement sans en connaître l'implémentation.
+
+À la manière d'une interface, la classe abstraite `AbstractPayment` oblige ses sous-classes à implémenter la méthode `sendPayment`. De cette manière, il est garanti d'avoir accès à cette méthode dans toutes les sous-classes.
+
+### Les interfaces
+
+C'est l'abstraction d'une capacité/comportement.
+
+Une interface masque les détails techniques (comment elle le fait) et n'expose que le nécessaire à son exploitation (ce qu'elle fait). Elles permettent d'établir un contrat entre deux parties en garantissant que les classes qui l'implémentent fournissent les méthodes et comportements qu'elle dicte (relation "peut-faire").
+
+- Ne jouent pas de rôle dans l'héritage de classes (mais une interface peut en étendre une autre)
+- N'implémentent aucun code (sauf méthodes par défaut dans certains langages)
+- Une classe peut implémenter plusieurs interfaces
+
+**Analogie**
+
+Le cahier des charges du client de la fonderie. Il ne dit pas comment fabriquer la pièce dont il a besoin, mais il garantit que la pièce livrée respectera le contrat, peu importe l'atelier qui la produit.
+
+Le cahier des charges ne produit rien lui-même (pas d'implémentation), n'importe quel atelier (classe) peut s'engager sur plusieurs cahiers des charges à la fois (plusieurs interfaces), et le client final interagit avec la pièce sans se soucier de comment elle a été fabriquée.
+
+```php
+<?php
+
+interface MessengerInterface {
+    public function send(Message $message): void;
+}
+
+class DiscordMessenger implements MessengerInterface {
+    public function send(Message $message) {
+        ... envoie le message via Discord
+    }
+}
+
+class SignalMessenger implements MessengerInterface {
+    public function send(Message $message) {
+        ... envoie le message via Signal
+    }
+}
+
+class SignUpProcess {
+    public function __construct(private MessengerInterface $messenger) {
+    }
+
+    public function sendConfirmation(User $user): void {
+        $message = new Message(MessageTypes::SIGNUP_CONFIRM, $user);
+        $this->messenger->send($message);
+    }
+}
+```
+
+Dans cet exemple, l'interface `MessengerInterface` établit un contrat dictant l'implémentation d'une méthode `send` chargée d'envoyer un message. Les classes qui implémentent l'interface devront fournir la méthode `send` (le "quoi", ce qu'elle fait) mais la manière d'envoyer le message (le "comment" elle le fait) pourra être différente, tant que le comportement, ici envoyer un message, reste identique.
+
+Ainsi la classe `SignUpProcess`, qui bénéficie de l'injection de dépendance pour recevoir un objet de type `MessengerInterface`, recevra possiblement la classe `DiscordMessenger` ou `SignalMessenger`. Cela importe peu puisque `SignUpProcess` recevra l'une de nos deux classes interfacées par `MessengerInterface`, qui lui garantit l'accès à la méthode `send`.
+
+Grâce à l'interface, la classe `SignUpProcess` n'a pas à se soucier de l'implémentation de la méthode d'envoi du message, elle fait simplement appel à une méthode définie dans le contrat (l'interface).
+
+{/* ## L'Héritage : Structurer et spécialiser
 
 ---
 
@@ -142,6 +234,4 @@ Ainsi l'objet devient une entité autonome et prévisible : vous avez la garanti
 
 ---
 
-### Ouverture vers les Design Patterns.
-
---- */}
+### Ouverture vers les Design Patterns. */}
