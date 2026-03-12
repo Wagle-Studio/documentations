@@ -2,7 +2,7 @@
 
 ---
 
-### Pourquoi les classes et objets ne suffisent pas.
+**Pourquoi les classes et objets ne suffisent pas.**
 
 Maintenant que vous maîtrisez la syntaxe propre à la programmation orientée objet (propriétés, méthodes, héritage, etc.), il est indispensable d'en découvrir les concepts théoriques fondamentaux.
 
@@ -62,69 +62,184 @@ Cela garantit l'intégrité des données, notamment en permettant d'effectuer de
 
 Ainsi l'objet devient une entité autonome et prévisible : vous avez la garantie que ses données ne changeront que via les règles que vous avez vous-même définies.
 
+## Héritage
+
+---
+
+Sans doute le pilier de la POO le plus populaire. Le principe d'héritage consiste à permettre à une sous-classe (classe "enfant") d'étendre une autre classe (dite "parente"). Ainsi la classe enfant hérite de toutes les méthodes publiques et protégées, des propriétés et des constantes de la classe parente. Tant qu'une classe enfant ne redéfinit pas ces méthodes, elles conservent leur fonctionnalité d'origine.
+
+L'héritage est très utile pour définir et abstraire des fonctionnalités communes à plusieurs classes, tout en permettant d'ajouter des fonctionnalités spécifiques dans les classes enfant, sans avoir à réimplémenter toutes les fonctionnalités partagées.
+
+**Analogie**
+
+Faisons une liste de moyens de transport routier divers : voiture, moto, bus, camion, etc. Tous nos exemples sont relativement spécifiques, mais partagent des points communs que l'on pourrait attribuer à une classe commune : celle des véhicules motorisés.
+
+Cette classe pourrait être une spécification de la classe des moyens de transport, au côté des véhicules non motorisés, de l'aviation ou encore du transport maritime.
+
+En établissant une hiérarchie de classes, vous pouvez alors tirer pleinement parti du principe d'héritage en mutualisant les méthodes communes aux différents "étages" de votre hiérarchie.
+
+**En pratique**
+
+```php
+<?php
+
+class MotorizedVehicle {
+    protected string $engineType;
+    protected int $cylinder;
+    protected int $horsepower;
+
+    public function __construct(
+        string $engineType,
+        int    $cylinder,
+        int    $horsepower,
+    ) {
+        $this->engineType = $engineType;
+        $this->cylinder = $cylinder;
+        $this->horsepower = $horsepower;
+    }
+
+    public function getPerformanceIndex(): float {
+        return $this->horsepower / $this->cylinder;
+    }
+}
+
+class Car extends MotorizedVehicle {
+    protected $doors;
+
+    public function __construct(
+        int    $doors,
+        string $engineType,
+        int    $cylinder,
+        int    $horsepower,
+    ) {
+        parent::__construct($engineType, $cylinder, $horsepower);
+        $this->doors = $doors;
+    }
+}
+
+class Motorcycle extends MotorizedVehicle {
+    protected $saddle;
+
+    public function __construct(
+        string $saddle,
+        string $engineType,
+        int    $cylinder,
+        int    $horsepower,
+    ) {
+        parent::__construct($engineType, $cylinder, $horsepower);
+        $this->saddle = $saddle;
+    }
+}
+```
+
+**La surcharge**
+
+Une classe enfant peut redéfinir une méthode héritée de sa classe parente pour en modifier le comportement. On parle de surcharge.
+
+Par exemple, `Motorcycle` pourrait surcharger `getPerformanceIndex()` pour appliquer un calcul différent, adapté aux spécificités d'une moto, sans affecter le comportement de `Car` ni de `MotorizedVehicle`.
+
+```php
+class Motorcycle extends MotorizedVehicle {
+    ...
+
+    public function getPerformanceIndex(): float {
+        // Calcul spécifique aux motos (pondéré par le poids)
+        return ($this->horsepower / $this->cylinder) * 1.2;
+    }
+}
+```
+
+Dans cet exemple, la classe "parente" `MotorizedVehicle` définit des propriétés et méthodes communes à toutes ses futures sous-classes ("enfantes"). Les classes `Car` et `Motorcycle` dépendent de la classe `MotorizedVehicle`, on peut donc parler de lien hiérarchique.
+
+Puisque le nécessaire est mutualisé dans la classe `MotorizedVehicle`, les sous-classes peuvent alors se spécialiser en implémentant propriétés et méthodes spécifiques. Ces sous-classes pourraient alors être étendues par d'autres sous-classes plus spécialisées, et ainsi de suite.
+
+**Bénéfice**
+
+Lorsqu'il est utilisé à bon escient, le principe d'héritage apporte beaucoup de valeur ajoutée. Tout d'abord la mutualisation de code, qui facilite la maintenance en évitant de reproduire le même code dans différentes classes, tout en permettant les surcharges. Aussi, le code est moins rigide car les classes sont plus spécialisées, ce qui évite l'effet fourre-tout.
+
+### Mise en garde : La hiérarchie vs la composition.
+
+---
+
+Créer une hiérarchie de classes trop profonde ou trop rigide peut mener à des problèmes de maintenance : si la classe parente change, toutes les sous-classes sont impactées.
+
+Il est généralement conseillé de privilégier la composition plutôt que l'héritage.
+
+La composition consiste en une classe qui contient des objets d'autres classes au lieu de créer une hiérarchie, cela offre plus de flexibilité et de modularité.
+
+Plutôt que de créer une hiérarchie `MotorizedVehicle` > `Car` > `ElectricCar`, on pourrait composer une classe `Car` avec un objet `Engine` qui peut être `ElectricEngine` ou `CombustionEngine`.
+
+Ainsi, il est possible de modifier les classes `ElectricEngine` et `CombustionEngine` sans avoir à modifier la classe `Car`.
+
 ## Abstraction
 
 ---
 
 Le concept d'abstraction cherche à simplifier la réalité en masquant les détails techniques : en ne montrant que l'interface publique il est possible d'abstraire le "quoi" (ce qu'elle fait) du "comment" (comment elle le fait). En POO il y a deux mécanismes qui permettent l'abstraction : les classes abstraites et les interfaces.
 
-### Les classes abstraites
+### Abstraction de classe
 
-C'est l'abstraction d'une famille d'objets.
+---
 
-Ce type de classe permet, entre autres, de contraindre les sous-classes à l'implémentation de méthodes définies, mais aussi d'implémenter du code fonctionnel commun aux sous-classes héritant de la classe abstraite. Une classe abstraite ne peut pas être instanciée, illustrant d'autant plus son rôle dans la hiérarchie des classes (relation "est-un").
+Nous l'avons vu dans la partie dédiée, l'héritage permet la mutualisation du code commun. Les classes abstraites poussent ce concept plus loin en renforçant le contrat imposé aux sous-classes.
 
 - Ne peuvent pas être instanciées directement
 - Peuvent implémenter du code (constructeur, méthodes, propriétés, etc.) partagé avec les sous-classes (sauf visibilité restreinte)
-- Peuvent déclarer des méthodes abstraites devant être implémentées par les sous-classes
+- Peuvent déclarer des propriétés et méthodes abstraites devant être implémentées par les sous-classes
 - Une sous-classe ne peut étendre qu'une seule classe abstraite
 
 **Analogie**
 
 Un moule pour couler des pièces métalliques dans une fonderie. Le moule lui-même n'est pas une pièce utilisable, on ne peut pas s'en servir directement, mais il définit la forme que toutes les pièces produites à partir de lui auront en commun. Chaque pièce produite (sous-classes) peut ensuite être affinée différemment, mais elle partage la structure de base imposée par le moule.
 
+**En pratique**
+
 ```php
 <?php
 
-abstract class AbstractPayment {
+abstract class PaymentSupplier {
     protected function getCurrencyExchangeRate(Currency $currency): float {
         # ... retourne le taux de change de la devise du client
     }
 
-    abstract public function sendPayment(): void
+    abstract public function sendPayment(Payment $payment): void
 }
 
-class PaypalPayment extends AbstractPayment {
-    public function __construct(private Payment $payment) {
-    }
-
-
-    public function sendPayment() {
-        $customerCurrency = $this->payment->getCustomerCurrency();
+class PaypalPayment extends PaymentSupplier {
+    public function sendPayment(Payment $payment) {
+        $customerCurrency = $payment->getCustomerCurrency();
         $exchangeRate = $this->getCurrencyExchangeRate($customerCurrency);
         # ... éxecute le paiement avec Paypal
     }
 }
 
-class StripePayment extends AbstractPayment {
-    public function __construct(private Payment $payment) {
-    }
-
-    public function sendPayment() {
-        $customerCurrency = $this->payment->getCustomerCurrency();
+class StripePayment extends PaymentSupplier {
+    public function sendPayment(Payment $payment) {
+        $customerCurrency = $payment->getCustomerCurrency();
         $exchangeRate = $this->getCurrencyExchangeRate($customerCurrency);
         # ... éxecute le paiement avec Stripe
     }
 }
+
+class PaymentProcess {
+    public function __construct(private PaymentSupplier $paymentSupplier) {
+    }
+
+    public function exec(Payment $payment): void {
+        $this->paymentSupplier->sendPayment($payment);
+    }
+}
 ```
 
-Dans cet exemple, la classe abstraite `AbstractPayment` permet de masquer aux sous-classes les détails techniques sur la détermination du prix dans la devise du client (Euro > Dollar, Euro > Yen, etc.). En implémentant elle-même la méthode `getCurrencyExchangeRate`, la classe abstraite `AbstractPayment` permet à ses sous-classes d'appeler cette méthode indispensable à la procédure de paiement sans en connaître l'implémentation.
+Dans cet exemple, la classe abstraite `PaymentSupplier` permet de masquer aux sous-classes les détails techniques sur la détermination du prix dans la devise du client (Euro > Dollar, Euro > Yen, etc.). En implémentant elle-même la méthode `getCurrencyExchangeRate`, la classe abstraite `PaymentSupplier` permet à ses sous-classes d'appeler cette méthode indispensable à la procédure de paiement sans en connaître l'implémentation.
 
-À la manière d'une interface, la classe abstraite `AbstractPayment` oblige ses sous-classes à implémenter la méthode `sendPayment`. De cette manière, il est garanti d'avoir accès à cette méthode dans toutes les sous-classes.
+**Bénéfices**
 
-### Les interfaces
+Le principal avantage d'une classe abstraite réside dans sa capacité à donner une forme commune à toutes ses sous-classes, et mettre à disposition des propriétés et méthodes communes réduisant la duplication du code et facilitant sa maintenance. Bien que l'abstraction d'une famille d'objets permette de forcer l'implémentation de propriétés ou de méthodes, cela ne remplace pas le rôle d'une interface, qui elle, permet de définir un contrat de capacités (voir ci-après).
 
-C'est l'abstraction d'une capacité/comportement.
+### Abstraction d'une capacité/comportement
+
+---
 
 Une interface masque les détails techniques (comment elle le fait) et n'expose que le nécessaire à son exploitation (ce qu'elle fait). Elles permettent d'établir un contrat entre deux parties en garantissant que les classes qui l'implémentent fournissent les méthodes et comportements qu'elle dicte (relation "peut-faire").
 
@@ -137,6 +252,8 @@ Une interface masque les détails techniques (comment elle le fait) et n'expose 
 Le cahier des charges du client de la fonderie. Il ne dit pas comment fabriquer la pièce dont il a besoin, mais il garantit que la pièce livrée respectera le contrat, peu importe l'atelier qui la produit.
 
 Le cahier des charges ne produit rien lui-même (pas d'implémentation), n'importe quel atelier (classe) peut s'engager sur plusieurs cahiers des charges à la fois (plusieurs interfaces), et le client final interagit avec la pièce sans se soucier de comment elle a été fabriquée.
+
+**En pratique**
 
 ```php
 <?php
@@ -170,68 +287,152 @@ class SignUpProcess {
 
 Dans cet exemple, l'interface `MessengerInterface` établit un contrat dictant l'implémentation d'une méthode `send` chargée d'envoyer un message. Les classes qui implémentent l'interface devront fournir la méthode `send` (le "quoi", ce qu'elle fait) mais la manière d'envoyer le message (le "comment" elle le fait) pourra être différente, tant que le comportement, ici envoyer un message, reste identique.
 
-Ainsi la classe `SignUpProcess`, qui bénéficie de l'injection de dépendance pour recevoir un objet de type `MessengerInterface`, recevra possiblement la classe `DiscordMessenger` ou `SignalMessenger`. Cela importe peu puisque `SignUpProcess` recevra l'une de nos deux classes interfacées par `MessengerInterface`, qui lui garantit l'accès à la méthode `send`.
+**Bénéfice**
 
-Grâce à l'interface, la classe `SignUpProcess` n'a pas à se soucier de l'implémentation de la méthode d'envoi du message, elle fait simplement appel à une méthode définie dans le contrat (l'interface).
+Ce mécanisme permet de garantir à lui seul, qu'un objet extérieur pourra interagir de manière standardisée avec n'importe quelle classe implémentant une interface. Ainsi si deux classes implémentent une même interface, une classe peut se substituer à l'autre sans que cela n'entraîne de régression, c'est l'un des fondements du principe de substitution de Liskov (principes SOLID).
 
-{/* ## L'Héritage : Structurer et spécialiser
-
----
-
-### Le concept : La transmission de patrimoine (Relation "Est un").
+### Abstraction de classe ou de capacité ?
 
 ---
 
-### Analogie : Le véhicule (base commune) décliné en voiture ou moto (spécificités).
+Pour conclure, faisons le point sur les différences d'usages des classes abstraites (abstraction de classe) et des interfaces (abstraction d'une capacité/comportement).
+
+Une classe abstraite définit une hiérarchie et partage du code commun entre ses sous-classes, mais elle impose une contrainte : une sous-classe ne peut en étendre qu'une seule. Une interface, elle, définit un contrat de capacités sans s'inscrire dans une hiérarchie, une classe peut en implémenter plusieurs simultanément.
+
+Utilisez une interface pour définir un contrat de méthodes publiques, utilisez une classe abstraite pour partager du code réutilisable entre classes liées.
+
+## Polymorphisme
 
 ---
 
-### En pratique : Réutilisation du code et factorisation.
+Le mot vient du grec ancien et signifie « plusieurs formes ». En informatique, c'est la capacité d'un code à se comporter différemment selon le type d'objet qu'il manipule, tout en utilisant une interface unique.
+
+Le polymorphisme a un lien très étroit avec l'abstraction, car c'est grâce à l'abstraction qu'un code peut manipuler un objet via un type commun (`PaymentSupplier`, `MessengerInterface`) sans connaître son implémentation concrète. Et c'est précisément ce qui rend le polymorphisme possible.
+
+Qu'il s'agisse d'une abstraction de classe ou de capacité, l'idée consiste à fournir une interface unique pour des comportements multiples ("plusieurs formes").
+
+**Analogie**
+
+Le bouton "play" universel, celui que l'on retrouve sur une vidéo YouTube, l'enceinte bluetooth ou un jeu vidéo. Une même commande, des comportements différents selon l'objet qui la reçoit. Une même interface, différents comportements.
+
+**En pratique**
+
+Je vais reprendre une partie des exemples présents dans les parties sur l'abstraction de classe et celle de capacité/comportement. Le polymorphisme y était déjà illustré.
+
+```php
+<?php
+class PaymentProcess {
+    public function __construct(private PaymentSupplier $paymentSupplier) {
+    }
+
+    public function exec(Payment $payment): void {
+        $this->paymentSupplier->sendPayment($payment);
+    }
+}
+```
+
+La classe `PaymentProcess`, qui bénéficie de l'injection de dépendance pour recevoir un objet de type `PaymentSupplier`, recevra possiblement la classe `StripePayment` ou `PaypalPayment`. Cela importe peu puisque `PaymentProcess` recevra l'une de nos deux classes typées comme étant de la classe `PaymentSupplier`, qui lui garantit l'accès à la méthode `sendPayment`.
+
+Grâce à l'abstraction par l'héritage, la classe `PaymentProcess` n'a pas à se soucier de l'implémentation de la méthode d'envoi du paiement, elle fait simplement appel à une méthode définie dans la classe parente `PaymentSupplier`. C'est ici que réside le polymorphisme : selon l'objet injecté (`StripePayment` ou `PaypalPayment`), le comportement de `exec` sera différent.
+
+```php
+<?php
+class SignUpProcess {
+    public function __construct(private MessengerInterface $messenger) {
+    }
+
+    public function sendConfirmation(User $user): void {
+        $message = new Message(MessageTypes::SIGNUP_CONFIRM, $user);
+        $this->messenger->send($message);
+    }
+}
+```
+
+La classe `SignUpProcess`, qui bénéficie de l'injection de dépendance pour recevoir un objet de type `MessengerInterface`, recevra possiblement la classe `DiscordMessenger` ou `SignalMessenger`. Cela importe peu puisque `SignUpProcess` recevra l'une de nos deux classes interfacées par `MessengerInterface`, qui lui garantit l'accès à la méthode `send`. Même logique : selon le messager injecté, le comportement de `sendConfirmation` sera différent.
+
+**Bénéfice**
+
+Premièrement cela évite les conditions multiples. Les blocs `if/else` sont remplacés par un appel unique, à une méthode dont le comportement sera différent selon l'objet fourni.
+
+Le polymorphisme permet une meilleure extensibilité du code. Ajouter un comportement ne nécessite pas de modifier le code existant, seulement d'ajouter une nouvelle classe. C'est le principe Open/Closed des principes SOLID.
+
+## Mots de la fin
 
 ---
 
-### Mise en garde : La hiérarchie vs la composition.
+### L'interdépendance
 
 ---
 
-## Le Polymorphisme : L'interopérabilité des objets
+Ces quatre piliers de la POO sont interdépendants et peuvent être mis en pratique simultanément, c'est même idéal.
 
----
+Je vais retravailler l'exemple des méthodes de paiements de la partie sur l'abstraction.
 
-### Le concept : Une interface unique pour des comportements multiples ("Plusieurs formes").
+```php
+<?php
+interface PaymentSupplierInterface {
+    public function sendPayment(Payment $payment): void;
+}
 
----
+abstract class PaymentSupplier implements PaymentSupplierInterface {
+    private int $transactionCost = 2;
+    private string $transactionCostCurrency = "USD";
 
-### Analogie : Le bouton "Play" universel (YouTube, CD, Podcast).
+    protected function getCurrencyExchangeRate(Currency $currency): float {
+        # ... retourne le taux de change de la devise du client
+    }
 
----
+    protected function getTransactionCost(): int {
+        return $this->transactionCost;
+    }
 
-### Les deux types majeurs :
+    protected function getTransactionCostCurrency(): string {
+        return $this->transactionCostCurrency;
+    }
 
----
+    abstract public function sendPayment(Payment $payment): void
+}
 
-### Bénéfice : Rendre le code flexible et évolutif.
+class PaypalPayment extends PaymentSupplier {
+    public function sendPayment(Payment $payment) {
+        $customerCurrency = $payment->getCustomerCurrency();
+        $exchangeRate = $this->getCurrencyExchangeRate($customerCurrency);
+        # ... éxecute le paiement avec Paypal
+    }
+}
 
----
+class StripePayment extends PaymentSupplier {
+    public function sendPayment(Payment $payment) {
+        $customerCurrency = $payment->getCustomerCurrency();
+        $exchangeRate = $this->getCurrencyExchangeRate($customerCurrency);
+        # ... éxecute le paiement avec Stripe
+    }
+}
 
-## Synthèse & Principes de Conception
+class PaymentProcess {
+    public function __construct(private PaymentSupplierInterface $paymentSupplierInterface) {
+    }
 
----
+    public function exec(Payment $payment): void {
+        $this->paymentSupplierInterface->sendPayment($payment);
+    }
+}
+```
 
-### L'interdépendance : Comment ces piliers travaillent ensemble au quotidien.
+**L'encapsulation**
 
----
+Les propriétés `transactionCost` et `transactionCostCurrency` sont restreintes à la classe `PaymentSupplier` par le niveau de visibilité `private`. Les sous-classes pourront accéder à ces informations en lecture uniquement par l'intermédiaire des accesseurs `getTransactionCost` et `getTransactionCostCurrency`, eux-mêmes limités à la hiérarchie de classes et inaccessibles depuis l'extérieur.
 
-### Vers SOLID : Lien entre Polymorphisme et OCP (Open/Closed Principle).
+**L'héritage**
 
----
+Les propriétés `transactionCost` et `transactionCostCurrency`, leurs accesseurs ou encore la méthode `getCurrencyExchangeRate` sont déclarés dans la classe `PaymentSupplier`. Les classes `PaypalPayment` et `StripePayment` bénéficient du code déclaré dans la classe `PaymentSupplier` qu'elles étendent (sauf niveau de visibilité restreint).
 
-## Conclusion
+**L'abstraction**
 
----
+Contrairement à la version du code présentée dans la partie abstraction, ici la classe `PaymentSupplier`, qui bénéficiait d'une abstraction de classe, implémente dorénavant l'interface `PaymentSupplierInterface` pour profiter d'une abstraction de capacité/comportement.
 
-### Checklist d'auto-évaluation de votre code.
+Le bénéfice concret est que `PaymentProcess` est désormais typé sur l'interface plutôt que sur la classe abstraite, il devient totalement agnostique de la hiérarchie de classes. N'importe quelle classe implémentant `PaymentSupplierInterface` peut être injectée dans `PaymentProcess`, qu'elle étende ou non `PaymentSupplier`.
 
----
+**Le polymorphisme**
 
-### Ouverture vers les Design Patterns. */}
+C'est dans la classe `PaymentProcess` que l'on retrouve une illustration du polymorphisme. Cette classe recevra un objet implémentant l'interface `PaymentSupplierInterface` grâce à l'injection de dépendance. Peu importe qu'il s'agisse d'un fournisseur de paiement ou d'un autre, l'interface est unique mais le comportement de la méthode de paiement peut être différent.
