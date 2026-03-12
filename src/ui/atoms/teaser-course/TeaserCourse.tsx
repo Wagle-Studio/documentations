@@ -17,7 +17,7 @@ export const TeaserCourse = ({ course }: TeaserCourseProps) => {
   const lessons = findLessonsResult.data;
 
   return (
-    <Link href={`/documentation/${course.slug}`} className="teaser_course">
+    <Link href={`/documentations/${course.slug}`} className="teaser_course">
       <>
         <div className="teaser_course__header">
           <Image src={course.emoji} alt={course.label} width={32} height={32} />

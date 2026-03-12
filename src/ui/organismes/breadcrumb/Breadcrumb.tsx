@@ -27,13 +27,13 @@ const availableConfs: Confs = {
   course: {
     registerFn: (courseSlug: string): CoreResult<Course, undefined> =>
       RegisterManager.findCourseBySlug(courseSlug),
-    buildUrl: (courseSlug: string) => `/documentation/${courseSlug}`,
+    buildUrl: (courseSlug: string) => `/documentations/${courseSlug}`,
   },
   lesson: {
     registerFn: (lessonSlug: string) =>
       RegisterManager.findLessonBySlug(lessonSlug),
     buildUrl: (courseSlug: string, lessonSlug: string) =>
-      `/documentation/${courseSlug}/${lessonSlug}`,
+      `/documentations/${courseSlug}/${lessonSlug}`,
   },
 };
 

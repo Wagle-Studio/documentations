@@ -35,7 +35,7 @@ export const SidebarLesson = ({ courseSlug }: SidebarLessonProps) => {
         <li>
           <MenuLink
             label={course.label}
-            href={`/documentation/${course.slug}`}
+            href={`/documentations/${course.slug}`}
             emoji={course.emoji}
             selected={params.course === course.slug}
             highlight
@@ -47,7 +47,7 @@ export const SidebarLesson = ({ courseSlug }: SidebarLessonProps) => {
           >
             <MenuLink
               label={lesson.label}
-              href={`/documentation/${course.slug}/${lesson.slug}#top`}
+              href={`/documentations/${course.slug}/${lesson.slug}#top`}
               selected={params.lesson === lesson.slug}
             />
             {params.lesson === lesson.slug && summaryItems && (

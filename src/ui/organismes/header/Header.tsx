@@ -90,7 +90,7 @@ export const Header = () => {
                     <MenuLink
                       label={course.label}
                       emoji={course.emoji}
-                      href={`/documentation/${course.slug}`}
+                      href={`/documentations/${course.slug}`}
                       selected={params.course === course.slug}
                     />
                   </li>

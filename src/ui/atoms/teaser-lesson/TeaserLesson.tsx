@@ -10,7 +10,7 @@ interface TeaserLessonProps {
 export const TeaserLesson = ({ course, lesson }: TeaserLessonProps) => {
   return (
     <Link
-      href={`/documentation/${course.slug}/${lesson.slug}`}
+      href={`/documentations/${course.slug}/${lesson.slug}`}
       className="teaser_lesson"
     >
       <div className="teaser_lesson__header">
