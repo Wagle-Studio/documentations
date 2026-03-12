@@ -48,7 +48,7 @@ Pour accéder aux membres statiques d'une classe, utilisez plutôt l'opérateur 
 
 ---
 
-Pour créer une instance d'une classe, on utilise le mot‑clé `new`. Un objet est alors créé et, si défini, le constructeur de la classe est exécuté.
+Pour créer une instance d'une classe, on utilise le mot‑clé `new`. Un objet est alors créé et, si défini, le [constructeur](/documentations/php_poo/constructeur_descructeur) de la classe est exécuté.
 
 L'utilisation de `new` avec une expression (par exemple une variable contenant le nom d'une classe) est supportée. Cela permet différentes approches pour l'instanciation, notamment l'instanciation dynamique.
 
@@ -103,7 +103,7 @@ $instance->demo();       // Affiche : Goodbye world
 
 ---
 
-Une propriété est définie en utilisant au moins un modificateur d'accès. Les modificateurs disponibles sont :
+Une propriété est définie en utilisant au moins un [modificateur d'accès](/documentations/php_poo/visibilite). Les modificateurs disponibles sont :
 
 - `public` : accessible de partout
 
@@ -195,7 +195,7 @@ class Calculator {
 
 Dans une classe il est possible de définir des constantes qui restent identiques et non modifiables. La visibilité par défaut de constantes de classe est public.
 
-Il est aussi possible pour les interfaces d'avoir des constantes.
+Il est aussi possible pour les [interfaces](/documentations/php_poo/interfaces) d'avoir des constantes.
 
 À partir de PHP 8.3, les constantes de classe peuvent avoir un type scalaire tel que bool, int, float, string, ou même array. Lorsqu’on utilise array, son contenu ne peut contenir que d'autres types scalaires.
 

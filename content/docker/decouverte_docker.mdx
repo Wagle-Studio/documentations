@@ -28,7 +28,7 @@ Pour bien comprendre Docker, il est essentiel de maîtriser quelques concepts cl
 
 ---
 
-Le Dockerfile est un script qui contient les instructions pour construire une image Docker personnalisée. Il définit l'environnement nécessaire pour exécuter une application, en incluant les dépendances et la configuration.
+Le [Dockerfile](/documentations/docker/docker_file) est un script qui contient les instructions pour construire une image Docker personnalisée. Il définit l'environnement nécessaire pour exécuter une application, en incluant les dépendances et la configuration.
 
 ### Image
 
@@ -46,7 +46,7 @@ Un conteneur est une instance en cours d'exécution d'une image. Il fournit un e
 
 ---
 
-Les volumes permettent de persister et partager des données entre le système hôte et les conteneurs, ou entre différents conteneurs. Ils sont essentiels pour gérer les données qui doivent survivre au cycle de vie d'un conteneur.
+Les [volumes](/documentations/docker/volumes) permettent de persister et partager des données entre le système hôte et les conteneurs, ou entre différents conteneurs. Ils sont essentiels pour gérer les données qui doivent survivre au cycle de vie d'un conteneur.
 
 ### Types d'images
 
@@ -76,7 +76,7 @@ Le processus de création et d'exécution d'une application conteneurisée se d�
 
 ---
 
-Docker Compose simplifie la gestion d'applications multi-conteneurs en permettant de définir l'ensemble de l'infrastructure dans un unique fichier YAML nommé `docker-compose.yml`. Ce fichier décrit tous les services, leurs dépendances et leurs configurations.
+[Docker Compose](/documentations/docker/docker_compose) simplifie la gestion d'applications multi-conteneurs en permettant de définir l'ensemble de l'infrastructure dans un unique fichier YAML nommé `docker-compose.yml`. Ce fichier décrit tous les services, leurs dépendances et leurs configurations.
 
 La gestion centralisée offerte par Docker Compose facilite considérablement le déploiement et la maintenance d'applications. Une seule commande suffit pour démarrer ou arrêter tous les conteneurs.
 

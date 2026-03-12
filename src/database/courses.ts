@@ -21,15 +21,15 @@ const courses: Course[] = [
   },
   {
     id: 4,
-    label: "PHP POO",
-    slug: "php_poo",
-    emoji: "/emoji/elephant.png",
+    label: "Concepts POO",
+    slug: "poo_concepts",
+    emoji: "/emoji/book.png",
   },
   {
     id: 5,
-    label: "POO",
-    slug: "poo_concepts",
-    emoji: "/emoji/book.png",
+    label: "PHP POO",
+    slug: "php_poo",
+    emoji: "/emoji/elephant.png",
   },
 ];
 
