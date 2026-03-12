@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -14,7 +15,7 @@ export const RenderMdx = ({ content }: RenderMdxProps) => {
     <MDXRemote
       source={content}
       options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
-      components={{ h2: TagHeading2, img: TagImage, code: TagCode }}
+      components={{ h2: TagHeading2, img: TagImage, code: TagCode, a: TagAnchor }}
     />
   );
 };
@@ -47,6 +48,25 @@ interface TagHeading2Props {
 
 export const TagHeading2 = ({ children }: TagHeading2Props) => {
   return <h2 id={Slugifier.slugify(children as string)}>{children}</h2>;
+};
+
+interface TagAnchorProps {
+  href?: string;
+  children: React.ReactNode;
+}
+
+export const TagAnchor = ({ href = "", children }: TagAnchorProps) => {
+  const isInternal = href.startsWith("/");
+
+  if (isInternal) {
+    return <Link href={href}>{children}</Link>;
+  }
+
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  );
 };
 
 interface TagImageProps {
