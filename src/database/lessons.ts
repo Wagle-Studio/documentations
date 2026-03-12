@@ -1,10 +1,4 @@
-import {
-  Course,
-  Lesson,
-  LessonReference,
-  Reference,
-  Register,
-} from "./core/types";
+import { Lesson } from "@/core/types";
 
 const lessons: Lesson[] = [
   {
@@ -27,7 +21,7 @@ const lessons: Lesson[] = [
     slug: "installer_apache",
     course_id: 1,
     description:
-      "Procédure d’installation et de vérification d’Apache sur Ubuntu.",
+      "Procédure d'installation et de vérification d'Apache sur Ubuntu.",
     created: "2 novembre 2025",
     updated: "10 novembre 2025",
   },
@@ -51,7 +45,7 @@ const lessons: Lesson[] = [
     slug: "htpasswd",
     course_id: 1,
     description:
-      "Mise en place d’une authentification basique avec un fichier .htpasswd.",
+      "Mise en place d'une authentification basique avec un fichier .htpasswd.",
     created: "2 novembre 2025",
     updated: "10 novembre 2025",
   },
@@ -86,7 +80,7 @@ const lessons: Lesson[] = [
     slug: "installer_docker",
     course_id: 2,
     description:
-      "Procédure d’installation et de vérification de Docker sur Ubuntu.",
+      "Procédure d'installation et de vérification de Docker sur Ubuntu.",
     created: "5 novembre 2025",
     updated: "10 novembre 2025",
   },
@@ -119,7 +113,7 @@ const lessons: Lesson[] = [
     label: "Dockerfile",
     slug: "docker_file",
     course_id: 2,
-    description: "Création d’un Dockerfile pas à pas.",
+    description: "Création d'un Dockerfile pas à pas.",
     created: "2 novembre 2025",
     updated: "10 novembre 2025",
   },
@@ -223,7 +217,7 @@ const lessons: Lesson[] = [
     label: "Héritage",
     slug: "heritage",
     course_id: 4,
-    description: "Principes de l’héritage en PHP.",
+    description: "Principes de l'héritage en PHP.",
     created: "9 novembre 2025",
     updated: "9 novembre 2025",
   },
@@ -252,7 +246,7 @@ const lessons: Lesson[] = [
   {
     id: 22,
     index: 6,
-    paths: ["poo", "quatre_piliers_poo.mdx"],
+    paths: ["poo_concepts", "quatre_piliers_poo.mdx"],
     label: "Les quatre pilier de la POO",
     slug: "quatre_pilier_poo",
     course_id: 5,
@@ -260,209 +254,17 @@ const lessons: Lesson[] = [
     created: "01 mars 2026",
     updated: "01 mars 2026",
   },
-];
-
-const courses: Course[] = [
-  {
-    id: 1,
-    label: "Apache",
-    slug: "apache",
-    emoji: "/emoji/feather.png",
-  },
-  {
-    id: 2,
-    label: "Docker",
-    slug: "docker",
-    emoji: "/emoji/whale.png",
-  },
-  {
-    id: 3,
-    label: "Git",
-    slug: "git",
-    emoji: "/emoji/octopus.png",
-  },
-  {
-    id: 4,
-    label: "PHP POO",
-    slug: "php_poo",
-    emoji: "/emoji/elephant.png",
-  },
-  {
-    id: 5,
-    label: "POO",
-    slug: "poo",
-    emoji: "/emoji/book.png",
-  },
-];
-
-const references: Reference[] = [
-  {
-    id: 1,
-    label: "PHP - Syntaxe de base",
-    url: "https://www.php.net/manual/fr/language.oop5.basic.php",
-  },
-  {
-    id: 2,
-    label: "PHP - Mots réservés",
-    url: "https://www.php.net/manual/fr/reserved.php",
-  },
-  {
-    id: 3,
-    label: "PHP - Propriétés",
-    url: "https://www.php.net/manual/fr/language.oop5.properties.php",
-  },
-  {
-    id: 4,
-    label: "PHP - Constantes",
-    url: "https://www.php.net/manual/fr/language.oop5.constants.php",
-  },
-  {
-    id: 5,
-    label: "PHP - Auto-chargement de classes",
-    url: "https://www.php.net/manual/fr/language.oop5.autoload.php",
-  },
-  {
-    id: 6,
-    label: "PHP - Constructeurs et destructeurs",
-    url: "https://www.php.net/manual/fr/language.oop5.decon.php",
-  },
-  {
-    id: 7,
-    label: "PHP - Visibilité",
-    url: "https://www.php.net/manual/fr/language.oop5.visibility.php",
-  },
-  {
-    id: 8,
-    label: "PHP - Héritage",
-    url: "https://www.php.net/manual/fr/language.oop5.inheritance.php",
-  },
-  {
-    id: 9,
-    label: "PHP - Statique",
-    url: "https://www.php.net/manual/fr/language.oop5.static.php",
-  },
-  {
-    id: 10,
-    label: "PHP - Abstraction de classes",
-    url: "https://www.php.net/manual/fr/language.oop5.abstract.php",
-  },
-  {
-    id: 11,
-    label: "PHP - Interfaces",
-    url: "https://www.php.net/manual/fr/language.oop5.interfaces.php",
-  },
-  {
-    id: 12,
-    label: "PHP - Traits",
-    url: "https://www.php.net/manual/fr/language.oop5.traits.php",
-  },
-  {
-    id: 13,
-    label: "Git - Documentation officielle",
-    url: "https://git-scm.com/docs",
-  },
-  {
-    id: 14,
-    label: "Git - Installer Git",
-    url: "https://git-scm.com/install",
-  },
-  {
-    id: 15,
-    label: "Git - Démarrer avec Git",
-    url: "https://git-scm.com/book/en/v2/Getting-Started-About-Version-Control",
-  },
-  {
-    id: 16,
-    label: "Git - Démarrer avec un répertoire Git",
-    url: "https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository",
-  },
-  {
-    id: 17,
-    label: "Docker - Les volumes",
-    url: "https://docs.docker.com/engine/storage/volumes/",
-  },
-  {
-    id: 18,
-    label: "Docker - Les images",
-    url: "https://docs.docker.com/engine/reference/commandline/pull/",
-  },
-  {
-    id: 19,
-    label: "Docker - Documentation officielle",
-    url: "https://docs.docker.com",
-  },
-  {
-    id: 20,
-    label: "Microsoft - Installer WSL",
-    url: "https://learn.microsoft.com/fr-fr/windows/wsl/install",
-  },
-  {
-    id: 21,
-    label: "Docker - Dockerfile",
-    url: "https://docs.docker.com/reference/dockerfile/",
-  },
-  {
-    id: 22,
-    label: "Docker - Docker Hub",
-    url: "https://hub.docker.com/",
-  },
   {
     id: 23,
-    label: "Docker - Docker Compose",
-    url: "https://docs.docker.com/compose/",
-  },
-  {
-    id: 24,
-    label: "Apache - Virtual Hosts",
-    url: "https://httpd.apache.org/docs/2.2/fr/vhosts/examples.html",
-  },
-  {
-    id: 25,
-    label: "Ubuntu - Installer et configurer Apache",
-    url: "https://doc.ubuntu-fr.org/apache2",
-  },
-  {
-    id: 26,
-    label: "Apache - htpasswd",
-    url: "https://httpd.apache.org/docs/2.4/fr/programs/htpasswd.html",
+    index: 7,
+    paths: ["poo_concepts", "principes_solid.mdx"],
+    label: "Les principes SOLID",
+    slug: "principes_solid",
+    course_id: 5,
+    description: "Les principes de conceptions SOLID illustrés.",
+    created: "01 mars 2026",
+    updated: "01 mars 2026",
   },
 ];
 
-const lesson_references: LessonReference[] = [
-  { lesson_id: 15, reference_id: 1 },
-  { lesson_id: 15, reference_id: 2 },
-  { lesson_id: 15, reference_id: 3 },
-  { lesson_id: 15, reference_id: 4 },
-  { lesson_id: 16, reference_id: 5 },
-  { lesson_id: 17, reference_id: 6 },
-  { lesson_id: 18, reference_id: 7 },
-  { lesson_id: 19, reference_id: 8 },
-  { lesson_id: 15, reference_id: 9 },
-  { lesson_id: 19, reference_id: 10 },
-  { lesson_id: 20, reference_id: 11 },
-  { lesson_id: 21, reference_id: 12 },
-  { lesson_id: 15, reference_id: 7 },
-  { lesson_id: 12, reference_id: 13 },
-  { lesson_id: 13, reference_id: 14 },
-  { lesson_id: 14, reference_id: 15 },
-  { lesson_id: 13, reference_id: 15 },
-  { lesson_id: 13, reference_id: 16 },
-  { lesson_id: 14, reference_id: 16 },
-  { lesson_id: 9, reference_id: 17 },
-  { lesson_id: 8, reference_id: 18 },
-  { lesson_id: 5, reference_id: 19 },
-  { lesson_id: 6, reference_id: 19 },
-  { lesson_id: 7, reference_id: 19 },
-  { lesson_id: 7, reference_id: 20 },
-  { lesson_id: 10, reference_id: 21 },
-  { lesson_id: 10, reference_id: 22 },
-  { lesson_id: 11, reference_id: 22 },
-  { lesson_id: 11, reference_id: 23 },
-  { lesson_id: 3, reference_id: 24 },
-  { lesson_id: 2, reference_id: 25 },
-  { lesson_id: 4, reference_id: 26 },
-];
-
-const register: Register = { courses, lessons, references, lesson_references };
-
-export default register;
+export default lessons;

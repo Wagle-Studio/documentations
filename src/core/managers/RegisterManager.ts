@@ -6,7 +6,7 @@ import {
   Reference,
   Register,
 } from "@/core/types";
-import register from "@/register";
+import register from "@/database";
 
 export default class RegisterManager {
   private static readonly register: Register = register;

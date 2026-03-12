@@ -1,0 +1,38 @@
+import { LessonReference } from "@/core/types";
+
+const lesson_references: LessonReference[] = [
+  { lesson_id: 15, reference_id: 1 },
+  { lesson_id: 15, reference_id: 2 },
+  { lesson_id: 15, reference_id: 3 },
+  { lesson_id: 15, reference_id: 4 },
+  { lesson_id: 16, reference_id: 5 },
+  { lesson_id: 17, reference_id: 6 },
+  { lesson_id: 18, reference_id: 7 },
+  { lesson_id: 19, reference_id: 8 },
+  { lesson_id: 15, reference_id: 9 },
+  { lesson_id: 19, reference_id: 10 },
+  { lesson_id: 20, reference_id: 11 },
+  { lesson_id: 21, reference_id: 12 },
+  { lesson_id: 15, reference_id: 7 },
+  { lesson_id: 12, reference_id: 13 },
+  { lesson_id: 13, reference_id: 14 },
+  { lesson_id: 14, reference_id: 15 },
+  { lesson_id: 13, reference_id: 15 },
+  { lesson_id: 13, reference_id: 16 },
+  { lesson_id: 14, reference_id: 16 },
+  { lesson_id: 9, reference_id: 17 },
+  { lesson_id: 8, reference_id: 18 },
+  { lesson_id: 5, reference_id: 19 },
+  { lesson_id: 6, reference_id: 19 },
+  { lesson_id: 7, reference_id: 19 },
+  { lesson_id: 7, reference_id: 20 },
+  { lesson_id: 10, reference_id: 21 },
+  { lesson_id: 10, reference_id: 22 },
+  { lesson_id: 11, reference_id: 22 },
+  { lesson_id: 11, reference_id: 23 },
+  { lesson_id: 3, reference_id: 24 },
+  { lesson_id: 2, reference_id: 25 },
+  { lesson_id: 4, reference_id: 26 },
+];
+
+export default lesson_references;
