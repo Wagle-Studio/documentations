@@ -1,0 +1,27 @@
+.tag-code {
+  position: relative;
+
+  &:hover .tag-code__copy {
+    opacity: 1;
+  }
+}
+
+.tag-code__copy {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  z-index: 1;
+  opacity: 0;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-small);
+  font-size: var(--font-size-small);
+  padding: 2px var(--space-2);
+  cursor: pointer;
+  color: var(--foreground);
+  transition: opacity 0.25s ease, color 0.25s ease;
+
+  &--copied {
+    color: var(--primary);
+  }
+}
