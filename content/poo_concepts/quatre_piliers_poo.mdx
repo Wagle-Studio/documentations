@@ -16,7 +16,7 @@ Les classes et les objets sont les briques de votre application. Mais pour const
 
 ---
 
-Le concept d'encapsulation peut être illustré par l'image d'une "boîte noire" : cela consiste à restreindre l'accès aux données d'une classe en définissant leur [visibilité](/documentations/php_poo/visibilite) (public, protected, private) et en ne laissant accessible que les méthodes nécessaire à son utilisation.
+Le concept d'encapsulation peut être illustré par l'image d'une "boîte noire" : cela consiste à restreindre l'accès aux données d'une classe en définissant leur [visibilité](/documentations/php_poo/visibilite) (public, protected, private) et en ne laissant accessible que les méthodes nécessaires à son utilisation.
 
 Plus important encore, cela permet de maîtriser l'état interne d'une classe grâce à l'utilisation d'accesseurs (getters) et de mutateurs (setters).
 
@@ -202,14 +202,14 @@ abstract class PaymentSupplier {
         # ... retourne le taux de change de la devise du client
     }
 
-    abstract public function sendPayment(Payment $payment): void
+    abstract public function sendPayment(Payment $payment): void;
 }
 
 class PaypalPayment extends PaymentSupplier {
     public function sendPayment(Payment $payment) {
         $customerCurrency = $payment->getCustomerCurrency();
         $exchangeRate = $this->getCurrencyExchangeRate($customerCurrency);
-        # ... éxecute le paiement avec Paypal
+        # ... exécute le paiement avec Paypal
     }
 }
 
@@ -217,7 +217,7 @@ class StripePayment extends PaymentSupplier {
     public function sendPayment(Payment $payment) {
         $customerCurrency = $payment->getCustomerCurrency();
         $exchangeRate = $this->getCurrencyExchangeRate($customerCurrency);
-        # ... éxecute le paiement avec Stripe
+        # ... exécute le paiement avec Stripe
     }
 }
 
@@ -390,14 +390,14 @@ abstract class PaymentSupplier implements PaymentSupplierInterface {
         return $this->transactionCostCurrency;
     }
 
-    abstract public function sendPayment(Payment $payment): void
+    abstract public function sendPayment(Payment $payment): void;
 }
 
 class PaypalPayment extends PaymentSupplier {
     public function sendPayment(Payment $payment) {
         $customerCurrency = $payment->getCustomerCurrency();
         $exchangeRate = $this->getCurrencyExchangeRate($customerCurrency);
-        # ... éxecute le paiement avec Paypal
+        # ... exécute le paiement avec Paypal
     }
 }
 
@@ -405,7 +405,7 @@ class StripePayment extends PaymentSupplier {
     public function sendPayment(Payment $payment) {
         $customerCurrency = $payment->getCustomerCurrency();
         $exchangeRate = $this->getCurrencyExchangeRate($customerCurrency);
-        # ... éxecute le paiement avec Stripe
+        # ... exécute le paiement avec Stripe
     }
 }
 

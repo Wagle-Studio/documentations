@@ -4,7 +4,7 @@
 
 Une application repose souvent sur plusieurs services : backend PHP, frontend JS, base de données SQL, serveur SMTP pour les emails, etc. Chaque service nécessite un container propre et cela peut devenir fastidieux.
 
-Docker-compose est un outil permettant de définir et gérer plusieurs conteneurs à partir d’un fichier unique : `docker-compose.yml`. Plutôt que de lancer manuellement chaque service, tout est automatisé et orchestré vie un unique fichier.
+Docker-compose est un outil permettant de définir et gérer plusieurs conteneurs à partir d’un fichier unique : `docker-compose.yml`. Plutôt que de lancer manuellement chaque service, tout est automatisé et orchestré via un unique fichier.
 
 Ce fichier organisera les configurations des différentes images nécessaires au bon fonctionnement de l’environnement.
 
@@ -82,7 +82,8 @@ services:
       PMA_HOST: db
       PMA_USER: admin
       PMA_PASSWORD: root
-    ports: - 8080:80
+    ports:
+      - 8080:80
 ```
 
 Avec cette configuration, un conteneur `phpmyadmin` sera créé à partir de l’image officielle de PHPMyAdmin.
@@ -150,24 +151,26 @@ Elle repose sur une image personnalisée construite à partir d’un Dockerfile 
 version: '3.8'
 
 services:
-db:
-image: mysql
-...
+  db:
+    image: mysql
+    ...
 
-phpmyadmin:
-image: phpmyadmin/phpmyadmin
-...
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ...
 
-next:
-build:
-context: nextjs
-...
+  next:
+    build:
+      context: nextjs
+    ...
 
-php:
-build:
-context: php # dossier de votre application backend PHP
-volumes: - ./php:/app # dossier local monté dans le conteneur
-ports: - 8000:8000
+  php:
+    build:
+      context: php # dossier de votre application backend PHP
+    volumes:
+      - ./php:/app # dossier local monté dans le conteneur
+    ports:
+      - 8000:8000
 ```
 
 Comme pour le frontend, le paramètre `build` indique à Docker le chemin vers le dossier contenant le Dockerfile utilisé pour créer l’image du backend.

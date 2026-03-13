@@ -203,7 +203,7 @@ Il est aussi possible pour les [interfaces](/documentations/php_poo/interfaces) 
 <?php
 
 class MyClass {
-    const CONSTANT = "valeur constante"
+    const CONSTANT = "valeur constante";
 
     public function showConstant() {
         echo self::CONSTANT;
@@ -229,7 +229,7 @@ Une classe statique ne peut pas être instanciée et toutes ses propriétés et 
 
 Il est aussi possible de ne déclarer qu'une seule méthode ou propriété comme statique dans une classe non statique.
 
-Le fait de déclaraer une classe, une propriété ou une méthode comme statique permet de regrouper des fonctionnalités utilitaires ou des constantes sans avoir besoin de créer une instance de la classe.
+Le fait de déclarer une classe, une propriété ou une méthode comme statique permet de regrouper des fonctionnalités utilitaires ou des constantes sans avoir besoin de créer une instance de la classe.
 
 Attention, comme les méthodes statiques peuvent être appelées sans instance, elles n'ont pas accès à la pseudo-variable `$this`.
 

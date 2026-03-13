@@ -227,7 +227,7 @@ class User {
 }
 ```
 
-## Open/Close
+## Open/Closed
 
 ---
 
@@ -235,7 +235,7 @@ class User {
 
 Ce principe suggère qu'une classe doit être ouverte à l'extension (l'ajout de fonctionnalité) mais fermée à la modification. L'implémentation d'une fonctionnalité ne doit pas entraîner de modification dans le code existant.
 
-Ce principe est très lié aux [deux piliers de la POO](/documentations/poo_concepts/quatre_pilier_poo) que sont l'abstraction et le polymorphisme. L'abstraction permet l'exploitation de différentes classes par l'intermédiaire d'une interface unique tandis que le polymorphisme permet au code d'adopter différement comportement selon la classe exploitée.
+Ce principe est très lié aux [deux piliers de la POO](/documentations/poo_concepts/quatre_piliers_poo) que sont l'abstraction et le polymorphisme. L'abstraction permet l'exploitation de différentes classes par l'intermédiaire d'une interface unique tandis que le polymorphisme permet au code d'adopter un comportement différent selon la classe exploitée.
 
 ### Avant principe
 
@@ -542,7 +542,7 @@ L'injection de dépendance est le mécanisme qui permet d'appliquer ce principe 
 
 Sans l'injection de dépendance il n'est pas possible de dépendre d'une abstraction (interface) car celles-ci ne sont pas instanciables. Les [interfaces](/documentations/php_poo/interfaces) ne sont pas des classes, elles permettent de normaliser les interactions avec les objets qui les implémentent.
 
-Le principe d'inversion des dépendances est transversal à plusieurs principes SOLID, c'est le cas pour [Open/Close](#open_close) et [Liskov Substitution](#liskov_substitution). Ce principe formalise justement la pratique de dépendance aux abstractions.
+Le principe d'inversion des dépendances est transversal à plusieurs principes SOLID, c'est le cas pour [Open/Closed](#open_closed) et [Liskov Substitution](#liskov_substitution). Ce principe formalise justement la pratique de dépendance aux abstractions.
 
 Pour illustrer ce principe j'utiliserai le même code que celui de la partie Open/Close.
 
