@@ -2,30 +2,17 @@
 
 import "./sidebarLesson.scss";
 import { useParams } from "next/navigation";
+import { Course, Lesson } from "@/core/types";
 import { MenuLink } from "@/ui";
 import { useSummaryParser } from "@/core/hooks";
-import RegisterManager from "@/core/managers/RegisterManager";
 
 interface SidebarLessonProps {
-  courseSlug: string;
+  course: Course;
+  lessons: Lesson[];
 }
 
-export const SidebarLesson = ({ courseSlug }: SidebarLessonProps) => {
+export const SidebarLesson = ({ course, lessons }: SidebarLessonProps) => {
   const params = useParams();
-
-  const findCourseResult = RegisterManager.findCourseBySlug(courseSlug);
-
-  // TODO : handle error case
-  if (!findCourseResult.success) throw new Error(findCourseResult.message);
-
-  const course = findCourseResult.data;
-
-  const findLessonsResult = RegisterManager.findLessonsByCourseId(course.id);
-
-  // TODO : handle error case
-  if (!findLessonsResult.success) throw new Error(findLessonsResult.message);
-
-  const lessons = findLessonsResult.data;
 
   const { summaryItems } = useSummaryParser(params.lesson);
 

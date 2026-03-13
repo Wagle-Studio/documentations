@@ -3,6 +3,7 @@ import path from "path";
 import matter from "gray-matter";
 import { CoreResult, Lesson, Reference } from "@/core/types";
 import RegisterManager from "./RegisterManager";
+import { notFound } from "next/navigation";
 
 interface GetContentResult {
   lesson: Lesson;
@@ -19,8 +20,7 @@ export default class FileManager {
   static getContent = (slug: string): CoreResult<GetContentResult, null> => {
     const findLessonResult = RegisterManager.findLessonBySlug(slug);
 
-    // TODO : handle error case
-    if (!findLessonResult.success) throw new Error(findLessonResult.message);
+    if (!findLessonResult.success) notFound();
 
     const findReferencesResult = RegisterManager.findReferencesByLessonId(
       findLessonResult.data.id

@@ -1,21 +1,14 @@
 import "./contentCourse.scss";
 import Image from "next/image";
-import { Course } from "@/core/types";
+import { Course, Lesson } from "@/core/types";
 import { ListLessons } from "@/ui/molecules";
-import RegisterManager from "@/core/managers/RegisterManager";
 
 interface ContentCourseProps {
   course: Course;
+  lessons: Lesson[];
 }
 
-export const ContentCourse = ({ course }: ContentCourseProps) => {
-  const findLessonsResult = RegisterManager.findLessonsByCourseId(course.id);
-
-  // TODO : handle error case
-  if (!findLessonsResult.success) throw new Error(findLessonsResult.message);
-
-  const lessons = findLessonsResult.data;
-
+export const ContentCourse = ({ course, lessons }: ContentCourseProps) => {
   return (
     <div className="content_course">
       <div className="content_course__header">

@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+import RegisterManager from "@/core/managers/RegisterManager";
 import { TemplateCourse } from "@/ui";
 
 interface FolderLayoutProps {
@@ -13,5 +15,13 @@ export default async function CourseLayout({
 }: Readonly<FolderLayoutProps>) {
   const { course } = await params;
 
-  return <TemplateCourse courseSlug={course}>{children}</TemplateCourse>;
+  const findCourseResult = RegisterManager.findCourseBySlug(course);
+
+  if (!findCourseResult.success) notFound();
+
+  const findLessonsResult = RegisterManager.findLessonsByCourseId(findCourseResult.data.id);
+
+  if (!findLessonsResult.success) throw new Error(findLessonsResult.message);
+
+  return <TemplateCourse course={findCourseResult.data} lessons={findLessonsResult.data}>{children}</TemplateCourse>;
 }

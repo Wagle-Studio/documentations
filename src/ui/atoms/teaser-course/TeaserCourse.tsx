@@ -11,7 +11,6 @@ interface TeaserCourseProps {
 export const TeaserCourse = ({ course }: TeaserCourseProps) => {
   const findLessonsResult = RegisterManager.findLessonsByCourseId(course.id);
 
-  // TODO : handle error case
   if (!findLessonsResult.success) throw new Error(findLessonsResult.message);
 
   const lessons = findLessonsResult.data;

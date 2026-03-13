@@ -1,3 +1,4 @@
+import { cache } from "react";
 import {
   CoreResult,
   CoreResultSuccess,
@@ -43,7 +44,7 @@ export default class RegisterManager {
     }
   };
 
-  static findCourseBySlug = (slug: string): CoreResult<Course, undefined> => {
+  static findCourseBySlug = cache((slug: string): CoreResult<Course, undefined> => {
     const course = this.register.courses.find((course) => course.slug === slug);
 
     if (!course) {
@@ -57,7 +58,7 @@ export default class RegisterManager {
         data: course,
       };
     }
-  };
+  });
 
   static findLessonBySlug = (slug: string): CoreResult<Lesson, undefined> => {
     const lesson = this.register.lessons.find((lesson) => lesson.slug === slug);
@@ -75,7 +76,7 @@ export default class RegisterManager {
     }
   };
 
-  static findLessonsByCourseId = (
+  static findLessonsByCourseId = cache((
     courseId: number
   ): CoreResult<Lesson[], undefined> => {
     const lessons = this.register.lessons
@@ -93,7 +94,7 @@ export default class RegisterManager {
         data: lessons,
       };
     }
-  };
+  });
 
   static findReferencesByLessonId = (
     lessonId: number

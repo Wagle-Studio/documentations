@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { Course } from "@/core/types";
 import RegisterManager from "@/core/managers/RegisterManager";
 import { ContentCourse } from "@/ui";
@@ -17,14 +18,13 @@ interface CourseParams {
 export default async function CoursePage({ params }: CourseParams) {
   const { course } = await params;
 
-  // TODO : handle error case
   const findCourseResult = RegisterManager.findCourseBySlug(course);
 
-  return (
-    <>
-      {findCourseResult.success && (
-        <ContentCourse course={findCourseResult.data} />
-      )}
-    </>
-  );
+  if (!findCourseResult.success) notFound();
+
+  const findLessonsResult = RegisterManager.findLessonsByCourseId(findCourseResult.data.id);
+
+  if (!findLessonsResult.success) throw new Error(findLessonsResult.message);
+
+  return <ContentCourse course={findCourseResult.data} lessons={findLessonsResult.data} />;
 }
