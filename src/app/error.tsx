@@ -3,10 +3,11 @@
 import Link from "next/link";
 
 interface ErrorProps {
-  error: Error;
+  error: Error & { digest?: string };
+  reset: () => void;
 }
 
-export default function Error({ error }: ErrorProps) {
+export default function Error({ error, reset }: ErrorProps) {
   return (
     <main style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: "var(--space-4)", textAlign: "center" }}>
       <h1>Une erreur est survenue</h1>

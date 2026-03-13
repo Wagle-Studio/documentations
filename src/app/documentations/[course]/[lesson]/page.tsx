@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Metadata } from "next";
 import FileManager from "@/core/managers/FileManager";
 import RegisterManager from "@/core/managers/RegisterManager";
 import { ContentLesson } from "@/ui";
@@ -22,6 +23,16 @@ export async function generateStaticParams() {
 
 interface LessonParams {
   params: Promise<{ course: string; lesson: string }>;
+}
+
+export async function generateMetadata({ params }: LessonParams): Promise<Metadata> {
+  const { lesson } = await params;
+  const result = FileManager.getContent(lesson);
+  if (!result.success) return {};
+  return {
+    title: result.data.lesson.label,
+    description: result.data.lesson.description,
+  };
 }
 
 export default async function Lesson({ params }: LessonParams) {
