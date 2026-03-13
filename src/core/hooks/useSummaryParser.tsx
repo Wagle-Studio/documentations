@@ -24,7 +24,11 @@ export const useSummaryParser = (lessonSlug: ParamValue) => {
       .filter((item) => item.tagName === "H2")
       .map(
         (h2): SummaryItem => ({
-          label: h2.textContent,
+          label: Array.from(h2.childNodes)
+            .filter((node) => node.nodeType === Node.TEXT_NODE)
+            .map((node) => node.textContent)
+            .join("")
+            .trim(),
           slug: h2.id,
         })
       );
