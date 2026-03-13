@@ -16,8 +16,9 @@ export const HeaderLesson = ({ lesson, references }: HeaderLessonProps) => {
           <p>{lesson.description}</p>
         </div>
         <div className="content_lesson__header__body--subtitles">
-          <p>Créé le {lesson.created}</p>
-          <p>Mis à jour le {lesson.updated}</p>
+          <span>Créé le {lesson.created}</span>
+          <span className="content_lesson__header__body--subtitles__separator">·</span>
+          <span>Mis à jour le {lesson.updated}</span>
         </div>
       </div>
       {references && references.length > 0 && (

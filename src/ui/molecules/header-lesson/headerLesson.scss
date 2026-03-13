@@ -20,12 +20,17 @@
 
     &--subtitles {
       display: flex;
-      flex-direction: column;
-      gap: var(--space-0);
+      flex-direction: row;
+      align-items: center;
+      gap: var(--space-1);
 
-      > p {
-        margin: 0 !important;
-        font-style: italic;
+      > span {
+        font-size: var(--font-size-small);
+        color: var(--muted-foreground);
+      }
+
+      &__separator {
+        color: var(--border) !important;
       }
     }
   }
