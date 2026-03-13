@@ -1,6 +1,6 @@
 import "./../ui/globals.scss";
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Fraunces } from "next/font/google";
 import { TemplateApp } from "@/ui";
 
 const inter = Inter({
@@ -8,6 +8,13 @@ const inter = Inter({
   display: "swap",
   weight: ["400", "500", "600", "700"],
   variable: "--font-primary",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["300", "400", "600", "700"],
+  variable: "--font-display",
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -30,7 +37,7 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${inter.variable} ${fraunces.variable} ${jetbrainsMono.variable}`}
       data-scroll-behavior="smooth"
     >
       <body>

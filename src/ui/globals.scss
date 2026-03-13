@@ -39,12 +39,12 @@
   --font-size-large: 1.5rem;
   --font-size-xlarge: 2rem;
 
-  --font-size-desktop-heading-1: 2.5rem;
+  --font-size-desktop-heading-1: 2.75rem;
   --font-size-desktop-heading-2: 1.75rem;
   --font-size-desktop-heading-3: 1.25rem;
   --font-size-desktop-heading-4: 1rem;
 
-  --font-size-mobile-heading-1: 2rem;
+  --font-size-mobile-heading-1: 2.25rem;
   --font-size-mobile-heading-2: 1.5rem;
   --font-size-mobile-heading-3: 1.25rem;
   --font-size-mobile-heading-4: 1rem;
@@ -131,12 +131,12 @@ body {
 }
 
 h1 {
-  font-family: var(--font-primary);
+  font-family: var(--font-display);
   font-size: var(--font-size-mobile-heading-1);
   line-height: var(--font-line-height-large);
   color: var(--foreground);
-  font-weight: var(--font-weight-xlarge);
-  letter-spacing: 0;
+  font-weight: 600;
+  letter-spacing: -0.03em;
 }
 
 h2 {
@@ -145,7 +145,7 @@ h2 {
   line-height: var(--font-line-height-large);
   color: var(--foreground);
   font-weight: var(--font-weight-xlarge);
-  letter-spacing: 0;
+  letter-spacing: -0.02em;
 }
 
 h3 {
@@ -154,7 +154,7 @@ h3 {
   line-height: var(--font-line-height-large);
   color: var(--foreground);
   font-weight: var(--font-weight-xlarge);
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
 }
 
 h4 {
@@ -163,7 +163,7 @@ h4 {
   line-height: var(--font-line-height-large);
   color: var(--foreground);
   font-weight: var(--font-weight-large);
-  letter-spacing: 0;
+  letter-spacing: -0.005em;
 }
 
 p,
