@@ -1,16 +1,18 @@
 "use client";
 
 import "./header.scss";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import clsx from "clsx";
-import { CrossIcon, GithubIcon, MenuIcon, MenuLink, Tag } from "@/ui";
+import { CrossIcon, DarkModeIcon, GithubIcon, LightModeIcon, MenuIcon, MenuLink, Tag } from "@/ui";
 import RegisterManager from "@/core/managers/RegisterManager";
+import { AppContext } from "@/ui/AppContext";
 
 export const Header = () => {
   const [menuDisplay, setMenuDisplay] = useState<boolean>(false);
+  const { isDarkMode, setIsDarkMode } = useContext(AppContext);
 
   const params = useParams();
 
@@ -66,6 +68,19 @@ export const Header = () => {
             )}
           </div>
           <div className="header__wrapper--end--desktop">
+            <button
+              className={clsx("header__toggle", {
+                "header__toggle--dark": isDarkMode,
+              })}
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              role="switch"
+              aria-checked={isDarkMode}
+              aria-label="Changer le thème"
+            >
+              <LightModeIcon />
+              <span className="header__toggle__thumb" />
+              <DarkModeIcon />
+            </button>
             <Tag>V 1.3</Tag>
             <a
               href="https://github.com/Wagle-Studio/documentations"

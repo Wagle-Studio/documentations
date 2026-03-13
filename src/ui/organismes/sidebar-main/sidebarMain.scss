@@ -1,8 +1,8 @@
 .sidebar_main {
   width: 100%;
-  border: 1px solid var(--gray-base);
+  border: 1px solid var(--border);
   border-radius: var(--border-radius-small);
-  background-color: var(--white);
+  background-color: var(--card);
 
   &__menu {
     display: flex;

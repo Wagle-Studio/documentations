@@ -1,14 +1,13 @@
+"use client";
 import "./templateApp.scss";
-import { ReactNode } from "react";
+import { ReactNode, useContext } from "react";
 import { Header, SidebarMain } from "@/ui";
+import AppContextProvider, { AppContext } from "@/ui/AppContext";
 
-interface TemplateAppProps {
-  children: ReactNode;
-}
-
-export const TemplateApp = ({ children }: TemplateAppProps) => {
+const TemplateAppInner = ({ children }: { children: ReactNode }) => {
+  const { isDarkMode } = useContext(AppContext);
   return (
-    <main className="template_app">
+    <main className={`template_app${isDarkMode ? " app--dark" : ""}`}>
       <div className="template_app__header">
         <Header />
       </div>
@@ -19,3 +18,9 @@ export const TemplateApp = ({ children }: TemplateAppProps) => {
     </main>
   );
 };
+
+export const TemplateApp = ({ children }: { children: ReactNode }) => (
+  <AppContextProvider>
+    <TemplateAppInner>{children}</TemplateAppInner>
+  </AppContextProvider>
+);

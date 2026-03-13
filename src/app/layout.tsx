@@ -1,13 +1,20 @@
 import "./../ui/globals.scss";
 import type { Metadata } from "next";
-import { Rubik } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { TemplateApp } from "@/ui";
 
-const rubik = Rubik({
+const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   weight: ["400", "500", "600", "700"],
   variable: "--font-primary",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-secondary",
 });
 
 export const metadata: Metadata = {
@@ -23,7 +30,7 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${rubik.variable}`}
+      className={`${inter.variable} ${jetbrainsMono.variable}`}
       data-scroll-behavior="smooth"
     >
       <body>

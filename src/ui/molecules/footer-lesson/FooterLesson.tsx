@@ -15,7 +15,6 @@ export const FooterLesson = ({ references }: FooterLessonProps) => {
           <ul>
             {references.map((reference) => (
               <li key={reference.id}>
-                🔗
                 <Link
                   href={reference.url}
                   target="_blank"

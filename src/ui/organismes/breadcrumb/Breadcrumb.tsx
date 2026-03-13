@@ -75,26 +75,33 @@ export const Breadcrumb = () => {
   }, [params]);
 
   return (
-    <div className="breadcrumb">
+    <nav className="breadcrumb" aria-label="Fil d'ariane">
       <ul className="breadcrumb__list">
         <li className="breadcrumb__list__item">
           <Link href="/">
             <HomeIcon />
           </Link>
-          <p>{`>`}</p>
+          <span className="breadcrumb__separator" aria-hidden="true">›</span>
         </li>
-        {breadCrumbItems.map((breadCrumbItem) => (
+        {breadCrumbItems.map((breadCrumbItem, index) => (
           <li
             className="breadcrumb__list__item"
             key={`breadcrumb__list__item--${breadCrumbItem.slug}`}
           >
-            <Link href={breadCrumbItem.slug}>{breadCrumbItem.label}</Link>
+            <Link
+              href={breadCrumbItem.slug}
+              className="breadcrumb__label"
+              {...(index === breadCrumbItems.length - 1 ? { "aria-current": "page" } : {})}
+            >
+              {breadCrumbItem.label}
+            </Link>
 
-            {breadCrumbItems.indexOf(breadCrumbItem) !==
-              breadCrumbItems.length - 1 && <p>{`>`}</p>}
+            {index !== breadCrumbItems.length - 1 && (
+              <span className="breadcrumb__separator" aria-hidden="true">›</span>
+            )}
           </li>
         ))}
       </ul>
-    </div>
+    </nav>
   );
 };

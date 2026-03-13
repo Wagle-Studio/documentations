@@ -7,6 +7,11 @@
     h3,
     h4 {
       margin-bottom: var(--space-2);
+      scroll-margin-top: calc(42px + var(--space-2));
+
+      @media screen and (min-width: 850px) {
+        scroll-margin-top: calc(74px + var(--space-2));
+      }
     }
 
     h2 {
@@ -55,10 +60,10 @@
       width: auto !important;
       object-fit: contain;
       border-radius: var(--border-radius-base);
-      border: 1px solid var(--gray-light);
+      border: 1px solid var(--muted);
 
       &__alt {
-        color: var(--gray-darker);
+        color: var(--muted-foreground);
       }
     }
 
@@ -80,7 +85,8 @@
     pre,
     .code-inline {
       border-radius: var(--border-radius-base);
-      background-color: var(--tag-code);
+      background-color: var(--muted);
+      font-family: var(--font-secondary);
     }
 
     .code-inline {
@@ -92,7 +98,7 @@
       margin-top: var(--space-2);
       padding: var(--space-2) var(--space-2);
       border-radius: var(--border-radius-base);
-      background-color: var(--gray-light);
+      background-color: var(--muted);
 
       > p {
         margin: 0;

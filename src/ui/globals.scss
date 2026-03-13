@@ -1,14 +1,19 @@
 :root {
-  --primary: #13364c;
-  --white: #fdfdfd;
-  --gray-darker: #393939;
-  --gray-dark: #808080;
-  --gray-base: #dee2e6;
-  --gray-light: #e3eaf2;
-  --gray-lighter: #f3f4f6;
-
-  --body-bg: #fbfbfb;
-  --tag-code: #e3eaf2;
+  --primary: #0d9488;
+  --primary-soft: rgba(13, 148, 136, 0.15);
+  --primary-foreground: #ffffff;
+  --card: #ffffff;
+  --card-foreground: #1a1f35;
+  --background: #f8f9fb;
+  --foreground: #1a1f35;
+  --muted-foreground: #6b7280;
+  --border: #e2e4e9;
+  --muted: #f0f1f4;
+  --secondary: #f0f1f4;
+  --secondary-foreground: #2a3040;
+  --accent: #0d9488;
+  --ring: #0d9488;
+  --card-shadow: 0px 4px 20px 0px rgba(0, 0, 0, 0.08);
 
   --space-0: 4px;
   --space-1: 8px;
@@ -52,12 +57,41 @@
 
   --border-radius-small: 4px;
   --border-radius-base: 8px;
-  --border-radius-medium: 12px;
+  --border-radius-medium: 16px;
+  --border-radius-large: 32px;
+
+  --info: #3b82f6;
+  --succes: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
 
   --breakpoint-mobile: 576px;
   --breakpoint-tablet: 850px;
   --breakpoint-laptop: 992px;
   --breakpoint-desktop: 1260px;
+}
+
+.app--dark {
+  --background: #0f1426;
+  --foreground: #ecf1ff;
+  --card: #121a31;
+  --card-foreground: #ecf1ff;
+  --primary: #2dd4bf;
+  --primary-soft: rgba(45, 212, 191, 0.24);
+  --primary-foreground: #06211f;
+  --secondary: #1a243f;
+  --secondary-foreground: #d7e1ff;
+  --muted: #1a243f;
+  --muted-foreground: #a0afcf;
+  --accent: #2dd4bf;
+  --accent-foreground: #06211f;
+  --border: #2f3b60;
+  --ring: #2dd4bf;
+  --card-shadow: 0px 4px 20px 0px rgba(0, 0, 0, 0.35);
+  --info: #60a5fa;
+  --succes: #4ade80;
+  --warning: #fbbf24;
+  --error: #f87171;
 }
 
 .page {
@@ -89,7 +123,9 @@
 }
 
 body {
-  background-color: var(--body-bg);
+  background-color: var(--background);
+  color: var(--foreground);
+  transition: background-color 0.25s ease, color 0.25s ease;
   max-width: 1280px;
   margin: 0 auto;
 }
@@ -98,7 +134,7 @@ h1 {
   font-family: var(--font-primary);
   font-size: var(--font-size-mobile-heading-1);
   line-height: var(--font-line-height-large);
-  color: var(--black);
+  color: var(--foreground);
   font-weight: var(--font-weight-xlarge);
   letter-spacing: 0;
 }
@@ -107,7 +143,7 @@ h2 {
   font-family: var(--font-primary);
   font-size: var(--font-size-mobile-heading-2);
   line-height: var(--font-line-height-large);
-  color: var(--black);
+  color: var(--foreground);
   font-weight: var(--font-weight-xlarge);
   letter-spacing: 0;
 }
@@ -116,7 +152,7 @@ h3 {
   font-family: var(--font-primary);
   font-size: var(--font-size-mobile-heading-3);
   line-height: var(--font-line-height-large);
-  color: var(--black);
+  color: var(--foreground);
   font-weight: var(--font-weight-xlarge);
   letter-spacing: 0;
 }
@@ -125,7 +161,7 @@ h4 {
   font-family: var(--font-primary);
   font-size: var(--font-size-mobile-heading-4);
   line-height: var(--font-line-height-large);
-  color: var(--black);
+  color: var(--foreground);
   font-weight: var(--font-weight-large);
   letter-spacing: 0;
 }
@@ -139,7 +175,7 @@ label {
   font-family: var(--font-primary);
   font-size: var(--font-size-base);
   line-height: var(--font-line-height-extra);
-  color: var(--gray-deeper);
+  color: var(--foreground);
   font-weight: var(--font-weight-base);
 }
 

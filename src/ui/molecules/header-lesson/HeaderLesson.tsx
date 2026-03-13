@@ -23,7 +23,7 @@ export const HeaderLesson = ({ lesson, references }: HeaderLessonProps) => {
       {references && references.length > 0 && (
         <div className="content_lesson__header__actions">
           <ButtonLink href="#references">
-            🔗 Voir
+            Voir
             {references.length > 1
               ? ` ${references.length} références`
               : " 1 référence"}

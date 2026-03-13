@@ -1,8 +1,8 @@
 .sidebar_second {
   width: 100%;
-  border: 1px solid var(--gray-base);
+  border: 1px solid var(--border);
   border-radius: var(--border-radius-small);
-  background-color: var(--white);
+  background-color: var(--card);
 
   &__menu {
     display: flex;
@@ -19,9 +19,9 @@
       padding: 0;
       margin: 0;
       list-style: none;
-      background-color: var(--gray-lighter);
-      border-top: 1px solid var(--gray-base);
-      border-bottom: 1px solid var(--gray-base);
+      background-color: var(--secondary);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
 
       > li > a {
         padding-left: var(--space-3);

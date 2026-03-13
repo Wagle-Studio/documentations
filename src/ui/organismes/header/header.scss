@@ -1,6 +1,7 @@
 .header {
   padding: var(--space-2);
-  background-color: var(--body-bg);
+  background-color: var(--background);
+  backdrop-filter: blur(8px);
 
   &--mobile {
     display: flex;
@@ -9,7 +10,7 @@
     background-color: #00000050;
 
     @media screen and (min-width: 850px) {
-      background-color: var(--body-bg);
+      background-color: var(--background);
     }
   }
 
@@ -25,9 +26,9 @@
     justify-content: space-between;
     align-items: center;
     padding: var(--space-1);
-    border: 1px solid var(--gray-base);
+    border: 1px solid var(--border);
     border-radius: var(--border-radius-small);
-    background-color: var(--white);
+    background-color: var(--card);
 
     &--mobile {
       margin-top: auto;
@@ -40,7 +41,7 @@
       align-items: center;
       line-height: 0;
       font-weight: var(--font-weight-large);
-      color: var(--black);
+      color: var(--foreground);
       text-decoration: none;
     }
 
@@ -78,9 +79,9 @@
 
       &__wrapper {
         padding: var(--space-2);
-        border: 1px solid var(--gray-base);
+        border: 1px solid var(--border);
         border-radius: var(--border-radius-small);
-        background-color: var(--body-bg);
+        background-color: var(--background);
 
         > ul {
           list-style: none;
@@ -97,6 +98,51 @@
         left: -16px;
         right: -16px;
         height: 100vh;
+      }
+    }
+  }
+
+  &__toggle {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background-color: var(--muted);
+    cursor: pointer;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+
+    .icon {
+      color: var(--muted-foreground);
+      transition: color 0.25s ease, opacity 0.25s ease;
+      opacity: 0.5;
+    }
+
+    &__thumb {
+      display: block;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      background-color: var(--card);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      transition: transform 0.25s ease, background-color 0.25s ease;
+      transform: translateX(-20px);
+      z-index: 1;
+    }
+
+    &--dark {
+      background-color: var(--primary-soft);
+      border-color: var(--primary);
+
+      .icon {
+        color: var(--primary);
+      }
+
+      .header__toggle__thumb {
+        transform: translateX(20px);
+        background-color: var(--primary);
       }
     }
   }

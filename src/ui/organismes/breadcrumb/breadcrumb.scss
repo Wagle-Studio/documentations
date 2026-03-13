@@ -4,7 +4,7 @@
 
 .breadcrumb {
   padding: var(--space-2) 0;
-  background-color: var(--body-bg);
+  background-color: var(--background);
 
   @media screen and (min-width: 850px) {
     padding: 0 0 var(--space-2) 0;
@@ -17,9 +17,9 @@
     gap: var(--space-1);
     padding: var(--space-1);
     list-style: none;
-    border: 1px solid var(--gray-base);
+    border: 1px solid var(--border);
     border-radius: var(--border-radius-small);
-    background-color: var(--white);
+    background-color: var(--card);
 
     &__item {
       display: flex;
@@ -33,5 +33,25 @@
         }
       }
     }
+
+    @media screen and (max-width: 849px) {
+      &:has(li:nth-child(3)) {
+        li:nth-child(n + 3) { display: none; }
+        li:nth-child(2) .breadcrumb__separator { display: none; }
+      }
+    }
+  }
+
+  &__separator {
+    color: var(--muted-foreground);
+    font-size: var(--font-size-small);
+    user-select: none;
+  }
+
+  &__label {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 20ch;
   }
 }
