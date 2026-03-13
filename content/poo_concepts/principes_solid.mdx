@@ -1,0 +1,531 @@
+## Introduction
+
+---
+
+L'acronyme SOLID est très populaire dans le milieu du développement, il fait référence à cinq principes de conception destinés à produire de meilleures architectures.
+
+Ces cinq principes sont un sous-ensemble de nombreux principes promus par l'ingénieur logiciel et instructeur américain Robert C. Martin dans son article Design Principles and Design Patterns de 2000, bien que l'acronyme SOLID ait été introduit plus tard par Michael Feathers. Martin est également l'auteur du très populaire livre Clean Code.
+
+Ces principes ne sont pas des règles strictes mais des directives pour aider à concevoir un code plus robuste, maintenable et évolutif. Ces principes sont d'autant plus appréciés lorsque l'on travaille en équipe et que la clarté du code et la facilité de le modifier sont cruciales.
+
+## Single responsability
+
+---
+
+**Principe de responsabilité unique**
+
+Sans doute le principe le plus "naturel", il s'agit d'éviter les classes, méthodes, etc dites "fourre-tout".
+
+Une classe, une fonction ou une méthode doit avoir une et une seule unique raison d'être. Cela favorise la modularité et facilite la maintenance en évitant les classes surchargées de responsabilité.
+
+Une classe, méthode, etc, qui respecte ce principe n'a alors qu'une seule raison de changer. Si une classe gère à la fois la logique métier et la persistance des données, elle aura deux raisons de changer. Séparez ces responsabilités en deux classes distinctes.
+
+### Avant principe
+
+---
+
+La classe ci-après ne respecte pas le principe de responsabilité unique à plusieurs niveaux :
+
+La classe possède plus d'une responsabilité, initialement c'est une classe pour créer des objets représentant des utilisateurs mais ici elle possède aussi les méthodes nécessaires à l'authentification.
+
+Les méthodes (ici, une seule est illustrée) ont plusieurs responsabilités. Par exemple `signup` s'occupe de vérifier la pertinence de la requête POST entrante, la validation de types/formats, la connexion et l'enregistrement en base de données.
+
+C'est l'exemple typique de ce que l'on souhaite éviter.
+
+```php
+<?php
+
+class User {
+    public function __construct(
+        private string $username,
+        private string $email,
+        private string | null $password,
+    ) {}
+
+    public function getUsername(): string { ... }
+
+    public function setUsername(string $username): void { ... }
+
+    public function getEmail(): string { ... }
+
+    public function setEmail(string $email): void { ... }
+
+    public function signup(): void {
+        if (
+            is_null($_POST['email'] && count($_POST['email']) > 0) ||
+            is_null($_POST['username']) ||
+            is_null($_POST['password']) ||
+            is_null($_POST['confirmPassword'])
+        ) {
+            ...
+        }
+
+        if ($_POST['password'] === $_POST['confirmPassword']) {
+            ...
+        }
+
+        $dsn = 'mysql:host=localhost;dbname=ma_base';
+        $username = 'root';
+        $password = '';
+
+        try {
+            $pdo = new PDO($dsn, $username, $password);
+            $sql = "INSERT INTO utilisateurs (username, email, password) VALUES (:username, :email, :password)";
+            $request = $pdo->prepare($sql);
+
+            $request->execute([
+                ':username' => $_POST['username'],
+                ':email' => $_POST['email'],
+                ':password' => $_POST['password']
+            ]);
+        } catch (PDOException $e) {
+            echo "Erreur de connexion : " . $e->getMessage();
+        }
+
+        ...
+    }
+
+    public function signin(): void {
+        ...
+    }
+
+    public function resetPassword(): void {
+        ...
+    }
+}
+```
+
+### Après principe
+
+---
+
+Création d'un service dédié à l'authentification, contenant les propriétés et méthodes nécessaires à celle-ci. La classe `User` est soulagée de cette responsabilité.
+
+Création d'un service dédié à la validation des diverses données, où seront déclarées les méthodes nécessaires à la validation d'un email, de la robustesse d'un mot de passe, etc.
+
+Création d'un service dédié à la connexion à la base de données, ainsi qu'un répertoire (repository) où seront déclarés les méthodes nécessaires à l'échange de données entre le programme et la base pour l'entité `User`. La méthode `signup` n'est plus responsable de cette partie du processus.
+
+La classe `User`, initialement pensée comme model/entité représentant un utilisateur reprend son unique rôle.
+
+```php
+<?php
+
+class AuthService {
+    public function __construct(
+        private ValidationService $validation,
+        private UserRepository $userRepository
+    ) {}
+
+    public function signup(): void {
+        $request = $_POST;
+
+        if (!$this->validation->isSignupRequestValid($request)) {
+            ...
+        }
+
+        if (!$this->validation->isPasswordMatch(
+            $request['password'], $request['confirmPassword'])
+        ) {
+            ...
+        }
+
+        if (!$this->validation->isPasswordSafe($request['password'])) {
+            ...
+        }
+
+        $this->userRepository->add(
+            $request['email'], $request['password'], $request['username']
+        );
+
+        ...
+    }
+
+    public function signin(): void {
+        ...
+    }
+
+    public function resetPassword(): void {
+        ...
+    }
+}
+```
+
+```php
+<?php
+
+class ValidationService {
+    public function isSignupRequestValid(array $request): bool {
+        ...
+    }
+
+    public function isPasswordMatch(string $password, string $confirmPassword): bool {
+        ...
+    }
+
+    public function isPasswordSafe(string $password): bool {
+        ...
+    }
+}
+```
+
+```php
+<?php
+
+class Database {
+    protected PDO $database;
+
+    public function __construct()
+    {
+        $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME;
+
+        try {
+            $this->database = new PDO($dsn, DB_USER, DB_PSWD);
+        } catch (PDOException $e) {
+            echo "Erreur de connexion : " . $e->getMessage();
+        }
+    }
+}
+```
+
+```php
+<?php
+
+class UserRepository extends Database {
+    public function add(
+        string $email,
+        string $password,
+        string $username
+    ): void {
+        $sql = "INSERT INTO utilisateurs (username, email, password) VALUES (:username, :email, :password)";
+        $request = $this->database->prepare($sql);
+        $request->execute([
+            ':username' => $username,
+            ':email' => $email,
+            ':password' => $password
+        ]);
+    }
+}
+```
+
+```php
+<?php
+
+class User {
+    public function __construct(
+        private string $username,
+        private string $email,
+        private string | null $password,
+    ) {}
+
+    public function getUsername(): string { ... }
+
+    public function setUsername(string $username): void { ... }
+
+    public function getEmail(): string { ... }
+
+    public function setEmail(string $email): void { ... }
+}
+```
+
+## Open/Close
+
+---
+
+**Principe d'évolution par extension**
+
+Ce principe suggère qu'une classe doit être ouverte à l'extension (l'ajout de fonctionnalité) mais fermée à la modification. L'implémentation d'une fonctionnalité ne doit pas entraîner de modification dans le code existant.
+
+Ce principe est très lié aux deux piliers de la POO que sont l'abstraction et le polymorphisme. L'abstraction permet l'exploitation de différentes classes par l'intermédiaire d'une interface unique tandis que le polymorphisme permet au code d'adopter différement comportement selon la classe exploitée.
+
+### Avant principe
+
+---
+
+Dans cet exemple, le canal d'envoi d'un message est déterminé par la configuration du programme, dans le fichier d'environnement. La variable `MESSAGE_SUPPLIER` déterminera le canal à utiliser.
+
+Le méthode `resetPassword` de la classe `AuthController` nécessitera une modification si l'on souhaite ajouter une nouvelle manière de distribuer le lien de changement de mot de passe.
+
+Il n'existe pas d'interface commune pour l'envoi d'un message, chaque classe représentant un fournisseur déclare une méthode différente, ce qui rend le code appelant dépendant de chaque implémentation concrète.
+
+```php
+<?php
+
+class EmailSupplier {
+    public function sendEmail(User $user, Message $message): void {
+        ...
+    }
+}
+
+class SmsSupplier {
+    public function sendSms(User $user, Message $message): void {
+        ...
+    }
+}
+
+class AuthController {
+    public function resetPassword(User $user): void {
+        $message = new Message(MessageTypeEnum::RESET_PASSWORD, $user);
+        $supplier = getenv('MESSAGE_SUPPLIER');
+
+        if ($supplier === 'email') {
+            $emailSupplier = new EmailSupplier();
+            $emailSupplier->sendEmail($user, $message);
+        }
+
+        if ($supplier === 'sms') {
+            $smsSupplier = new SmsSupplier();
+            $smsSupplier->sendSms($user, $message);
+        }
+    }
+}
+```
+
+### Après principe
+
+---
+
+Le principe n'a pas changé, le canal d'envoi d'un message est déterminé par la configuration du programme. C'est lors de l'injection de dépendance que le choix entre `EmailSupplier` et `SmsSupplier` sera déterminé, la classe choisie sera alors exploitée via l'interface `MessageSupplierInterface`.
+
+L'interface `MessageSupplierInterface` garantit que toutes les classes l'implémentant disposent de la méthode `send` et sa signature. Grâce à cette abstraction la méthode `resetPassword` de la classe `AuthController` n'est plus concernée par le choix du canal, cette dernière exploite la classe typée avec `MessageSupplierInterface` et utilise une interface unique.
+
+Il est maintenant possible d'ajouter d'autres canaux de communications sans avoir à modifier le code existant. Une classe implémentant `MessageSupplierInterface` pourra être exploitée par la méthode `resetPassword` sans intervenir dans le contrôleur.
+
+```php
+<?php
+
+interface MessageSupplierInterface {
+    public function send(User $user, Message $message): void;
+}
+
+class EmailSupplier implements MessageSupplierInterface {
+    public function send(User $user, Message $message): void {
+        ...
+    }
+}
+
+class SmsSupplier implements MessageSupplierInterface {
+    public function send(User $user, Message $message): void {
+        ...
+    }
+}
+
+class AuthController {
+    public function __construct(
+        private MessageSupplierInterface $messageSupplier
+    ) {}
+
+    public function resetPassword(User $user): void {
+        $message = new Message(MessageTypeEnum::RESET_PASSWORD, $user);
+        $this->messageSupplier->send($user, $message);
+    }
+}
+```
+
+## Liskov Substitution
+
+---
+
+**Principe de cohérence de la hiérarchie**
+
+Ce principe vise à garantir que les sous-classes peuvent être utilisées de manière interchangeable avec leur classe de base, sans altérer le comportement attendu du programme.
+
+Pour cela, les points suivants doivent être respectés :
+
+- La signature des méthodes (paramètres et retours) doit être identique entre l'enfant et le parent
+- Les exceptions levées doivent être du même type
+- Les préconditions et postconditions doivent être cohérentes
+
+Les langages modernes et le typage, notamment via les signatures de méthodes définies dans les interfaces, garantissent en partie l'application du principe. Néanmoins, cela ne garantit pas que les exceptions ou les contraintes métier seront uniformes.
+
+Si une classe `EmailSupplier` implémente `MessageSupplierInterface`, alors toute instance de `EmailSupplier` doit pouvoir remplacer n'importe quelle autre implémentation de `MessageSupplierInterface` sans que le code appelant ne s'en aperçoive.
+
+### Avant principe
+
+---
+
+Bien que PHP contraigne les classes implémentant `MessageSupplierInterface` à respecter la signature de la méthode `send`, il ne peut pas garantir l'uniformité des comportements. Ici, `SmsSupplier` échoue silencieusement au lieu de lever une exception, contrairement à `EmailSupplier`.
+
+Les préconditions ne sont pas identiques, un message pourra être trop court pour un SMS tandis qu'il serait exploitable dans un email.
+
+```php
+<?php
+
+interface MessageSupplierInterface {
+    public function send(User $user, Message $message): void;
+}
+
+class EmailSupplier implements MessageSupplierInterface {
+    public function send(User $user, Message $message): void {
+        if (strlen($message->getContent()) < 6) {
+            throw new Exception("Message is too short");
+        }
+
+        // envoi l'email et lève une exception en cas d'échec
+        if (!$this->sendEmail($user, $message)) {
+            throw new Exception("Failed to send email");
+        }
+    }
+}
+
+class SmsSupplier implements MessageSupplierInterface {
+    public function send(User $user, Message $message): void {
+        if (strlen($message->getContent()) < 3) {
+            throw new Exception("Message is too short");
+        }
+
+        // Echoue silencieusement, aucune exception n'est levée
+        if (!$this->sendSms($user, $message)) {
+            return;
+        }
+    }
+}
+
+class AuthController {
+    public function __construct(
+        private MessageSupplierInterface $supplier,
+    ) {}
+
+    public function resetPassword(User $user): void {
+        $message = new Message(MessageTypeEnum::RESET_PASSWORD, $user);
+        $this->supplier->send($user, $message);
+        // Le contrôleur suppose que le message est toujours parti
+        // mais ce n'est pas garanti avec SmsSupplier
+    }
+}
+```
+
+### Après principe
+
+---
+
+La méthode `send` de la classe `SmsSupplier` a était modifiée pour implémenter la même exception que la méthode de la classe `EmailSupplier`.
+
+Aussi, les préconditions ont été uniformisées pour garantir le même comportement lors des validations du contenu du message.
+
+```php
+<?php
+
+interface MessageSupplierInterface {
+    public function send(User $user, Message $message): void;
+}
+
+class EmailSupplier implements MessageSupplierInterface {
+    public function send(User $user, Message $message): void {
+        if (strlen($message->getContent()) < 6) {
+            throw new Exception("Message is too short");
+        }
+
+        if (!$this->sendEmail($user, $message)) {
+            throw new Exception("Failed to send email");
+        }
+    }
+}
+
+class SmsSupplier implements MessageSupplierInterface {
+    public function send(User $user, Message $message): void {
+        if (strlen($message->getContent()) < 6) {
+            throw new Exception("Message is too short");
+        }
+
+        if (!$this->sendSms($user, $message)) {
+            throw new Exception("Failed to send sms");
+        }
+    }
+}
+
+class AuthController {
+    public function __construct(
+        private MessageSupplierInterface $supplier,
+    ) {}
+
+    public function resetPassword(User $user): void {
+        $message = new Message(MessageTypeEnum::RESET_PASSWORD, $user);
+        $this->supplier->send($user, $message);
+    }
+}
+```
+
+## Interface Segregation
+
+---
+
+**Principe de spécificité des contrats**
+
+Ce principe prône l'utilisation de petites interfaces spécifique plutôt que de grandes interfaces générales. 
+
+Aucune classe ne devrait être forcée d'implémenter des méthodes / fonctions qu'elle n'utilise pas. Préférer plusieurs interfaces spécifiques pour chaque classe plutôt qu'une seule interface générale.
+
+Cela évite aux classes de dépendre de méthodes dont elles n'ont pas besoin, réduisant ainsi les couplages inutiles.
+
+### Avant principe 
+
+---
+
+Imaginons que nous utilisions un système de queue pour l'envoi d'email avec la méthode `addToQueue`, mais que ce ne soit pas le cas pour les SMS ou de futurs canaux de communication.
+
+Utiliser une unique interface oblige la classe `SmsSupplier` ne bénéficiant pas de système de queue à implémenter la méthode `addToQueue`.
+
+```php
+<?php
+
+interface MessageSupplierInterface {
+    public function send(User $user, Message $message): void;
+    public function addToQueue(User $user, Message $message): void;
+}
+
+class EmailSupplier implements MessageSupplierInterface {
+    public function send(User $user, Message $message): void {
+        ...
+    }
+
+    public function addToQueue(User $user, Message $message): void {
+        # Met le message dans une queue pour un envoi asynchrone
+    }
+}
+
+class SmsSupplier implements MessageSupplierInterface {
+    public function send(User $user, Message $message): void {
+        ...
+    }
+
+    public function addToQueue(User $user, Message $message): void {
+        # Aucune queue n'est implémentée pour les SMS
+        return;
+    }
+}
+```
+
+### Après principe
+
+---
+
+La création d'une interface `QueueableInterface` destinée au message pouvant être mis en queue permet de ne pas forcer l'implémentation d'une méthode inutile pour les fournisseurs de communication non concernés.
+
+```php
+<?php
+
+interface MessageSupplierInterface {
+    public function send(User $user, Message $message): void;
+}
+
+interface QueueableInterface {
+    public function addToQueue(QueueableJob $job): void;
+}
+
+class EmailSupplier implements MessageSupplierInterface, QueueableInterface {
+    public function send(User $user, Message $message): void {
+        $job = new EmailJob($user, $message);
+        $this->addToQueue($job);
+    }
+
+    public function addToQueue(QueueableJob $job): void {
+        # Met le job dans une queue pour un envoi asynchrone
+    }
+}
+
+class SmsSupplier implements MessageSupplierInterface {
+    public function send(User $user, Message $message): void {
+        ...
+    }
+}
+```
