@@ -82,12 +82,12 @@ jobs:
           IMAGE_TAG=${{ needs.build_and_push.outputs.image_tag }}
           CONTAINER_PREFIX=${{ secrets.CONTAINER_PREFIX }}
           DIST_PORT=${{ secrets.REMOTE_DIST_PORT }}
-          NEXT_PUBLIC_BASE_PATH=${{ secrets.NEXT_PUBLIC_BASE_PATH }}
+          NEXT_PUBLIC_BASE_URL=${{ secrets.NEXT_PUBLIC_BASE_URL }}
 
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << EOF
             cd "$APP_DIR"
             sed -i "s#^GHCR_NAMESPACE=.*#GHCR_NAMESPACE=${GHCR_NAMESPACE}:${IMAGE_TAG}#" .env
             sed -i "s#^REMOTE_DIST_PORT=.*#REMOTE_DIST_PORT=${DIST_PORT}#" .env
-            sed -i "s#^NEXT_PUBLIC_BASE_PATH=.*#NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH}#" .env
+            sed -i "s#^NEXT_PUBLIC_BASE_URL=.*#NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}#" .env
             docker compose -p ${CONTAINER_PREFIX} up -d --pull always
           EOF
