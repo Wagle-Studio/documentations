@@ -1,9 +1,11 @@
 "use client";
 
 import "./tag-code.scss";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { coldarkCold } from "react-syntax-highlighter/dist/esm/styles/prism";
+
+const LANGUAGE_REGEX = /language-(\w+)/;
 
 interface TagCodeProps {
   children: React.ReactNode;
@@ -13,20 +15,26 @@ interface TagCodeProps {
 
 export const TagCode = ({ children, className, inline }: TagCodeProps) => {
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    return () => clearTimeout(timerRef.current);
+  }, []);
+
+  const match = className ? LANGUAGE_REGEX.exec(className) : null;
+  const language = match?.[1];
+  const code = typeof children === "string" ? children : String(children);
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setCopied(false), 2000);
+  }, [code]);
 
   if (inline || !className) {
     return <code className="code-inline">{children}</code>;
   }
-
-  const match = /language-(\w+)/.exec(className);
-  const language = match?.[1];
-  const code = typeof children === "string" ? children : String(children);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <div className="tag-code">

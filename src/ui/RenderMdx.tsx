@@ -5,6 +5,8 @@ import remarkGfm from "remark-gfm";
 import { TagCode } from "@/ui/atoms/tag-code/TagCode";
 import { TagHeading2 } from "@/ui/atoms/tag-heading2/TagHeading2";
 
+const DIMENSIONS_REGEX = /(\d+)_(\d+)/;
+
 interface RenderMdxProps {
   content: string;
 }
@@ -45,7 +47,7 @@ interface TagImageProps {
 
 export const TagImage = ({ src, alt }: TagImageProps) => {
   const filename = src.split("/").pop() || "";
-  const dimensions = filename.match(/(\d+)_(\d+)/);
+  const dimensions = filename.match(DIMENSIONS_REGEX);
 
   const width = dimensions ? parseInt(dimensions[1]) : null;
   const height = dimensions ? parseInt(dimensions[2]) : null;

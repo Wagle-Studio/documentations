@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, ReactNode, useEffect, useState } from "react";
+import { createContext, ReactNode, useEffect, useMemo, useState } from "react";
 
 interface AppContextValues {
   isDarkMode: boolean;
@@ -46,8 +46,10 @@ export default function AppContextProvider({
     document.documentElement.classList.toggle("app--dark", isDarkMode);
   }, [isDarkMode]);
 
+  const value = useMemo(() => ({ isDarkMode, setIsDarkMode }), [isDarkMode]);
+
   return (
-    <AppContext.Provider value={{ isDarkMode, setIsDarkMode }}>
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );
