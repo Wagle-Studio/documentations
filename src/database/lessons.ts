@@ -10,8 +10,8 @@ const lessons: Lesson[] = [
     course_id: 1,
     description:
       "Commandes principales pour administrer et configurer le serveur Apache.",
-    created: "2 novembre 2025",
-    updated: "2 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 2,
@@ -22,8 +22,8 @@ const lessons: Lesson[] = [
     course_id: 1,
     description:
       "Procédure d'installation et de vérification d'Apache sur Ubuntu.",
-    created: "2 novembre 2025",
-    updated: "10 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 3,
@@ -34,8 +34,8 @@ const lessons: Lesson[] = [
     course_id: 1,
     description:
       "Guide sur la création et la gestion des Virtual Hosts dans Apache.",
-    created: "2 novembre 2025",
-    updated: "10 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 4,
@@ -46,8 +46,8 @@ const lessons: Lesson[] = [
     course_id: 1,
     description:
       "Mise en place d'une authentification basique avec un fichier .htpasswd.",
-    created: "2 novembre 2025",
-    updated: "10 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 5,
@@ -58,8 +58,8 @@ const lessons: Lesson[] = [
     course_id: 2,
     description:
       "Commandes principales pour administrer Docker et Docker Compose.",
-    created: "2 novembre 2025",
-    updated: "2 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 6,
@@ -69,8 +69,8 @@ const lessons: Lesson[] = [
     slug: "decouverte_docker",
     course_id: 2,
     description: "Introduction aux concepts fondamentaux de Docker.",
-    created: "5 novembre 2025",
-    updated: "5 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 7,
@@ -81,8 +81,8 @@ const lessons: Lesson[] = [
     course_id: 2,
     description:
       "Procédure d'installation et de vérification de Docker sur Ubuntu.",
-    created: "5 novembre 2025",
-    updated: "10 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 8,
@@ -92,8 +92,8 @@ const lessons: Lesson[] = [
     slug: "les_images",
     course_id: 2,
     description: "Principes et usages des images Docker.",
-    created: "2 novembre 2025",
-    updated: "10 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 9,
@@ -103,8 +103,8 @@ const lessons: Lesson[] = [
     slug: "volumes",
     course_id: 2,
     description: "Persistance et partage des données avec les volumes Docker.",
-    created: "2 novembre 2025",
-    updated: "10 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 10,
@@ -114,8 +114,8 @@ const lessons: Lesson[] = [
     slug: "docker_file",
     course_id: 2,
     description: "Création d'un Dockerfile pas à pas.",
-    created: "2 novembre 2025",
-    updated: "10 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 11,
@@ -125,8 +125,8 @@ const lessons: Lesson[] = [
     slug: "docker_compose",
     course_id: 2,
     description: "Orchestration de plusieurs services avec Docker Compose.",
-    created: "2 novembre 2025",
-    updated: "2 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 12,
@@ -137,8 +137,8 @@ const lessons: Lesson[] = [
     course_id: 3,
     description:
       "Commandes principales pour administrer Git et son versionnement.",
-    created: "5 novembre 2025",
-    updated: "10 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 13,
@@ -149,8 +149,8 @@ const lessons: Lesson[] = [
     course_id: 3,
     description:
       "Installation et configuration initiale de Git et mise en place des clés SSH.",
-    created: "5 novembre 2025",
-    updated: "10 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 14,
@@ -161,8 +161,8 @@ const lessons: Lesson[] = [
     course_id: 3,
     description:
       "Guide pas à pas pour initialiser un dépôt, effectuer ses premiers commits et gérer les branches.",
-    created: "5 novembre 2025",
-    updated: "10 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 15,
@@ -172,8 +172,8 @@ const lessons: Lesson[] = [
     slug: "syntaxe_base",
     course_id: 5,
     description: "Introduction aux concepts fondamentaux de la POO en PHP.",
-    created: "7 novembre 2025",
-    updated: "7 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 16,
@@ -183,8 +183,8 @@ const lessons: Lesson[] = [
     slug: "auto_chargement",
     course_id: 5,
     description: "Guide sur l'auto-chargement des classes en PHP.",
-    created: "9 novembre 2025",
-    updated: "9 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 17,
@@ -195,8 +195,8 @@ const lessons: Lesson[] = [
     course_id: 5,
     description:
       "Les méthodes constructeur et destructeur dans les classes PHP.",
-    created: "9 novembre 2025",
-    updated: "9 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 18,
@@ -207,8 +207,8 @@ const lessons: Lesson[] = [
     course_id: 5,
     description:
       "Les différents niveaux de visibilité des propriétés et méthodes en PHP.",
-    created: "9 novembre 2025",
-    updated: "9 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 19,
@@ -218,8 +218,8 @@ const lessons: Lesson[] = [
     slug: "heritage",
     course_id: 5,
     description: "Principes de l'héritage en PHP.",
-    created: "9 novembre 2025",
-    updated: "9 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 20,
@@ -229,8 +229,8 @@ const lessons: Lesson[] = [
     slug: "interfaces",
     course_id: 5,
     description: "Utilisation des interfaces pour définir des contrats en PHP.",
-    created: "10 novembre 2025",
-    updated: "10 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 21,
@@ -240,8 +240,8 @@ const lessons: Lesson[] = [
     slug: "traits",
     course_id: 5,
     description: "Utilisation des traits pour le réemploi de code en PHP.",
-    created: "10 novembre 2025",
-    updated: "10 novembre 2025",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 22,
@@ -252,8 +252,8 @@ const lessons: Lesson[] = [
     course_id: 4,
     description:
       "Les concepts fondamentaux de la programmation orientée objet.",
-    created: "01 mars 2026",
-    updated: "01 mars 2026",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
   {
     id: 23,
@@ -263,8 +263,8 @@ const lessons: Lesson[] = [
     slug: "principes_solid",
     course_id: 4,
     description: "Les principes de conceptions SOLID illustrés.",
-    created: "01 mars 2026",
-    updated: "01 mars 2026",
+    created: "1 février 2026",
+    updated: "1 février 2026",
   },
 ];
 

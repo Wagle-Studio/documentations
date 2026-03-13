@@ -67,12 +67,16 @@
       }
     }
 
+    .tag-code {
+      padding: var(--space-4) 0;
+      background-color: var(--background);
+    }
+
     pre {
       display: block !important;
       box-sizing: border-box !important;
       max-width: 100% !important;
       overflow-x: hidden !important;
-      margin: var(--space-4) 0;
     }
 
     pre code {

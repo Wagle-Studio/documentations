@@ -1,9 +1,13 @@
 "use client";
 
 import "./tag-code.scss";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { coldarkCold } from "react-syntax-highlighter/dist/esm/styles/prism";
+import {
+  coldarkCold,
+  coldarkDark,
+} from "react-syntax-highlighter/dist/esm/styles/prism";
+import { AppContext } from "@/ui/AppContext";
 
 const LANGUAGE_REGEX = /language-(\w+)/;
 
@@ -14,6 +18,7 @@ interface TagCodeProps {
 }
 
 export const TagCode = ({ children, className, inline }: TagCodeProps) => {
+  const { isDarkMode } = useContext(AppContext);
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -45,7 +50,7 @@ export const TagCode = ({ children, className, inline }: TagCodeProps) => {
       >
         {copied ? "Copié !" : "Copier"}
       </button>
-      <SyntaxHighlighter language={language} style={coldarkCold} wrapLongLines>
+      <SyntaxHighlighter language={language} style={isDarkMode ? coldarkDark : coldarkCold} wrapLongLines>
         {code}
       </SyntaxHighlighter>
     </div>

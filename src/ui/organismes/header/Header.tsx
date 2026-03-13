@@ -81,7 +81,7 @@ export const Header = () => {
               <span className="header__toggle__thumb" />
               <DarkModeIcon />
             </button>
-            <Tag>V 1.3</Tag>
+            <Tag>V 2.0</Tag>
             <a
               href="https://github.com/Wagle-Studio/documentations"
               target="_blank"
