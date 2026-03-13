@@ -235,7 +235,7 @@ class User {
 
 Ce principe suggère qu'une classe doit être ouverte à l'extension (l'ajout de fonctionnalité) mais fermée à la modification. L'implémentation d'une fonctionnalité ne doit pas entraîner de modification dans le code existant.
 
-Ce principe est très lié aux deux piliers de la POO que sont l'abstraction et le polymorphisme. L'abstraction permet l'exploitation de différentes classes par l'intermédiaire d'une interface unique tandis que le polymorphisme permet au code d'adopter différement comportement selon la classe exploitée.
+Ce principe est très lié aux [deux piliers de la POO](/documentations/poo_concepts/quatre_pilier_poo) que sont l'abstraction et le polymorphisme. L'abstraction permet l'exploitation de différentes classes par l'intermédiaire d'une interface unique tandis que le polymorphisme permet au code d'adopter différement comportement selon la classe exploitée.
 
 ### Avant principe
 
@@ -243,7 +243,7 @@ Ce principe est très lié aux deux piliers de la POO que sont l'abstraction et 
 
 Dans cet exemple, le canal d'envoi d'un message est déterminé par la configuration du programme, dans le fichier d'environnement. La variable `MESSAGE_SUPPLIER` déterminera le canal à utiliser.
 
-Le méthode `resetPassword` de la classe `AuthController` nécessitera une modification si l'on souhaite ajouter une nouvelle manière de distribuer le lien de changement de mot de passe.
+La méthode `resetPassword` de la classe `AuthController` nécessitera une modification si l'on souhaite ajouter une nouvelle manière de distribuer le lien de changement de mot de passe.
 
 Il n'existe pas d'interface commune pour l'envoi d'un message, chaque classe représentant un fournisseur déclare une méthode différente, ce qui rend le code appelant dépendant de chaque implémentation concrète.
 
@@ -327,7 +327,7 @@ class AuthController {
 
 **Principe de cohérence de la hiérarchie**
 
-Ce principe vise à garantir que les sous-classes peuvent être utilisées de manière interchangeable avec leur classe de base, sans altérer le comportement attendu du programme.
+Ce principe vise à garantir que les [sous-classes](/documentations/php_poo/heritage) peuvent être utilisées de manière interchangeable avec leur classe de base, sans altérer le comportement attendu du programme.
 
 Pour cela, les points suivants doivent être respectés :
 
@@ -335,7 +335,7 @@ Pour cela, les points suivants doivent être respectés :
 - Les exceptions levées doivent être du même type
 - Les préconditions et postconditions doivent être cohérentes
 
-Les langages modernes et le typage, notamment via les signatures de méthodes définies dans les interfaces, garantissent en partie l'application du principe. Néanmoins, cela ne garantit pas que les exceptions ou les contraintes métier seront uniformes.
+Les langages modernes et le typage, notamment via les signatures de méthodes définies dans les [interfaces](/documentations/php_poo/interfaces), garantissent en partie l'application du principe. Néanmoins, cela ne garantit pas que les exceptions ou les contraintes métier seront uniformes.
 
 Si une classe `EmailSupplier` implémente `MessageSupplierInterface`, alors toute instance de `EmailSupplier` doit pouvoir remplacer n'importe quelle autre implémentation de `MessageSupplierInterface` sans que le code appelant ne s'en aperçoive.
 
@@ -398,7 +398,7 @@ class AuthController {
 
 ---
 
-La méthode `send` de la classe `SmsSupplier` a était modifiée pour implémenter la même exception que la méthode de la classe `EmailSupplier`.
+La méthode `send` de la classe `SmsSupplier` a été modifiée pour implémenter la même exception que la méthode de la classe `EmailSupplier`.
 
 Aussi, les préconditions ont été uniformisées pour garantir le même comportement lors des validations du contenu du message.
 
@@ -451,13 +451,13 @@ class AuthController {
 
 **Principe de spécificité des contrats**
 
-Ce principe prône l'utilisation de petites interfaces spécifique plutôt que de grandes interfaces générales. 
+Ce principe prône l'utilisation de petites [interfaces](/documentations/php_poo/interfaces) spécifiques plutôt que de grandes interfaces générales.
 
 Aucune classe ne devrait être forcée d'implémenter des méthodes / fonctions qu'elle n'utilise pas. Préférer plusieurs interfaces spécifiques pour chaque classe plutôt qu'une seule interface générale.
 
 Cela évite aux classes de dépendre de méthodes dont elles n'ont pas besoin, réduisant ainsi les couplages inutiles.
 
-### Avant principe 
+### Avant principe
 
 ---
 
@@ -529,3 +529,113 @@ class SmsSupplier implements MessageSupplierInterface {
     }
 }
 ```
+
+## Dependency Inversion
+
+---
+
+**Principe de découplage par l'abstraction**
+
+Une classe doit dépendre de son abstraction, pas de son implémentation. Ce principe consiste à détacher la logique métier des détails techniques en imposant que les modules de haut niveau et de bas niveau dépendent tous deux d'abstractions communes.
+
+L'injection de dépendance est le mécanisme qui permet d'appliquer ce principe concrètement. Plutôt qu'une classe n'instancie elle-même ses dépendances avec `new`, elle les reçoit de l'extérieur, ce qui lui permet de dépendre d'une abstraction (interface) plutôt que d'une implémentation concrète.
+
+Sans l'injection de dépendance il n'est pas possible de dépendre d'une abstraction (interface) car celles-ci ne sont pas instanciables. Les [interfaces](/documentations/php_poo/interfaces) ne sont pas des classes, elles permettent de normaliser les interactions avec les objets qui les implémentent.
+
+Le principe d'inversion des dépendances est transversal à plusieurs principes SOLID, c'est le cas pour [Open/Close](#open_close) et [Liskov Substitution](#liskov_substitution). Ce principe formalise justement la pratique de dépendance aux abstractions.
+
+Pour illustrer ce principe j'utiliserai le même code que celui de la partie Open/Close.
+
+### Avant principe
+
+---
+
+Dans cet exemple, le canal d'envoi d'un message est déterminé par la configuration du programme, dans le fichier d'environnement. La variable `MESSAGE_SUPPLIER` déterminera le canal à utiliser.
+
+Il n'existe pas d'interface commune pour l'envoi d'un message, chaque classe représentant un fournisseur déclare une méthode différente, ce qui rend le code appelant dépendant de chaque implémentation concrète.
+
+```php
+<?php
+
+class EmailSupplier {
+    public function sendEmail(User $user, Message $message): void {
+        ...
+    }
+}
+
+class SmsSupplier {
+    public function sendSms(User $user, Message $message): void {
+        ...
+    }
+}
+
+class AuthController {
+    public function resetPassword(User $user): void {
+        $message = new Message(MessageTypeEnum::RESET_PASSWORD, $user);
+        $supplier = getenv('MESSAGE_SUPPLIER');
+
+        if ($supplier === 'email') {
+            $emailSupplier = new EmailSupplier();
+            $emailSupplier->sendEmail($user, $message);
+        }
+
+        if ($supplier === 'sms') {
+            $smsSupplier = new SmsSupplier();
+            $smsSupplier->sendSms($user, $message);
+        }
+    }
+}
+```
+
+### Après principe
+
+---
+
+Le principe n'a pas changé, le canal d'envoi d'un message est déterminé par la configuration du programme. C'est lors de l'injection de dépendance que le choix entre `EmailSupplier` et `SmsSupplier` sera déterminé, la classe choisie sera alors exploitée via l'interface `MessageSupplierInterface`.
+
+L'interface `MessageSupplierInterface` garantit que toutes les classes l'implémentant disposent de la méthode `send` et sa signature.
+
+La classe de haut niveau (classes métiers), `AuthController`, n'est plus dépendante de l'implémentation concrète des classes de bas niveau (classes techniques). Les classes de haut et bas niveau peuvent évoluer indépendamment les unes des autres tant que l'implémentation de l'interface est valide.
+
+```php
+<?php
+
+interface MessageSupplierInterface {
+    public function send(User $user, Message $message): void;
+}
+
+class EmailSupplier implements MessageSupplierInterface {
+    public function send(User $user, Message $message): void {
+        ...
+    }
+}
+
+class SmsSupplier implements MessageSupplierInterface {
+    public function send(User $user, Message $message): void {
+        ...
+    }
+}
+
+class AuthController {
+    public function __construct(
+        private MessageSupplierInterface $messageSupplier
+    ) {}
+
+    public function resetPassword(User $user): void {
+        $message = new Message(MessageTypeEnum::RESET_PASSWORD, $user);
+        $this->messageSupplier->send($user, $message);
+    }
+}
+```
+
+## Les liens entre les principes
+
+---
+
+| Principes   | Lien                                                                                                                                                                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **O/C + D** | Le découplage par l'abstraction de Dependency Inversion est nécessaire pour réaliser Open/Closed, sans abstraction, impossible d'étendre sans modifier              |
+| **L + D**   | Dependency Inversion permet de substituer les implémentations via les abstractions, Liskov garantit que ces substitutions ne trahissent pas le comportement attendu |
+| **S + I**   | Une classe à responsabilité unique favorise la création d'interfaces bien ciblées, réduisant le risque d'interfaces trop larges                                     |
+| **L + O/C** | Liskov est une continuité de Open/Closed : O/C invite à l'extension sans modification, Liskov garantit que cette extension respecte le contrat comportemental       |
+| **S + O/C** | Une classe à responsabilité unique est plus facile à étendre sans modification                                                                                      |
