@@ -34,7 +34,7 @@ export const useSummaryParser = (lessonSlug: ParamValue) => {
       );
 
     setSummaryItems(summaryItems);
-  }, [lessonSlug, setSummaryItems]);
+  }, [lessonSlug]);
 
   return { summaryItems };
 };
