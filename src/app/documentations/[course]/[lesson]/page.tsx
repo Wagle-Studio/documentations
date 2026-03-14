@@ -42,11 +42,20 @@ export default async function Lesson({ params }: LessonParams) {
 
   if (!getContentResult.success) notFound();
 
+  const mdx = getContentResult.data.mdx;
+  const headings = [...mdx.matchAll(/^## (.+)$/gm)].map(m => m[1]);
+  let geminiPrompt: string | undefined;
+
+  if (headings.length > 0) {
+    geminiPrompt = `Crée un test interactif en français basé sur cette leçon :\n\nTitre : ${getContentResult.data.lesson.label}\n\nSections :\n${headings.map(h => `- ${h}`).join('\n')}\n\nGénère des questions à choix multiples, de difficulté progressive.`;
+  }
+
   return (
     <ContentLesson
       lesson={getContentResult.data.lesson}
-      mdx={getContentResult.data.mdx}
+      mdx={mdx}
       references={getContentResult.data.references}
+      geminiPrompt={geminiPrompt}
     />
   );
 }

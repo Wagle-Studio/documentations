@@ -1,0 +1,45 @@
+.prompt_preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+
+  @media screen and (min-width: 600px) {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  &__block {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    height: 4.5rem;
+    border-radius: var(--border-radius-base);
+    background-color: var(--code-surface);
+  }
+
+  &__text {
+    margin: 0;
+    padding: var(--space-1) var(--space-2);
+    font-family: monospace;
+    font-size: var(--font-size-small);
+    color: var(--code-foreground);
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.5;
+  }
+
+  &__fade {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2rem;
+    background: linear-gradient(to bottom, transparent, var(--code-surface));
+    pointer-events: none;
+  }
+
+  &__copy {
+    flex-shrink: 0;
+    align-self: flex-start;
+  }
+}

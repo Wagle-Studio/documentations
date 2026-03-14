@@ -60,6 +60,9 @@
   --border-radius-medium: 16px;
   --border-radius-large: 32px;
 
+  --code-surface: #1a1f35;
+  --code-foreground: #ecf1ff;
+
   --info: #3b82f6;
   --succes: #22c55e;
   --warning: #f59e0b;
@@ -72,6 +75,9 @@
 }
 
 .app--dark {
+  --code-surface: #0a0e1a;
+  --code-foreground: #ecf1ff;
+
   --background: #0f1426;
   --foreground: #ecf1ff;
   --card: #121a31;

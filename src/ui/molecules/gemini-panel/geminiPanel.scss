@@ -1,0 +1,74 @@
+@keyframes geminiPanelSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .gemini_panel {
+    animation: geminiPanelSlideDown 150ms ease-out;
+  }
+}
+
+.gemini_panel {
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-base);
+  background-color: var(--card);
+  overflow: hidden;
+
+  &__steps {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--border);
+    justify-content: space-between;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__step-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+&__step-description {
+    font-size: var(--font-size-small);
+    color: var(--muted-foreground);
+    margin: 0;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  @media screen and (min-width: 850px) {
+    &__steps {
+      flex-direction: row;
+    }
+
+    &__step {
+      border-bottom: none;
+      border-right: 1px solid var(--border);
+
+      &:last-child {
+        border-right: none;
+      }
+    }
+  }
+}

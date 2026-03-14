@@ -2,6 +2,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-0);
   padding: var(--space-1) var(--space-2);
   font-family: var(--font-primary);
   font-size: var(--font-size-small);
@@ -13,21 +14,37 @@
   background-color: var(--primary);
   cursor: pointer;
   transition: background-color 150ms ease, color 150ms ease, border 150ms ease,
-    transform 150ms ease;
+    transform 150ms ease, filter 150ms ease;
 
   &--variant {
     &-primary {
       background-color: var(--primary);
       border: 1px solid var(--primary);
       color: var(--card);
+
+      &:hover {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        filter: brightness(0.88);
+        transform: translateY(-2px);
+      }
     }
 
     &-ghost {
-      padding: 0;
       background-color: transparent;
       border: 1px solid transparent;
       color: var(--foreground);
+
+      &:hover {
+        background-color: var(--muted);
+        border-color: var(--border);
+        transform: translateY(-2px);
+      }
     }
+  }
+
+  .icon {
+    color: inherit;
   }
 
   &--icon {
@@ -36,9 +53,5 @@
         order: 1;
       }
     }
-  }
-
-  &:hover {
-    transform: translateY(-2px);
   }
 }
