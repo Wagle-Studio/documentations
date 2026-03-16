@@ -31,6 +31,12 @@ const courses: Course[] = [
     slug: "php_poo",
     emoji: "/emoji/elephant.png",
   },
+  {
+    id: 6,
+    label: "API REST",
+    slug: "api_rest",
+    emoji: "/emoji/satellite.png",
+  },
 ];
 
 export default courses;

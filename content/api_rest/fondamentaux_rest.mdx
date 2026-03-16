@@ -1,0 +1,87 @@
+## Introduction
+
+---
+
+Le principe fondamental d'une API REST et de rendre accessible les ressources d’une application via des URLs et manipulées avec les méthodes HTTP.
+
+Dans la pratique, l'API REST fonctionne sur le principe de l'environnement client-serveur. Elle récupère et transmet d'un côté les requêtes d'un utilisateur ou d'une application, et de l'autre les informations rendues par le serveur.
+
+> ℹ️ API : Application Programming Interface : Elle représente un contrat de communication entre logiciels. C'est une interface de programmation qui permet à deux applications de communiquer entre elles.
+
+> ℹ️ REST : REpresentational State Transfer : C'est un style d'architecture d'API web, une manière standard de structurer son API, défini en 2000 par Roy Fielding.
+
+### Cas d'usages
+
+---
+
+Une API répond fondamentalement à un besoin de communication entre deux programmes sans qu'ils aient besoin de connaître les détails internes l'un de l'autre.
+
+Le développement d'une application web ne nécessite pas forcément la mise en oeuvre d'une API, il existe des cas d'usage identifiés :
+
+**Séparer le front du back** : le client échange avec le serveur sans savoir comment celui-ci fonctionne
+
+**Automatisation** : des scripts qui interagissent avec un service sans passer par l'interface graphique
+
+**Intégrations entre outils** : connecter deux logiciels qui n'ont pas été conçus ensemble
+
+**Applications mobiles** : une application iOS et une app Android consomment la même API backend
+
+**Exposer ses données/services à des tiers** : une entreprise crée une API pour que d'autres puissent s'appuyer dessus
+
+## Contraintes principales
+
+---
+
+Six contraintes architecturales définissent un système REST. Ces contraintes restreignent la façon dont le serveur peut traiter et répondre aux requêtes pour construire des API plus standardisées et scalables.
+
+### Découplage client-serveur
+
+---
+
+Les responsabilités sont séparées entre le client et le serveur. Le client connaît seulement l'URI de la ressource qu'il souhaite obtenir, tandis que le serveur ne se préoccupe pas de la façon dont le client utilisera la réponse.
+
+Découpler l'interface utilisateur du serveur ou encore de la base de données permet aux composants d'évoluer indépendamment.
+
+### Sans état
+
+---
+
+Chaque requête du client doit contenir tous les éléments nécessaires au serveur pour effectuer l'opération demandée. Il n'y a pas de conservation de l'état de la session sur le serveur entre deux requêtes successives. Cela inclut les données nécessaires à l'authentification.
+
+En évitant une gestion d'état gourmande en ressources, le serveur peut gérer davantage de requêtes simultanées. Les communications sans état conduisent à une utilisation plus efficace des ressources du serveur.
+
+### Interface uniforme
+
+---
+
+La contrainte d'interface uniforme est fondamentale dans l'architecture REST pour définir la façon dont les informations sont identifiées, gérées et transmises.
+
+Cette contrainte s'articule autour de 4 principes, parmi lesquels l'identification des ressources est le plus fondamental :
+
+L'application de conventions de dénomination claires et cohérentes est cruciale pour rendre les API REST facilement compréhensibles et navigables pour les développeurs. Des conventions de dénomination incohérentes peuvent dérouter les clients.
+
+Rappelez-vous que l'identification et la manipulation des ressources se fait au travers de l'URI exploité par le client. Ces URI doivent s'articuler autour des ressources que vous exploitez. Utilisez une hiérarchie de ressources pour illustrer les relations plutôt que des actions spécifiques.
+
+### Cache
+
+---
+
+Les clients et les serveurs intermédiaires peuvent mettre en cache les réponses. Les réponses peuvent se définir comme pouvant être mises en cache ou non, afin d'empêcher le client de récupérer des données obsolètes ou inappropriées. 
+
+En mettant en cache les données de réponse, les clients peuvent réduire la latence des requêtes ultérieures, minimiser la charge sur les serveurs et diminuer le trafic sur le réseau. Une mise en cache bien gérée élimine partiellement voire totalement certaines interactions client-serveur.
+
+### Système en couches
+
+---
+
+Une API REST peut s'exécuter sur plusieurs serveurs organisés de façon hiérarchique. Un client ne doit pas pouvoir dire s'il est connecté directement au serveur final ou à un serveur intermédiaire.
+
+Les serveurs intermédiaires de cette architecture en couches permettent de séparer les préoccupations afin d'améliorer : la mise en cache, la sécurité, la maintenabilité ou encore l'évolutivité.
+
+### Code à la demande
+
+---
+
+Le code à la demande est une contrainte facultative des API REST, permettant aux serveurs de fournir une logique d'application pour effectuer des actions spécifiques sur les ressources. Le serveur peut fournir du code exécutable au client que celui-ci exécute.
+
+Cela permet de simplifier les clients en réduisant le nombre de fonctionnalités qu'ils doivent mettre en oeuvre pour leurs besoins. Attention, cela introduit également des risques de sécurité potentiels.

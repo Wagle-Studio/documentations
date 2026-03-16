@@ -266,6 +266,28 @@ const lessons: Lesson[] = [
     created: "1 février 2026",
     updated: "1 février 2026",
   },
+  {
+    id: 24,
+    index: 1,
+    paths: ["api_rest", "fondamentaux_rest.mdx"],
+    label: "Les fondamentaux",
+    slug: "fondamentaux_rest",
+    course_id: 6,
+    description: "Les fondamentaux et la philosophie REST.",
+    created: "1 février 2026",
+    updated: "1 février 2026",
+  },
+  {
+    id: 25,
+    index: 2,
+    paths: ["api_rest", "HTTP_api.mdx"],
+    label: "HTTP pour les API",
+    slug: "HTTP_api",
+    course_id: 6,
+    description: "Comprendre l’utilisation de HTTP dans les API.",
+    created: "1 février 2026",
+    updated: "1 février 2026",
+  },
 ];
 
 export default lessons;

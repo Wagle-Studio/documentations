@@ -1,0 +1,332 @@
+## Introduction
+
+---
+
+Rappelez-vous : le principe fondamental d'une API REST et de rendre accessible les ressources d'une application via des URLs et manipulées avec les méthodes HTTP.
+
+Les ressources sont identifiées via les URI comme le rappel l'un des principes de la contrainte d'interface uniforme, par exemple :
+
+- `/user/12`
+
+- `/users/12/articles`
+
+- `/articles/63`
+
+- `/articles/63/comments/12`
+
+Cette information seule n'est pas suffisante pour informer le serveur de vos attentions selon que vous souhaitiez consulter, modifier ou supprimer une ressource.
+
+Ce sont les méthodes HTTP qui permettent d'exprimer l'action que vous souhaitez réaliser.
+
+| **Action (BREAD)** | **Méthode HTTP** | **Exemple d'URL** | **Signification**                           |
+| ------------------ | ---------------- | ----------------- | ------------------------------------------- |
+| **Browse**         | `GET`            | `/books`          | Récupérer la liste de toutes les ressources |
+| **Read**           | `GET`            | `/books/3`        | Récupérer une ressource par son ID          |
+| **Add**            | `POST`           | `/books`          | Ajouter une nouvelle ressource              |
+| **Edit**           | `PATCH` / `PUT`  | `/books/3`        | Mettre à jour une ressource existante       |
+| **Delete**         | `DELETE`         | `/books/3`        | Supprimer une ressource                     |
+
+## Les méthodes HTTP
+
+---
+
+### GET
+
+---
+
+La méthode `GET` est utilisée pour récupérer des données depuis le serveur. Elle ne modifie pas l'état de la ressource et est dite idempotente : plusieurs appels successifs produisent le même résultat.
+
+Les paramètres peuvent être transmis via l'URL sous forme de query string :
+
+```http
+GET /books?author=tolkien&limit=10
+```
+
+Le serveur répond avec la représentation de la ressource, généralement en JSON :
+
+```json
+[
+  { "id": 1, "title": "Le Seigneur des Anneaux", "author": "Tolkien" },
+  { "id": 2, "title": "Le Hobbit", "author": "Tolkien" }
+]
+```
+
+> ℹ️ Une requête `GET` ne doit jamais contenir de corps (body). Les données sont exclusivement transmises dans l'URL.
+
+### POST
+
+---
+
+La méthode `POST` est utilisée pour créer une nouvelle ressource. Les données sont transmises dans le corps de la requête.
+
+Contrairement à `GET`, `POST` n'est pas idempotente : envoyer la même requête deux fois crée deux ressources distinctes.
+
+```yaml
+POST /books
+Content-Type: application/json
+
+{
+  "title": "Dune",
+  "author": "Frank Herbert"
+}
+```
+
+En cas de succès, le serveur retourne généralement un code `201 Created` accompagné de la ressource nouvellement créée, avec son identifiant attribué :
+
+```json
+{
+  "id": 42,
+  "title": "Dune",
+  "author": "Frank Herbert"
+}
+```
+
+### PUT
+
+---
+
+La méthode `PUT` remplace intégralement une ressource existante par les données fournies dans le corps de la requête. Si un champ n'est pas transmis, il sera considéré comme absent ou remis à sa valeur par défaut.
+
+```yaml
+PUT /books/42
+Content-Type: application/json
+
+{
+  "title": "Dune",
+  "author": "Frank Herbert",
+  "year": 1965
+}
+```
+
+`PUT` est idempotente : appeler cette requête plusieurs fois produit toujours le même résultat.
+
+### PATCH
+
+---
+
+La méthode `PATCH` applique une modification partielle à une ressource. Seuls les champs transmis dans le corps sont mis à jour, les autres restent inchangés.
+
+```yaml
+PATCH /books/42
+Content-Type: application/json
+
+{
+  "year": 1965
+}
+```
+
+C'est la méthode à privilégier lorsque vous ne souhaitez mettre à jour qu'un ou plusieurs champs d'une ressource sans en affecter le reste.
+
+### DELETE
+
+---
+
+La méthode `DELETE` supprime la ressource identifiée par l'URI. Le corps de la requête est généralement vide.
+
+```yaml
+DELETE /books/42
+```
+
+Le serveur répond souvent avec un code `204 No Content` pour indiquer que la suppression a bien été effectuée, sans retourner de contenu.
+
+`DELETE` est idempotente : supprimer une ressource déjà supprimée ne produit pas d'erreur fonctionnelle — la ressource n'existe simplement plus.
+
+### HEAD
+
+---
+
+La méthode `HEAD` fonctionne exactement comme `GET`, mais le serveur ne retourne aucun corps dans sa réponse, uniquement les en-têtes.
+
+```http
+HEAD /books/42
+```
+
+Le serveur répond avec les mêmes en-têtes qu'un `GET` équivalent (`Content-Type`, `Content-Length`, etc.), mais sans le contenu :
+
+```yaml
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 87
+```
+
+Elle est utilisée pour :
+
+- Vérifier l'existence d'une ressource sans la télécharger
+- Contrôler la fraîcheur d'un cache (via `Last-Modified` ou `ETag`)
+- Estimer la taille d'un fichier avant un téléchargement
+
+`HEAD` est idempotente et sans effet de bord.
+
+### OPTIONS
+
+---
+
+La méthode `OPTIONS` interroge le serveur sur les méthodes HTTP autorisées pour une ressource donnée. Le serveur répond via l'en-tête `Allow`.
+
+```http
+OPTIONS /books/42
+```
+
+```yaml
+HTTP/1.1 204 No Content
+Allow: GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
+```
+
+Elle est notamment utilisée par les navigateurs dans le mécanisme CORS (Cross-Origin Resource Sharing) : avant d'envoyer une requête cross-origin, le navigateur émet automatiquement une requête `OPTIONS` dite *preflight* pour vérifier que le serveur l'autorise.
+
+```yaml
+OPTIONS /books HTTP/1.1
+Origin: https://monapp.com
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: Content-Type, Authorization
+```
+
+Le serveur répond avec les politiques CORS applicables :
+
+```yaml
+HTTP/1.1 204 No Content
+Access-Control-Allow-Origin: https://monapp.com
+Access-Control-Allow-Methods: GET, POST, PATCH, DELETE
+Access-Control-Allow-Headers: Content-Type, Authorization
+Access-Control-Max-Age: 86400
+```
+
+## Structure d'une requête HTTP
+
+---
+
+Une requête HTTP est composée de trois parties : la ligne de requête, les en-têtes (headers) et le corps (body).
+
+```yaml
+POST /books HTTP/1.1
+Host: api.example.com
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+Accept: application/json
+
+{
+  "title": "Fondation",
+  "author": "Isaac Asimov"
+}
+```
+
+### La ligne de requête
+
+---
+
+La première ligne contient trois informations : la méthode HTTP, le chemin de la ressource ciblée et la version du protocole utilisée.
+
+```yaml
+POST /books HTTP/1.1
+```
+
+### Les en-têtes
+
+---
+
+Les en-têtes transmettent des métadonnées sur la requête. Ils permettent au serveur de comprendre le format des données envoyées, les types de réponse acceptés ou encore les informations d'authentification.
+
+| **En-tête**     | **Rôle**                                                       |
+| --------------- | -------------------------------------------------------------- |
+| `Content-Type`  | Format des données envoyées dans le corps (`application/json`) |
+| `Accept`        | Format de réponse attendu par le client                        |
+| `Authorization` | Informations d'authentification (token, clé API, etc.)         |
+| `Host`          | Nom de domaine du serveur ciblé                                |
+
+### Le corps
+
+---
+
+Le corps (body) contient les données transmises au serveur. Il est présent uniquement pour les méthodes `POST`, `PUT` et `PATCH`. Son format doit correspondre à celui déclaré dans l'en-tête `Content-Type`.
+
+```json
+{
+  "title": "Fondation",
+  "author": "Isaac Asimov"
+}
+```
+
+## Structure d'une réponse HTTP
+
+---
+
+Le serveur répond à chaque requête avec une réponse HTTP structurée de la même manière : une ligne de statut, des en-têtes et un corps.
+
+```yaml
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "id": 99,
+  "title": "Fondation",
+  "author": "Isaac Asimov"
+}
+```
+
+### La ligne de statut
+
+---
+
+La ligne de statut indique si la requête a été traitée avec succès ou non. Elle est composée de la version du protocole, du code de statut et d'un message descriptif.
+
+```yaml
+HTTP/1.1 201 Created
+```
+
+## Les codes de statut HTTP
+
+---
+
+Les codes de statut HTTP sont des codes numériques à trois chiffres renvoyés par le serveur pour informer le client du résultat de sa requête. Ils sont regroupés en cinq familles selon leur premier chiffre.
+
+### 2xx — Succès
+
+---
+
+Les codes `2xx` indiquent que la requête a été reçue, comprise et traitée avec succès.
+
+| **Code** | **Nom**     | **Usage**                                               |
+| -------- | ----------- | ------------------------------------------------------- |
+| `200`    | OK          | Requête réussie, réponse retournée dans le corps        |
+| `201`    | Created     | Ressource créée avec succès (réponse à un `POST`)       |
+| `204`    | No Content  | Succès sans corps de réponse (réponse à un `DELETE`)    |
+
+### 3xx — Redirection
+
+---
+
+Les codes `3xx` signalent que le client doit effectuer une action supplémentaire, généralement suivre une redirection, pour obtenir la ressource souhaitée.
+
+| **Code** | **Nom**           | **Usage**                                                         |
+| -------- | ----------------- | ----------------------------------------------------------------- |
+| `301`    | Moved Permanently | La ressource a été déplacée définitivement vers une nouvelle URL  |
+| `302`    | Found             | La ressource est temporairement disponible à une autre URL        |
+| `304`    | Not Modified      | La ressource n'a pas changé depuis le dernier accès (mise en cache) |
+
+### 4xx — Erreurs client
+
+---
+
+Les codes `4xx` indiquent une erreur liée à la requête envoyée par le client : données manquantes, ressource inexistante, accès non autorisé, etc.
+
+| **Code** | **Nom**      | **Usage**                                                              |
+| -------- | ------------ | ---------------------------------------------------------------------- |
+| `400`    | Bad Request  | La requête est mal formée ou contient des données invalides            |
+| `401`    | Unauthorized | L'authentification est requise ou les identifiants sont invalides      |
+| `403`    | Forbidden    | Le client est authentifié mais n'a pas les droits nécessaires          |
+| `404`    | Not Found    | La ressource demandée n'existe pas                                     |
+| `422`    | Unprocessable Entity | Les données sont bien reçues mais échouent à la validation     |
+
+### 5xx — Erreurs serveur
+
+---
+
+Les codes `5xx` signalent une erreur interne au serveur. Le client a envoyé une requête valide mais le serveur n'a pas pu la traiter correctement.
+
+| **Code** | **Nom**                | **Usage**                                                          |
+| -------- | ---------------------- | ------------------------------------------------------------------ |
+| `500`    | Internal Server Error  | Erreur générique côté serveur                                      |
+| `502`    | Bad Gateway            | Le serveur intermédiaire a reçu une réponse invalide               |
+| `503`    | Service Unavailable    | Le serveur est temporairement indisponible (surcharge, maintenance) |
+
+> ℹ️ En pratique, une API REST bien conçue doit retourner des codes de statut cohérents avec la situation réelle. Retourner systématiquement un `200` avec un message d'erreur dans le corps est une mauvaise pratique courante à éviter.

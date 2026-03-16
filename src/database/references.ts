@@ -131,6 +131,16 @@ const references: Reference[] = [
     label: "Apache - htpasswd",
     url: "https://httpd.apache.org/docs/2.4/fr/programs/htpasswd.html",
   },
+  {
+    id: 27,
+    label: "API REST - 6 règles des API REST",
+    url: "https://appmaster.io/fr/blog/les-six-regles-du-repos-apis",
+  },
+  {
+    id: 28,
+    label: "API REST - Wikipedia",
+    url: "https://fr.wikipedia.org/wiki/Representational_state_transfer",
+  },
 ];
 
 export default references;

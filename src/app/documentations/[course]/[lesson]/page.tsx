@@ -25,7 +25,9 @@ interface LessonParams {
   params: Promise<{ course: string; lesson: string }>;
 }
 
-export async function generateMetadata({ params }: LessonParams): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: LessonParams): Promise<Metadata> {
   const { lesson } = await params;
   const result = FileManager.getContent(lesson);
   if (!result.success) return {};
@@ -43,11 +45,14 @@ export default async function Lesson({ params }: LessonParams) {
   if (!getContentResult.success) notFound();
 
   const mdx = getContentResult.data.mdx;
-  const headings = [...mdx.matchAll(/^## (.+)$/gm)].map(m => m[1]);
+  const h2 = [...mdx.matchAll(/^## (.+)$/gm)].map((m) => m[1]);
+  const h3 = [...mdx.matchAll(/^### (.+)$/gm)].map((m) => m[1]);
+  const headings = [...h2, ...h3];
+
   let geminiPrompt: string | undefined;
 
   if (headings.length > 0) {
-    geminiPrompt = `Crée un test interactif en français basé sur cette leçon :\n\nTitre : ${getContentResult.data.lesson.label}\n\nSections :\n${headings.map(h => `- ${h}`).join('\n')}\n\nGénère des questions à choix multiples, de difficulté progressive.`;
+    geminiPrompt = `Crée un test interactif en français basé sur cette leçon :\n\nTitre : ${getContentResult.data.lesson.label}\n\nSections :\n${headings.map((h) => `- ${h}`).join("\n")}\n\nGénère des questions à choix multiples, de difficulté progressive.`;
   }
 
   return (
