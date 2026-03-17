@@ -1,0 +1,181 @@
+## Introduction
+
+---
+
+Le nommage des routes est l'un des aspects les plus visibles de la conception d'une API REST. Des URLs bien formées facilitent la compréhension, la maintenance et l'évolution de l'API dans le temps.
+
+Des conventions partagées par la communauté rendent une API prévisible : un développeur qui découvre une route inconnue doit pouvoir en deviner le comportement sans consulter la documentation.
+
+## Conventions de nommage
+
+---
+
+### Noms de ressources au pluriel
+
+---
+
+Les segments de chemin désignent des collections de ressources. Par convention, ils s'écrivent toujours au pluriel.
+
+| **Incorrect** | **Correct** |
+| ------------- | ----------- |
+| `/book`       | `/books`    |
+| `/user`       | `/users`    |
+| `/article`    | `/articles` |
+
+L'identifiant de la ressource individuelle vient ensuite en second segment :
+
+```http
+GET /books       # collection
+GET /books/42    # ressource individuelle
+```
+
+### Noms, pas verbes
+
+---
+
+La méthode HTTP exprime déjà l'action. Le chemin doit donc désigner une ressource, jamais une action.
+
+| **Incorrect**        | **Correct**         |
+| -------------------- | ------------------- |
+| `GET /getBooks`      | `GET /books`        |
+| `POST /createBook`   | `POST /books`       |
+| `DELETE /deleteBook` | `DELETE /books/42`  |
+| `POST /updateUser`   | `PATCH /users/12`   |
+
+### Minuscules et kebab-case
+
+---
+
+Les segments d'URL s'écrivent en minuscules. Lorsqu'un nom est composé de plusieurs mots, ils sont séparés par des tirets (`-`), jamais par des underscores ni en camelCase.
+
+| **Incorrect**          | **Correct**             |
+| ---------------------- | ----------------------- |
+| `/BookAuthors`         | `/book-authors`         |
+| `/book_authors`        | `/book-authors`         |
+| `/bookAuthors`         | `/book-authors`         |
+
+### Hiérarchie et sous-ressources
+
+---
+
+Lorsqu'une ressource appartient à une autre, la relation s'exprime par imbrication dans le chemin. La profondeur est généralement limitée à deux niveaux pour rester lisible.
+
+```http
+GET  /users/12/articles          # articles de l'utilisateur 12
+GET  /users/12/articles/63       # article 63 de l'utilisateur 12
+POST /users/12/articles          # créer un article pour l'utilisateur 12
+```
+
+Au-delà de deux niveaux d'imbrication, préférer une route plate avec un paramètre de filtre :
+
+```http
+# À éviter
+GET /users/12/articles/63/comments/7
+
+# Préférer
+GET /comments/7
+GET /comments?article=63
+```
+
+### Paramètres de chemin vs paramètres de requête
+
+---
+
+Les deux mécanismes n'ont pas le même rôle :
+
+| **Type**                  | **Usage**                                 | **Exemple**                        |
+| ------------------------- | ----------------------------------------- | ---------------------------------- |
+| Paramètre de chemin       | Identifier une ressource précise          | `/books/42`                        |
+| Paramètre de requête      | Filtrer, trier ou paginer une collection  | `/books?author=tolkien&page=2`     |
+
+```http
+GET /books/42                          # lecture d'une ressource identifiée
+GET /books?genre=fantasy&sort=title    # recherche filtrée dans la collection
+```
+
+### Versionnement
+
+---
+
+Le versionnement permet de faire évoluer l'API sans rompre la compatibilité avec les clients existants. La convention la plus répandue consiste à inclure le numéro de version au début du chemin.
+
+```http
+GET /v1/books
+GET /v2/books
+```
+
+La version est introduite dès la conception initiale, même si une seule version existe au départ, afin de ne pas avoir à refactoriser toutes les URLs lors d'une future évolution majeure.
+
+## Filtrage, tri et pagination
+
+---
+
+Lorsqu'une collection contient de nombreuses ressources, il est rarement pertinent de tout retourner d'un coup. Le client exprime ses besoins via des paramètres de requête transmis dans l'URL.
+
+### Filtrage
+
+---
+
+Le filtrage permet de restreindre les résultats selon un ou plusieurs critères. Chaque critère correspond à un paramètre de requête dont le nom correspond au champ sur lequel on filtre.
+
+```http
+GET /books?author=tolkien
+GET /books?genre=fantasy&available=true
+```
+
+Plusieurs paramètres se combinent naturellement : la requête ci-dessus retourne uniquement les livres de fantasy disponibles.
+
+> ℹ️ Le serveur n'est pas tenu d'exposer un paramètre pour chaque champ. Seuls les critères de filtrage pertinents pour les clients sont à documenter et implémenter.
+
+### Tri
+
+---
+
+Le tri s'exprime via un paramètre `sort` qui indique le champ utilisé comme critère, et un paramètre `order` qui précise le sens : `asc` (croissant) ou `desc` (décroissant).
+
+```http
+GET /books?sort=title&order=asc
+GET /books?sort=published_at&order=desc
+```
+
+Lorsqu'aucun paramètre de tri n'est fourni, le serveur applique un ordre par défaut, généralement par date de création ou par identifiant.
+
+### Pagination
+
+---
+
+La pagination découpe une collection en pages de taille fixe. Deux conventions coexistent selon les API.
+
+**Par numéro de page** : le client indique le numéro de la page souhaitée et la taille de chaque page.
+
+```http
+GET /books?page=2&limit=20
+```
+
+**Par offset** : le client indique le nombre d'éléments à ignorer depuis le début de la collection.
+
+```http
+GET /books?offset=40&limit=20
+```
+
+Les deux approches sont équivalentes pour un résultat identique. La convention `page` / `limit` est plus lisible pour un usage humain, tandis que `offset` / `limit` est plus précise pour des usages programmatiques.
+
+Le serveur retourne généralement des métadonnées de pagination dans la réponse pour permettre au client de naviguer :
+
+```json
+{
+  "data": [...],
+  "pagination": {
+    "total": 142,
+    "page": 2,
+    "limit": 20,
+    "pages": 8
+  }
+}
+```
+
+Ces trois mécanismes — filtrage, tri et pagination — se combinent librement dans une même requête :
+
+```http
+GET /books?genre=fantasy&sort=title&order=asc&page=1&limit=10
+```

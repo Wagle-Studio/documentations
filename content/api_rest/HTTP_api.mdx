@@ -2,23 +2,11 @@
 
 ---
 
-Rappelez-vous : le principe fondamental d'une API REST et de rendre accessible les ressources d'une application via des URLs et manipulées avec les méthodes HTTP.
+Une API REST repose intégralement sur le protocole HTTP pour transporter ses requêtes et ses réponses. Chaque interaction se résume ainsi : une ressource identifiée par une URI, combinée à une méthode HTTP qui exprime l'intention du client.
 
-Les ressources sont identifiées via les URI comme le rappel l'un des principes de la contrainte d'interface uniforme, par exemple :
+Le modèle BREAD (Browse, Read, Add, Edit, Delete) permet de faire correspondre ces intentions aux méthodes HTTP standard :
 
-- `/user/12`
-
-- `/users/12/articles`
-
-- `/articles/63`
-
-- `/articles/63/comments/12`
-
-Cette information seule n'est pas suffisante pour informer le serveur de vos attentions selon que vous souhaitiez consulter, modifier ou supprimer une ressource.
-
-Ce sont les méthodes HTTP qui permettent d'exprimer l'action que vous souhaitez réaliser.
-
-| **Action (BREAD)** | **Méthode HTTP** | **Exemple d'URL** | **Signification**                           |
+| **Action** | **Méthode** | **Exemple** | **Signification**                           |
 | ------------------ | ---------------- | ----------------- | ------------------------------------------- |
 | **Browse**         | `GET`            | `/books`          | Récupérer la liste de toutes les ressources |
 | **Read**           | `GET`            | `/books/3`        | Récupérer une ressource par son ID          |
@@ -26,9 +14,66 @@ Ce sont les méthodes HTTP qui permettent d'exprimer l'action que vous souhaitez
 | **Edit**           | `PATCH` / `PUT`  | `/books/3`        | Mettre à jour une ressource existante       |
 | **Delete**         | `DELETE`         | `/books/3`        | Supprimer une ressource                     |
 
+## Requête HTTP
+
+---
+
+Avant d'étudier chaque méthode en détail, il faut comprendre comment une requête HTTP est construite. Elle est composée de trois parties : la ligne de requête, les en-têtes (headers) et le corps (body).
+
+```yaml
+POST /books HTTP/1.1
+Host: api.example.com
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+Accept: application/json
+
+{
+  "title": "Fondation",
+  "author": "Isaac Asimov"
+}
+```
+
+### La ligne de requête
+
+---
+
+La première ligne contient trois informations : la méthode HTTP, le chemin de la ressource ciblée et la version du protocole utilisée.
+
+```yaml
+POST /books HTTP/1.1
+```
+
+### Les en-têtes
+
+---
+
+Les en-têtes transmettent des métadonnées sur la requête. Ils permettent au serveur de comprendre le format des données envoyées, les types de réponse acceptés ou encore les informations d'authentification.
+
+| **En-tête**     | **Rôle**                                                       |
+| --------------- | -------------------------------------------------------------- |
+| `Content-Type`  | Format des données envoyées dans le corps (`application/json`) |
+| `Accept`        | Format de réponse attendu par le client                        |
+| `Authorization` | Informations d'authentification (token, clé API, etc.)         |
+| `Host`          | Nom de domaine du serveur ciblé                                |
+
+### Le corps
+
+---
+
+Le corps (body) contient les données transmises au serveur. Il est présent uniquement pour les méthodes `POST`, `PUT` et `PATCH`. Son format doit correspondre à celui déclaré dans l'en-tête `Content-Type`.
+
+```json
+{
+  "title": "Fondation",
+  "author": "Isaac Asimov"
+}
+```
+
 ## Les méthodes HTTP
 
 ---
+
+Les méthodes HTTP définissent l'action que le client souhaite réaliser sur une ressource. Chacune a une sémantique précise que les API REST s'engagent à respecter.
 
 ### GET
 
@@ -191,62 +236,7 @@ Access-Control-Allow-Headers: Content-Type, Authorization
 Access-Control-Max-Age: 86400
 ```
 
-## Structure d'une requête HTTP
-
----
-
-Une requête HTTP est composée de trois parties : la ligne de requête, les en-têtes (headers) et le corps (body).
-
-```yaml
-POST /books HTTP/1.1
-Host: api.example.com
-Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
-Accept: application/json
-
-{
-  "title": "Fondation",
-  "author": "Isaac Asimov"
-}
-```
-
-### La ligne de requête
-
----
-
-La première ligne contient trois informations : la méthode HTTP, le chemin de la ressource ciblée et la version du protocole utilisée.
-
-```yaml
-POST /books HTTP/1.1
-```
-
-### Les en-têtes
-
----
-
-Les en-têtes transmettent des métadonnées sur la requête. Ils permettent au serveur de comprendre le format des données envoyées, les types de réponse acceptés ou encore les informations d'authentification.
-
-| **En-tête**     | **Rôle**                                                       |
-| --------------- | -------------------------------------------------------------- |
-| `Content-Type`  | Format des données envoyées dans le corps (`application/json`) |
-| `Accept`        | Format de réponse attendu par le client                        |
-| `Authorization` | Informations d'authentification (token, clé API, etc.)         |
-| `Host`          | Nom de domaine du serveur ciblé                                |
-
-### Le corps
-
----
-
-Le corps (body) contient les données transmises au serveur. Il est présent uniquement pour les méthodes `POST`, `PUT` et `PATCH`. Son format doit correspondre à celui déclaré dans l'en-tête `Content-Type`.
-
-```json
-{
-  "title": "Fondation",
-  "author": "Isaac Asimov"
-}
-```
-
-## Structure d'une réponse HTTP
+## Réponse HTTP
 
 ---
 
@@ -273,7 +263,7 @@ La ligne de statut indique si la requête a été traitée avec succès ou non. 
 HTTP/1.1 201 Created
 ```
 
-## Les codes de statut HTTP
+## Codes de statut HTTP
 
 ---
 
