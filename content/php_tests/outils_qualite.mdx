@@ -1,0 +1,212 @@
+## Introduction
+
+---
+
+Les tests fonctionnels et unitaires vérifient le comportement du code à l'exécution. Les outils qualité, eux, analysent le code avant même de le lancer. Ils constituent un filet de sécurité complémentaire en détectant les erreurs de type, les incohérences et les écarts aux conventions de codage.
+
+Trois outils couvrent l'essentiel des besoins :
+
+- **PHPStan** : analyse statique, détecte les erreurs de type et de logique sans exécuter le code.
+- **PHP_CodeSniffer** : vérifie le respect des standards de codage (formatage, conventions de nommage, etc.).
+- **GrumPHP** : orchestre ces tâches automatiquement à chaque commit Git.
+
+## PHPStan
+
+---
+
+PHPStan est un outil d'analyse statique. Il lit le code source et signale les erreurs potentielles, types incompatibles, appels de méthodes sur des valeurs nullables, variables inexistantes, sans avoir à exécuter l'application.
+
+### Installation
+
+---
+
+```bash
+composer require --dev phpstan/phpstan
+```
+
+### Configuration
+
+---
+
+PHPStan se configure via un fichier `phpstan.neon` à la racine du projet.
+
+```yaml
+parameters:
+    level: 6
+    paths:
+        - src
+```
+
+Le paramètre `level` définit la rigueur de l'analyse. Il va de `0` (le plus permissif) à `9` (le plus strict). Il est conseillé de commencer à un niveau bas et de l'augmenter progressivement.
+
+| Niveau | Ce qui est vérifié |
+| --- | --- |
+| 0 | Erreurs basiques (classes et fonctions inconnues) |
+| 3 | Types de retour et paramètres |
+| 5 | Vérification des propriétés de classe |
+| 8 | Variables potentiellement `null` |
+| 9 | Rigueur maximale |
+
+### Utilisation
+
+---
+
+```bash
+vendor/bin/phpstan analyse
+```
+
+PHPStan lit la configuration `phpstan.neon` et retourne la liste des erreurs détectées avec le fichier et la ligne correspondants.
+
+```txt
+ ------ -------------------------------------------------------
+  Line   src/Service/UserService.php
+ ------ -------------------------------------------------------
+  42     Cannot call method getEmail() on User|null.
+ ------ -------------------------------------------------------
+```
+
+Chaque erreur signalée indique un endroit où le code peut produire un comportement inattendu en production.
+
+## PHP_CodeSniffer
+
+---
+
+PHP_CodeSniffer (PHPCS) vérifie que le code respecte un standard de codage défini, indentation, espaces, conventions de nommage, longueur des lignes, etc. Un second outil, PHPCBF, corrige automatiquement la plupart des infractions détectées.
+
+### Installation
+
+---
+
+```bash
+composer require --dev squizlabs/php_codesniffer
+```
+
+### Configuration
+
+---
+
+PHPCS se configure via un fichier `.phpcs.xml` à la racine du projet.
+
+```xml
+<?xml version="1.0"?>
+<ruleset name="MonProjet">
+    <description>Standards de codage du projet</description>
+
+    <file>src</file>
+    <file>tests</file>
+
+    <rule ref="PSR12"/>
+</ruleset>
+```
+
+Le standard `PSR12` est le plus courant dans l'écosystème PHP moderne. Il étend PSR-2 et couvre les règles de formatage définies par le PHP-FIG.
+
+### Utilisation
+
+---
+
+**Analyser le code :**
+
+```bash
+vendor/bin/phpcs
+```
+
+PHPCS affiche la liste des infractions avec le fichier, la ligne et la règle violée.
+
+```txt
+FILE: src/Controller/UserController.php
+----------------------------------------------------------------------
+FOUND 2 ERRORS AFFECTING 2 LINES
+----------------------------------------------------------------------
+ 14 | ERROR | [x] Expected 1 space after opening bracket; 0 found
+ 27 | ERROR | [x] Line exceeds 120 characters; contains 135 characters
+----------------------------------------------------------------------
+```
+
+**Corriger automatiquement :**
+
+```bash
+vendor/bin/phpcbf
+```
+
+PHPCBF applique les corrections automatiques sur les infractions marquées `[x]`. Les infractions marquées sans crochet nécessitent une correction manuelle.
+
+## GrumPHP
+
+---
+
+PHPStan et PHPCS ne sont utiles que si l'on pense à les exécuter. GrumPHP résout ce problème en les intégrant à un hook Git : il lance automatiquement les tâches configurées avant chaque commit et bloque le commit si l'une d'elles échoue.
+
+### Installation
+
+---
+
+```bash
+composer require --dev phpro/grumphp
+```
+
+À l'installation, GrumPHP enregistre automatiquement un hook `pre-commit` dans le dépôt Git. Aucune configuration manuelle du hook n'est nécessaire.
+
+### Configuration
+
+---
+
+GrumPHP se configure via un fichier `grumphp.yml` à la racine du projet.
+
+```yaml
+grumphp:
+    tasks:
+        phpstan:
+            configuration: phpstan.neon
+        phpcs:
+            standard: .phpcs.xml
+```
+
+Chaque tâche déclarée dans `tasks` sera exécutée lors du hook `pre-commit`. Il est possible d'y intégrer d'autres outils : PHPUnit, Psalm, etc.
+
+### Utilisation
+
+---
+
+GrumPHP est transparent une fois configuré. À chaque `git commit`, il s'exécute automatiquement.
+
+```txt
+GrumPHP is sniffing your code...
+
+Running task 1/2: Phpstan... ✔
+Running task 2/2: Phpcs... ✘
+
+PHPcs failed:
+FILE: src/Service/UserService.php
+----------------------------------------------------------------------
+FOUND 1 ERROR AFFECTING 1 LINE
+----------------------------------------------------------------------
+ 58 | ERROR | [x] Expected 1 space after opening bracket; 0 found
+----------------------------------------------------------------------
+
+Cannot commit, GrumPHP returned errors.
+```
+
+Si toutes les tâches passent, le commit est créé normalement. Dans le cas contraire, GrumPHP bloque le commit et affiche les erreurs à corriger.
+
+### Contourner le hook
+
+---
+
+Il est possible de passer outre GrumPHP ponctuellement avec l'option `--no-verify` de Git. Cette option doit rester exceptionnelle : elle court-circuite toutes les vérifications.
+
+```bash
+git commit -m "message" --no-verify
+```
+
+## Résumé
+
+---
+
+| Outil | Rôle | Exécution |
+| --- | --- | --- |
+| **PHPStan** | Détecte les erreurs de type et de logique | Manuel ou via GrumPHP |
+| **PHP_CodeSniffer** | Vérifie les standards de formatage | Manuel ou via GrumPHP |
+| **GrumPHP** | Orchestre les tâches au moment du commit | Automatique (hook Git) |
+
+Ces trois outils sont complémentaires. PHPStan et PHPCS couvrent des aspects différents de la qualité du code, GrumPHP garantit qu'ils s'exécutent systématiquement sans dépendre de la discipline de chaque développeur.

@@ -321,6 +321,30 @@ const lessons: Lesson[] = [
     created: "1 février 2026",
     updated: "1 février 2026",
   },
+  {
+    id: 29,
+    index: 1,
+    paths: ["php_tests", "trois_familles_tests.mdx"],
+    label: "Les familles de tests",
+    slug: "trois_familles_tests",
+    course_id: 7,
+    description:
+      "Découvrir les trois grandes familles de tests : unitaires, fonctionnels et end-to-end (E2E).",
+    created: "18 mars 2026",
+    updated: "18 mars 2026",
+  },
+  {
+    id: 30,
+    index: 2,
+    paths: ["php_tests", "outils_qualite.mdx"],
+    label: "Outils qualité",
+    slug: "outils_qualite",
+    course_id: 7,
+    description:
+      "Analyse statique et standards de code avec PHPStan, PHP_CodeSniffer et GrumPHP.",
+    created: "18 mars 2026",
+    updated: "18 mars 2026",
+  },
 ];
 
 export default lessons;

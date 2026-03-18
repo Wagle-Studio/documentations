@@ -21,21 +21,27 @@ const courses: Course[] = [
   },
   {
     id: 4,
+    label: "API REST",
+    slug: "api_rest",
+    emoji: "/emoji/satellite.png",
+  },
+  {
+    id: 5,
     label: "Concepts POO",
     slug: "poo_concepts",
     emoji: "/emoji/book.png",
   },
   {
-    id: 5,
+    id: 6,
     label: "PHP POO",
     slug: "php_poo",
     emoji: "/emoji/elephant.png",
   },
   {
-    id: 6,
-    label: "API REST",
-    slug: "api_rest",
-    emoji: "/emoji/satellite.png",
+    id: 7,
+    label: "Tests en PHP",
+    slug: "php_tests",
+    emoji: "/emoji/alembic.png",
   },
 ];
 

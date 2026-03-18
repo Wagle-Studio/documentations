@@ -1,0 +1,262 @@
+## Introduction
+
+---
+
+Les tests permettent de vérifier que le code fonctionne comme prévu et de limiter les régressions lors des évolutions.
+
+On distingue trois grands niveaux de tests :
+
+- **Unitaire** : vérifie une brique de code isolée.
+- **Fonctionnel** : valide qu'une fonctionnalité complète répond à un besoin métier.
+- **End-to-End (E2E)** : simule un parcours utilisateur du début à la fin.
+
+Ces niveaux se complètent et forment une pyramide : beaucoup de tests unitaires, moins de tests fonctionnels, et quelques tests E2E ciblés.
+
+## Tests unitaires
+
+---
+
+Un test unitaire vérifie le comportement d'une fonction ou d'une méthode isolée. On ne dépend pas d'une base de données, ni d'une API, ni d'une interface : tout est testé en circuit court.
+
+Exemple : tester une fonction qui assemble une URL à partir de segments.
+
+```php
+<?php
+
+function buildUrl(string $base, string $path): string
+{
+    return $base . '/' . $path;
+}
+```
+
+```php
+<?php
+
+use PHPUnit\Framework\TestCase;
+
+class BuildUrlTest extends TestCase
+{
+    public function testAssembleCorrectementUneUrl(): void
+    {
+        $result = buildUrl('https://monsite.com', 'produits');
+        $this->assertSame('https://monsite.com/produits', $result);
+    }
+}
+```
+
+Rapide, fiable, utilisé massivement pour garantir la solidité des briques de base.
+
+## Tests fonctionnels
+
+---
+
+Un test fonctionnel valide une fonctionnalité complète de l'application. Il combine plusieurs unités de code et vérifie qu'un processus métier produit bien le résultat attendu.
+
+Exemple : système de filtre d'une page de produits.
+
+- Une fonction assemble l'URL du filtre.
+- Une autre récupère les données en base.
+- Une autre renvoie les résultats filtrés.
+
+```php
+<?php
+
+function filtrerProduits(string $category): array
+{
+    $url = buildUrl('/produits', $category);
+    $result = queryDatabase($url);
+    return $result;
+}
+```
+
+```php
+<?php
+
+use PHPUnit\Framework\TestCase;
+
+class FiltrerProduitsTest extends TestCase
+{
+    public function testLeFiltreRetourneLesProduitsDeLaCategorie(): void
+    {
+        $result = filtrerProduits('chaussures');
+        $this->assertContains('Basket running', $result);
+    }
+}
+```
+
+Plus lent qu'un test unitaire, mais essentiel pour vérifier que les différentes briques coopèrent correctement.
+
+## Tests End-to-End (E2E)
+
+---
+
+Un test E2E simule le comportement d'un utilisateur réel. On interagit avec l'interface (clics, formulaires, navigation) et on vérifie le résultat affiché. Cela couvre toute la chaîne : interface, logique applicative, base de données.
+
+Exemple : l'utilisateur ouvre la page produits, sélectionne un filtre, et la page affiche uniquement les produits correspondants. En PHP, ce type de test peut être réalisé avec [Panther](https://github.com/symfony/panther), qui pilote un vrai navigateur.
+
+```php
+<?php
+
+use Symfony\Component\Panther\PantherTestCase;
+
+class FiltrageProduitsTest extends PantherTestCase
+{
+    public function testUtilisateurPeutFiltrerLesProduits(): void
+    {
+        $client = static::createPantherClient();
+        $client->request('GET', '/produits');
+        $client->clickLink('Filtrer par chaussures');
+        $this->assertSelectorContains('.produit', 'Basket running');
+    }
+}
+```
+
+Plus lent et plus fragile que les autres familles, mais garantit que tout le système fonctionne en conditions réelles.
+
+## Résumé
+
+---
+
+| Type | Périmètre | Exemple | Vitesse | Usage |
+| --- | --- | --- | --- | --- |
+| **Unitaire** | Une fonction ou méthode isolée | Concaténation d'URL | Très rapide | Nombreux |
+| **Fonctionnel** | Une fonctionnalité complète | Filtre de produits | Moyen | Modéré |
+| **E2E** | Parcours utilisateur complet | Filtrage depuis l'interface | Lent | Ciblé |
+
+### Différence clé entre tests fonctionnels et E2E
+
+---
+
+Un test fonctionnel s'intéresse à une fonctionnalité métier complète, mais il la vérifie en circuit court. Cela signifie qu'on appelle directement le code ou qu'on simule une requête (par exemple un appel HTTP) sans passer par l'interface graphique.
+
+C'est efficace pour s'assurer que la logique applicative produit le bon résultat, mais cela ne reflète pas l'expérience réelle d'un utilisateur. À l'inverse, un test E2E rejoue le même scénario du point de vue de l'utilisateur final.
+
+On pilote un vrai navigateur, on clique sur les boutons, on remplit les formulaires et on observe le rendu final. Ce niveau permet de valider que toute la chaîne (interface, application, base de données) fonctionne ensemble dans des conditions proches du réel.
+
+## Bonnes pratiques pour tests unitaires
+
+---
+
+### Nom de test explicite
+
+---
+
+Un titre de test doit raconter le comportement attendu. Quand il échoue, il permet de comprendre immédiatement quoi et pourquoi.
+
+Utilisez un verbe d'action, mentionnez le contexte, l'entrée et la sortie ou l'effet attendu.
+
+Exemples :
+
+- `createUser_retourneUneInstanceUserAvecLEmailFourni`
+- `authenticateUser_retourneUneErreurSiLeMotDePasseEstIncorrect`
+
+### AAA — Arrange, Act, Assert
+
+---
+
+Structurer le test en trois étapes pour éviter la confusion et la logique inutile.
+
+- **Arrange** : prépare les données et les doubles de test
+- **Act** : exécute une seule action
+- **Assert** : vérifie un seul résultat ou un groupe d'attentes cohérentes
+
+```php
+<?php
+
+use PHPUnit\Framework\TestCase;
+
+class AuthServiceTest extends TestCase
+{
+    public function testCreateUserRetourneUneInstanceValide(): void
+    {
+        // Arrange
+        $email = 'alice@exemple.com';
+        $password = 'secret123';
+
+        // Act
+        $user = AuthService::createUser($email, $password);
+
+        // Assert
+        $this->assertSame($email, $user->getEmail());
+        $this->assertSame($password, $user->getPassword());
+    }
+}
+```
+
+### Isolation et mocks
+
+---
+
+Tester une unité en isolant ses dépendances permet de s'assurer que, si le test échoue, la cause pointe bien vers la fonction testée et non vers l'un de ses collaborateurs.
+
+**Quand mocker :**
+
+- Tout ce qui sort de la fonction testée
+- Les entrées/sorties réseau
+- La date et l'heure
+- Les valeurs aléatoires
+- Les librairies externes non déterministes
+
+**Quand ne pas mocker :**
+
+- Les objets valeur simples
+- Les classes sans effets de bord
+- Les fonctions pures
+
+### Chemins heureux et cas d'erreur
+
+---
+
+Garantissez le comportement dans les cas attendus, mais aussi dans les cas d'erreur. Chaque comportement distinct mérite son propre test.
+
+> Un test doit vérifier un seul comportement observable. Dès que vous abordez un autre comportement, créez un nouveau test.
+
+## Plan de tests
+
+---
+
+Un plan de tests est un document qui décrit quoi tester, comment le tester et quel résultat attendre. Il sert de feuille de route pour organiser les tests, éviter les oublis et permettre à toute l'équipe de partager une vision claire de la couverture.
+
+Un plan de tests se compose généralement de :
+
+- **Titre** : ce que l'on vérifie.
+- **Préconditions** : ce qu'il faut préparer avant.
+- **Étapes** : les actions à effectuer.
+- **Résultat attendu** : ce qui doit se produire.
+
+C'est une notion commune à toutes les familles de tests, mais son niveau de détail varie selon le type :
+
+- **Unitaire** : très technique, centré sur une fonction isolée.
+- **Fonctionnel** : plus métier, centré sur une fonctionnalité de l'application.
+- **E2E** : proche du langage utilisateur, centré sur un scénario réel via l'interface.
+
+### Exemple d'un plan de tests
+
+---
+
+**Test unitaire**
+
+| Élément | Contenu |
+| --- | --- |
+| Titre | Vérifier la fonction `buildUrl` |
+| Préconditions | Aucune |
+| Étapes | Appeler `buildUrl('https://monsite.com', 'produits')` |
+| Résultat attendu | Retourne `'https://monsite.com/produits'` |
+
+**Test fonctionnel**
+
+| Élément | Contenu |
+| --- | --- |
+| Titre | Vérifier le filtre des produits par catégorie |
+| Préconditions | Avoir une base avec des produits dont certains en catégorie "chaussures" |
+| Étapes | Appeler `filtrerProduits('chaussures')` |
+| Résultat attendu | Seuls les produits de la catégorie chaussures sont retournés |
+
+**Test E2E**
+
+| Élément | Contenu |
+| --- | --- |
+| Titre | Vérifier le filtrage de produits depuis l'interface |
+| Préconditions | L'utilisateur est sur la page Produits |
+| Étapes | 1. Cliquer sur le filtre "chaussures" 2. Observer la liste affichée |
+| Résultat attendu | La page affiche uniquement les produits de la catégorie chaussures |
