@@ -1,0 +1,147 @@
+## Introduction
+
+---
+
+La sécurité est un sujet à part entière dans la création d'une API REST. Une API expose directement les données et la logique métier sur le réseau par l'intermédiaire des endpoints.
+
+Il est indispensable d'implémenter des mécanismes de sécurité pour ne pas compromettre les données de vos utilisateurs. Ces mécanismes permettrons de garantir la sécurité et l'intégrité des données côté serveur et client.
+
+Il existe différente menaces dont : l'interception des données en transit (HTTPS) et l'accès non autorisé aux ressources (authentification/autorisation).
+
+## HTTPS
+
+---
+
+Ce n'est pas une recommandation propre aux API REST mais il est indispensable d'utiliser le protocol HTTPS. Le protocol HTTP transmet les données en clair, n'importe qui sur le réseau peut intercepter les requêtes (l'attaque "man in the middle") et les données sensibles qui peuvent s'y trouver : credentials, tokens, corps de requête, etc.
+
+Avec HTTPS (HTTP + TLS) le canal de communication entre le client et le serveur est chiffré, assurant la sécurité et l'intégrité des données échangées.
+
+Dans cet exemple, le token exposé compromet la sécurité de l'utilisateur et le corps de requête expose des données personnelles.
+
+```yaml
+PATCH /user/12 HTTP/1.1
+Host: api.example.com
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+Accept: application/json
+{
+  "phone": "+33742156698"
+}
+```
+
+Sans trop entrer dans les détails techniques, le header HSTS et une redirection automatique sont deux mécanismes intéressant à mettre en place côté serveur.
+
+### HSTS
+
+---
+
+Permet à un serveur d'indiquer à un agent utilisateur comme un navigateur web, qu'il doit intéragir avec lui en utilisant une connexion sécurisée comme HTTPS. C'est le serveur qui transmet l'information au client dans sa réponse avec le header `Strict-Transport-Security`.
+
+Dès lors, le client remplace automatiquement les liens non sécurisés par des liens sécurisés (HTTP -> HTTPS). Si la sécurité de la connexion ne peut pas être assurée, une erreur est affichée et l'accès à la page est restreint.
+
+### Redirection automatique
+
+---
+
+Par défauts les requêtes HTTP utilisent le port 80 du serveur, tandis que les requêtes HTTPS utilisent le port 443. Vous pouvez rediriger les requêtes HTTP transmisent par le port 80 au port 443 à l'aide d'une redirection dans la configuration serveur.
+
+Une fois la configuration serveur mise en place, lorsque le serveur reçoit une requête HTTP il répond avec un code status 301. Cette réponse force une redirection permanente vers la même URL mais avec le protocol HTTPS.
+
+## L'authentification
+
+---
+
+Dans le cadre d'une architecture REST chaque requête doit contenir tous les éléments nécessaires au serveur pour effectuer l'opération demandée, cela inclut les données nécessaires à l'authentification.
+
+Lorsque l'utilisateur accède à une page/donnée dont l'accès est sécurisé, il doit fournir le nécessaire pour s'authentifier auprès du serveur. Mais vous ne pouvez pas demander à votre utilisateur de renseigner ses identifiants de connexion toutes les dix secondes.
+
+Sans trop entrer dans les détails techniques, voici trois des mécanismes qui répondent à cette problématique d'authentification.
+
+### API Key
+
+---
+
+Ce sont des clés "opaques" générées par le serveur et transmise au client dans un header `X-API-Key`. Rien n'est standardisé, chacun est libre de construire et chiffrer ses clés comme il le souhaite.
+
+Ce système d'authentification est fonctionnel, mais il n'est pas optimale. Ce genre de clé est utilisée pour les accès machine-to-machine (votre code communique avec une boite à clé par le biai d'une API sécurisée avec la clé), l'accès à des services tiers (accéder à une API de films et séries), etc.
+
+Sa principale limite est l'absence de mécanisme d'expiration natif, la révocation d'une clé se fait manuellement. Si la clé fuité sans que l'on ne s'en apercoive, un attaquant pourrait l'exploiter aussi longtemps qu'il le souhaite, sans s'inquiéter d'une quelconque date d'expiration de la clé.
+
+### JWT
+
+---
+
+Le mécanisme des Json Web Token vise à standardiser une forme de token sécurisée, compacte et autonome commune au web.
+
+Le JWT s'articule autour de trois parties :
+
+1. Le header : il identifie l'algorithme utilisé pour générer la signature, généralement HS256
+2. Le corps : équivalent à un corps de requête, ce sont les données à transmettre.
+3. La signature : suite de caractères générée par l'algorithme (HS256), "signeé" par le JWT secret de l'application
+
+Les différentes parties du token sont séparées par un point `.`.
+
+```yaml
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0MjI3Nzk2Mzh9.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI
+```
+
+Le principal avantage du JWT est son caractère "stateless" : le serveur n'a pas besoin de stocker le token, il lui suffit de vérifier la signature avec son secret. Le token est transmis dans le header `Authorization` à chaque requête.
+
+```yaml
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+En pratique, deux tokens coexistent : un access token de courte durée (quelques minutes à quelques heures) utilisé pour authentifier les requêtes, et un refresh token de longue durée qui permet d'en obtenir un nouveau sans redemander les identifiants à l'utilisateur.
+
+### OAuth 2.0
+
+---
+
+OAuth 2.0 est un protocole de délégation d'accès. Plutôt que de gérer l'authentification directement, il s'appuie sur un serveur d'autorisation tiers (Google, GitHub, etc.) qui délivre un access token au client une fois l'utilisateur identifié.
+
+C'est le mécanisme derrière les boutons "Se connecter avec Google". L'utilisateur s'authentifie auprès de Google, qui retourne un token à votre application. Votre API n'a jamais accès aux identifiants de l'utilisateur.
+
+Le résultat est identique aux autres mécanismes : un token (souvent un JWT) transmis dans le header `Authorization` à chaque requête.
+
+## L'autorisation
+
+---
+
+L'autorisation intervient après l'authentification. Là où l'authentification répond à "qui es-tu ?", l'autorisation répond à "qu'as-tu le droit de faire ?".
+
+Un utilisateur peut être authentifié mais ne pas avoir les droits nécessaires pour accéder à une ressource. C'est le rôle de l'autorisation de le vérifier avant de traiter la requête.
+
+Le modèle le plus répandu est le RBAC (Role-Based Access Control) : chaque utilisateur se voit attribuer un ou plusieurs rôles (admin, editor, viewer, etc.), et chaque ressource ou action est associée à une liste de rôles autorisés.
+
+En pratique, les rôles sont souvent embarqués directement dans le payload du JWT, ce qui évite d'interroger la base de données à chaque requête pour connaître les droits de l'utilisateur.
+
+```json
+{
+  "sub": "42",
+  "email": "alice@example.com",
+  "role": "admin",
+  "exp": 1742000000
+}
+```
+
+Le serveur vérifie le rôle contenu dans le token et retourne un `403 Forbidden` si l'utilisateur n'a pas les droits suffisants, même si son token est valide.
+
+## CORS
+
+---
+
+La same-origin policy est une règle de sécurité imposée par les navigateurs : une page web ne peut pas envoyer de requêtes vers un domaine différent du sien. Un frontend sur `https://monapp.com` ne peut pas appeler `https://api.monapp.com` sans autorisation explicite du serveur.
+
+CORS (Cross-Origin Resource Sharing) est le mécanisme qui permet au serveur de lever cette restriction de manière contrôlée. Il s'appuie sur des headers HTTP que le serveur inclut dans ses réponses pour indiquer les origines autorisées.
+
+```yaml
+Access-Control-Allow-Origin: https://monapp.com
+Access-Control-Allow-Methods: GET, POST, PATCH, DELETE
+Access-Control-Allow-Headers: Content-Type, Authorization
+```
+
+Avant certaines requêtes (celles avec un corps JSON, un header custom ou une méthode autre que GET), le navigateur envoie automatiquement une requête `OPTIONS` dite "preflight" pour vérifier que le serveur autorise l'opération. Le serveur doit y répondre avec les headers CORS appropriés.
+
+Il est possible d'utiliser le wildcard `*` pour autoriser toutes les origines, mais cette approche est incompatible avec les requêtes authentifiées : un header `Authorization` ne peut pas être transmis si `Access-Control-Allow-Origin` vaut `*`.
+
+> ℹ️ Une configuration CORS trop permissive est une faille de sécurité : elle permet à n'importe quel site d'appeler votre API au nom d'un utilisateur connecté.

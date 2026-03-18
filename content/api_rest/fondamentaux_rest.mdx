@@ -40,7 +40,7 @@ Six contraintes architecturales définissent un système REST. Ces contraintes r
 
 Les responsabilités sont séparées entre le client et le serveur. Le client connaît seulement l'URI de la ressource qu'il souhaite obtenir, tandis que le serveur ne se préoccupe pas de la façon dont le client utilisera la réponse.
 
-Découpler l'interface utilisateur du serveur ou encore de la base de données permet aux composants d'évoluer indépendamment.
+Découpler l'interface utilisateur du serveur permet aux composants d'évoluer indépendamment.
 
 ### Sans état
 
@@ -48,7 +48,8 @@ Découpler l'interface utilisateur du serveur ou encore de la base de données p
 
 Chaque requête du client doit contenir tous les éléments nécessaires au serveur pour effectuer l'opération demandée. Il n'y a pas de conservation de l'état de la session sur le serveur entre deux requêtes successives. Cela inclut les données nécessaires à l'authentification.
 
-En évitant une gestion d'état gourmande en ressources, le serveur peut gérer davantage de requêtes simultanées. Les communications sans état conduisent à une utilisation plus efficace des ressources du serveur.
+Les communications sans état conduisent à une utilisation plus efficace des ressources du serveur. Cela facilite grandement la mise à l'echelle : si aucun état n'est stocké côté serveur cela signifie que l'utilisateur peut s'adresser à n'importe quel serveur du cluster.
+
 
 ### Interface uniforme
 

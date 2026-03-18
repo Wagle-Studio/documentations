@@ -138,8 +138,23 @@ const references: Reference[] = [
   },
   {
     id: 28,
-    label: "API REST - Wikipedia",
+    label: "Wikipedia - REST",
     url: "https://fr.wikipedia.org/wiki/Representational_state_transfer",
+  },
+  {
+    id: 29,
+    label: "Article - Comprendre les API REST",
+    url: "https://blog.stephane-robert.info/docs/developper/api-rest/",
+  },
+  {
+    id: 30,
+    label: "MDN - ETag header",
+    url: "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/ETag",
+  },
+  {
+    id: 31,
+    label: "Article - Headers",
+    url: "https://http.dev/headers",
   },
 ];
 

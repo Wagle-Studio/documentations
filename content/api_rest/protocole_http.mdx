@@ -26,7 +26,6 @@ Host: api.example.com
 Content-Type: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 Accept: application/json
-
 {
   "title": "Fondation",
   "author": "Isaac Asimov"
@@ -109,7 +108,6 @@ Contrairement à `GET`, `POST` n'est pas idempotente : envoyer la même requête
 ```yaml
 POST /books
 Content-Type: application/json
-
 {
   "title": "Dune",
   "author": "Frank Herbert"
@@ -135,7 +133,6 @@ La méthode `PUT` remplace intégralement une ressource existante par les donné
 ```yaml
 PUT /books/42
 Content-Type: application/json
-
 {
   "title": "Dune",
   "author": "Frank Herbert",
@@ -154,7 +151,6 @@ La méthode `PATCH` applique une modification partielle à une ressource. Seuls 
 ```yaml
 PATCH /books/42
 Content-Type: application/json
-
 {
   "year": 1965
 }
@@ -245,7 +241,6 @@ Le serveur répond à chaque requête avec une réponse HTTP structurée de la m
 ```yaml
 HTTP/1.1 201 Created
 Content-Type: application/json
-
 {
   "id": 99,
   "title": "Fondation",

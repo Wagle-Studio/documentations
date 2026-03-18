@@ -24,7 +24,7 @@ Les segments de chemin désignent des collections de ressources. Par convention,
 
 L'identifiant de la ressource individuelle vient ensuite en second segment :
 
-```http
+```yaml
 GET /books       # collection
 GET /books/42    # ressource individuelle
 ```
@@ -33,7 +33,7 @@ GET /books/42    # ressource individuelle
 
 ---
 
-La méthode HTTP exprime déjà l'action. Le chemin doit donc désigner une ressource, jamais une action.
+La méthode yaml exprime déjà l'action. Le chemin doit donc désigner une ressource, jamais une action.
 
 | **Incorrect**        | **Correct**         |
 | -------------------- | ------------------- |
@@ -60,7 +60,7 @@ Les segments d'URL s'écrivent en minuscules. Lorsqu'un nom est composé de plus
 
 Lorsqu'une ressource appartient à une autre, la relation s'exprime par imbrication dans le chemin. La profondeur est généralement limitée à deux niveaux pour rester lisible.
 
-```http
+```yaml
 GET  /users/12/articles          # articles de l'utilisateur 12
 GET  /users/12/articles/63       # article 63 de l'utilisateur 12
 POST /users/12/articles          # créer un article pour l'utilisateur 12
@@ -68,7 +68,7 @@ POST /users/12/articles          # créer un article pour l'utilisateur 12
 
 Au-delà de deux niveaux d'imbrication, préférer une route plate avec un paramètre de filtre :
 
-```http
+```yaml
 # À éviter
 GET /users/12/articles/63/comments/7
 
@@ -88,7 +88,7 @@ Les deux mécanismes n'ont pas le même rôle :
 | Paramètre de chemin       | Identifier une ressource précise          | `/books/42`                        |
 | Paramètre de requête      | Filtrer, trier ou paginer une collection  | `/books?author=tolkien&page=2`     |
 
-```http
+```yaml
 GET /books/42                          # lecture d'une ressource identifiée
 GET /books?genre=fantasy&sort=title    # recherche filtrée dans la collection
 ```
@@ -99,7 +99,7 @@ GET /books?genre=fantasy&sort=title    # recherche filtrée dans la collection
 
 Le versionnement permet de faire évoluer l'API sans rompre la compatibilité avec les clients existants. La convention la plus répandue consiste à inclure le numéro de version au début du chemin.
 
-```http
+```yaml
 GET /v1/books
 GET /v2/books
 ```
@@ -118,7 +118,7 @@ Lorsqu'une collection contient de nombreuses ressources, il est rarement pertine
 
 Le filtrage permet de restreindre les résultats selon un ou plusieurs critères. Chaque critère correspond à un paramètre de requête dont le nom correspond au champ sur lequel on filtre.
 
-```http
+```yaml
 GET /books?author=tolkien
 GET /books?genre=fantasy&available=true
 ```
@@ -133,7 +133,7 @@ Plusieurs paramètres se combinent naturellement : la requête ci-dessus retourn
 
 Le tri s'exprime via un paramètre `sort` qui indique le champ utilisé comme critère, et un paramètre `order` qui précise le sens : `asc` (croissant) ou `desc` (décroissant).
 
-```http
+```yaml
 GET /books?sort=title&order=asc
 GET /books?sort=published_at&order=desc
 ```
@@ -148,13 +148,13 @@ La pagination découpe une collection en pages de taille fixe. Deux conventions 
 
 **Par numéro de page** : le client indique le numéro de la page souhaitée et la taille de chaque page.
 
-```http
+```yaml
 GET /books?page=2&limit=20
 ```
 
 **Par offset** : le client indique le nombre d'éléments à ignorer depuis le début de la collection.
 
-```http
+```yaml
 GET /books?offset=40&limit=20
 ```
 
@@ -176,6 +176,6 @@ Le serveur retourne généralement des métadonnées de pagination dans la répo
 
 Ces trois mécanismes — filtrage, tri et pagination — se combinent librement dans une même requête :
 
-```http
+```yaml
 GET /books?genre=fantasy&sort=title&order=asc&page=1&limit=10
 ```

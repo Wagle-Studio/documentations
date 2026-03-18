@@ -1,0 +1,222 @@
+## Introduction
+
+---
+
+L'API peut vite être très sollicitée : chaque client qui utilise l'application entraîne une à plusieurs requêtes à chaque navigation et interaction, cela peut entraîner autant de requêtes auprès de services comme la base de données, etc.
+
+Dans le cadre d'une application de petite à moyenne taille, il est possible de ne pas rencontrer de problème de mise à l'échelle, même sans mettre en œuvre de mécanismes pour améliorer les performances.
+
+Néanmoins, il existe différentes solutions plus ou moins complexes à mettre en œuvre pour drastiquement améliorer les performances et la mise à l'échelle d'une API REST.
+
+## Cache
+
+---
+
+Il existe différentes manières de mettre en œuvre un système de mise en cache : cache-control, last-modified, etc. Dans la suite de cette partie j'utilise les `ETag`.
+
+L'`ETag` est un identifiant attribué à une version spécifique d'une ressource, cet identifiant est transmis au client lors de la première consultation d'une ressource. Le client fournit l'identifiant lorsqu'il souhaite accéder à nouveau à la ressource, ainsi le serveur peut déterminer si la version détenue par le client est à jour ou non.
+
+Techniquement parlant, l'identifiant peut être une version hashée de la ressource, un numéro de révision incrémental ou encore sa date de dernière modification. Celui-ci est transmis au client dans la réponse HTTP avec le header `ETag` et le contenu est mis en cache chez le client.
+
+```yaml
+HTTP/1.1 200 OK
+Content-Type: application/json
+ETag: "a3f89c2d"
+{
+  "id": 42,
+  "title": "Dune",
+  "author": "Frank Herbert"
+}
+```
+
+Lorsque le client accède à nouveau à la ressource, l'`ETag` est transmis au serveur avec le header `If-None-Match`. Le serveur génère l'`ETag` courant de la ressource et le compare à celui fourni par le client. Si l'`ETag` fourni par le client et celui généré sont identiques, cela confirme que la version du client correspond à celle de la base de données, elle est à jour.
+
+```yaml
+GET /books/42 HTTP/1.1
+Host: api.example.com
+If-None-Match: "a3f89c2d"
+```
+
+```yaml
+HTTP/1.1 304 Not Modified
+ETag: "a3f89c2d"
+```
+
+Si le contenu est à jour, le serveur répond avec le code 304 Not Modified indiquant que la ressource n'a pas changé depuis le dernier accès. Le client consomme alors les données qu'il a en cache.
+
+Cette approche ne vous dispense pas d'accéder à la base de données pour récupérer le nécessaire à propos de la ressource pour générer le ETag à comparer avec celui fourni par le client. Néanmoins cela vous dispense de serialiser la ressource et vous n'avez rien à joindre dans le corps de la réponse HTTP.
+
+### Last-Modified
+
+---
+
+`Last-Modified` est l'alternative à l'`ETag` basée sur la date. Le serveur inclut la date de dernière modification de la ressource dans sa réponse :
+
+```yaml
+HTTP/1.1 200 OK
+Content-Type: application/json
+Last-Modified: Tue, 10 Mar 2026 14:32:00 GMT
+```
+
+Lors des requêtes suivantes, le client transmet cette date via le header `If-Modified-Since`. Si la ressource n'a pas changé depuis, le serveur répond `304 Not Modified`.
+
+```yaml
+GET /books/42 HTTP/1.1
+If-Modified-Since: Tue, 10 Mar 2026 14:32:00 GMT
+```
+
+Le fonctionnement est identique aux `ETag`, mais la précision est limitée à la seconde. Si une ressource peut être modifiée plusieurs fois par seconde, préférez les `ETag`.
+
+### Cache-Control
+
+---
+
+Le header `Cache-Control` est le principal mécanisme pour indiquer aux clients et aux intermédiaires (proxies, CDN) comment mettre en cache une réponse. Plusieurs directives peuvent être combinées.
+
+| **Directive**   | **Description**                                                                 |
+| --------------- | ------------------------------------------------------------------------------- |
+| `public`        | La réponse peut être mise en cache par n'importe quel intermédiaire             |
+| `private`       | La réponse ne peut être mise en cache que par le client final (pas de proxy)    |
+| `no-cache`      | La réponse peut être mise en cache mais doit être revalidée avant chaque usage  |
+| `no-store`      | La réponse ne doit jamais être mise en cache                                    |
+| `max-age`       | Durée de validité du cache en secondes                                          |
+| `s-maxage`      | Durée de validité spécifique aux caches partagés (proxies, CDN), remplace `max-age` pour eux |
+
+```yaml
+Cache-Control: private, no-cache
+Cache-Control: public, max-age=3600
+Cache-Control: public, max-age=86400, s-maxage=604800
+Cache-Control: no-store
+```
+
+> ℹ️ `no-cache` ne signifie pas "ne pas mettre en cache", cela signifie "mettre en cache mais revalider à chaque fois". Pour interdire complètement le cache, il faut utiliser `no-store`.
+
+### Vary
+
+---
+
+Le header `Vary` indique aux caches que la réponse peut être différente selon certains headers de la requête. Sans lui, un cache pourrait servir la mauvaise version de la réponse à un client.
+
+Par exemple, si votre API retourne les données dans la langue demandée par le client via le header `Accept-Language`, vous devez indiquer au cache de stocker une version par langue :
+
+```yaml
+HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: public, max-age=3600
+Vary: Accept-Language
+```
+
+Sans ce header, un cache pourrait servir la réponse en français à un client qui demande la réponse en anglais.
+
+Un cas particulièrement important : si votre API retourne des réponses différentes selon que la requête est authentifiée ou non, il faut inclure `Authorization` dans le `Vary`, ou plus simplement utiliser `Cache-Control: private` pour les ressources protégées.
+
+### Cache applicatif
+
+---
+
+Contrairement aux mécanismes précédents qui agissent au niveau HTTP, le cache applicatif se situe à l'intérieur du serveur d'application, entre la logique métier et la base de données.
+
+L'idée est simple : stocker le résultat d'une requête coûteuse en mémoire pour ne pas avoir à l'exécuter à nouveau lors des prochains appels.
+
+```bash
+Client → Serveur d'application → Redis (cache hit ✓) → réponse immédiate
+Client → Serveur d'application → Redis (cache miss ✗) → Base de données → Redis → réponse
+```
+
+Redis est le plus répandu : il s'agit d'un serveur de stockage clé-valeur en mémoire, extrêmement rapide. Une clé de cache est généralement construite à partir de l'identifiant de la ressource, voire des paramètres de la requête.
+
+C'est la technique la plus efficace pour absorber une charge importante, car elle supprime totalement les accès à la base de données pour les ressources mises en cache.
+
+### Invalidation
+
+---
+
+L'invalidation est le problème le plus difficile du cache : comment s'assurer que les données en cache sont supprimées ou rafraîchies lorsqu'une ressource est modifiée ?
+
+Il existe deux approches principales.
+
+L'invalidation active consiste à supprimer ou mettre à jour l'entrée en cache au moment où la ressource est modifiée. Si un livre est mis à jour via `PATCH /books/42`, le serveur supprime immédiatement l'entrée correspondante dans Redis. La prochaine requête ira chercher les données fraîches en base.
+
+L'expiration passive repose sur le `max-age` : on accepte que le cache soit potentiellement périmé pendant une courte durée. C'est plus simple à mettre en œuvre mais adapté uniquement aux données dont la fraîcheur n'est pas critique.
+
+> ℹ️ En pratique les deux approches coexistent : une durée d'expiration courte comme filet de sécurité, combinée à une invalidation active sur les opérations d'écriture.
+
+## Système en couches
+
+---
+
+Un système en couches consiste à intercaler un ou plusieurs serveurs intermédiaires entre le client et le serveur d'application. Le client ne sait pas s'il communique directement avec le serveur final ou avec un intermédiaire.
+
+```bash
+Client → Serveur intermédiaire (Varnish) → Serveur d'application → Base de données
+```
+
+Contrairement aux `ETag` qui délèguent la gestion du cache au client, cette approche est totalement transparente : le client reçoit une réponse `200` avec les données, sans savoir si elles proviennent du cache ou du serveur d'application.
+
+> ℹ️ Le système en couches est particulièrement adapté aux ressources publiques et stables. Pour les données personnalisées ou fréquemment modifiées, le cache doit être configuré avec des durées courtes ou désactivé.
+
+### Reverse proxy cache
+
+---
+
+Un reverse proxy cache comme Varnish se place devant le serveur d'application. Lorsqu'une ressource est demandée pour la première fois, la réponse est mise en mémoire. Les requêtes suivantes pour cette même ressource sont servies directement par Varnish, sans que le serveur d'application ni la base de données ne soient sollicités.
+
+C'est particulièrement efficace pour les ressources fréquemment consultées et rarement modifiées (catalogue produits, articles, données de référence, etc.).
+
+La durée de conservation en cache est contrôlée par le header `Cache-Control` que le serveur d'application inclut dans sa réponse :
+
+```yaml
+HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: public, max-age=3600
+```
+
+`max-age=3600` indique que la réponse peut être mise en cache pendant 3600 secondes (1 heure). Passé ce délai, la prochaine requête est transmise au serveur d'application pour rafraîchir le cache.
+
+### CDN
+
+---
+
+Un CDN (Content Delivery Network) fonctionne sur le même principe, mais à l'échelle mondiale. Les réponses sont répliquées sur des serveurs répartis géographiquement, et chaque client est automatiquement dirigé vers le nœud le plus proche de lui.
+
+Cela réduit la latence pour les utilisateurs distants du serveur d'origine et soulage ce dernier en absorbant une grande partie du trafic sans qu'il n'ait à traiter les requêtes directement.
+
+## Rate limiting
+
+---
+
+Le rate limiting consiste à limiter le nombre de requêtes qu'un client peut effectuer sur une période donnée. Sans cette protection, un client mal intentionné ou simplement défaillant peut saturer l'API et la rendre indisponible pour les autres utilisateurs.
+
+Lorsqu'un client dépasse la limite autorisée, le serveur retourne un code `429 Too Many Requests` et cesse de traiter ses requêtes jusqu'à la fin de la fenêtre de temps.
+
+Le serveur communique généralement l'état de la limite via des headers dédiés inclus dans chaque réponse :
+
+```yaml
+HTTP/1.1 200 OK
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 34
+X-RateLimit-Reset: 1742000000
+```
+
+| **Header**              | **Description**                                              |
+| ----------------------- | ------------------------------------------------------------ |
+| `X-RateLimit-Limit`     | Nombre maximum de requêtes autorisées sur la période         |
+| `X-RateLimit-Remaining` | Nombre de requêtes restantes avant d'atteindre la limite     |
+| `X-RateLimit-Reset`     | Timestamp Unix indiquant quand le compteur sera réinitialisé |
+
+Lorsque la limite est atteinte, le serveur peut également inclure un header `Retry-After` indiquant au client combien de secondes il doit attendre avant de renvoyer une requête.
+
+```yaml
+HTTP/1.1 429 Too Many Requests
+Retry-After: 30
+```
+
+### Stratégies de limitation
+
+---
+
+Il existe deux stratégies principales pour définir la fenêtre de comptage.
+
+La fenêtre fixe découpe le temps en intervalles réguliers : 100 requêtes par minute, compteur remis à zéro à chaque nouvelle minute. C'est la plus simple à mettre en œuvre, mais un client peut envoyer 100 requêtes en fin de fenêtre et 100 autres au début de la suivante, soit 200 requêtes en quelques secondes.
+
+La fenêtre glissante compte les requêtes sur les N dernières secondes à partir de chaque requête entrante, ce qui évite ce problème.
