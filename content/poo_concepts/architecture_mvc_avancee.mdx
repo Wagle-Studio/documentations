@@ -1,0 +1,854 @@
+## Présentation
+
+---
+
+Consultez la leçon Architecture MVC simple pour découvrir l'architecture MVC dans sa version la plus simple.
+
+Ce document illustre l'amélioration des unités de code présentées dans l'architecture simple, en abordant successivement le router, le système de vue, les répertoires et la gestion de la base de données.
+
+## Router +
+
+---
+
+Actuellement, le routeur ne gère que des routes statiques comme `/home` ou `/users`. Il serait pertinent d'accepter les routes dynamiques comme `/users/{id}` pour afficher un utilisateur spécifique.
+
+Aussi, le routeur n'est pas dynamique et rend l'ajout de nouvelles routes difficile. Il est donc difficilement maintenable et deviendra rapidement illisible.
+
+Actuellement, les contrôleurs sont instanciés manuellement dans le router, ce qui limite la flexibilité et alourdit la maintenance du code. L'amélioration consiste à généraliser l'appel des contrôleurs en les instanciant dynamiquement à partir des routes définies.
+
+### Nouvelle déclaration des routes
+
+---
+
+Dorénavant les routes seront déclarées de la manière suivante dans le fichier qui est chargé d'appeler le router.
+
+```php
+<?php
+
+use Src\Router;
+
+require_once __DIR__ . "/../vendor/autoload.php";
+
+$router = new Router();
+
+$router->add("users", "UserController", "collection", "GET");
+$router->add("users/{id}", "UserController", "read", "GET");
+$router->add("users", "UserController", "create", "POST");
+$router->add("users/{id}", "UserController", "update", "PUT");
+$router->add("users/{id}", "UserController", "delete", "DELETE");
+
+$router->dispatch();
+```
+
+Paramètres de la méthode `add` :
+
+1. La route de l'URL, les paramètres dynamiques sont remplacés par le nom du champ adéquat.
+2. Le nom du contrôleur concerné.
+3. Le nom de la méthode concernée dans le contrôleur.
+4. La méthode HTTP concernée.
+
+Ajoutez la méthode `add` au fichier `/src/Router.php` :
+
+```php
+public function add(
+    string $path,
+    string $controller,
+    string $method,
+    string $httpMethod
+) {
+    $path = trim($path);
+    $this->routes[$httpMethod][$path] = [
+        "controller" => $controller,
+        "method" => $method,
+    ];
+}
+```
+
+D'autres points comme la propriété `routes` ou la méthode `parseUri` doivent être modifiés. Le fichier `/src/Router.php` après modifications :
+
+```php
+<?php
+
+namespace Src;
+
+require_once __DIR__ . "/../conf.php";
+
+class Router
+{
+    private array $routes = [];
+
+    public function add(
+        string $path,
+        string $controller,
+        string $method,
+        string $httpMethod
+    ) {
+        $path = trim($path);
+        $this->routes[$httpMethod][$path] = [
+            "controller" => $controller,
+            "method" => $method,
+        ];
+    }
+
+    public function dispatch()
+    {
+        var_dump($this->routes);
+    }
+
+    private function parseUri($uri)
+    {
+        $trimmedUri = trim($uri);
+        $route = str_replace(BASE_URL, "",  $trimmedUri);
+        $trimmedRoute = ltrim($route, "/");
+
+        return $trimmedRoute;
+    }
+}
+```
+
+Vous devriez voir s'afficher un tableau contenant les routes déclarées dans le fichier qui créé l'instance du router.
+
+```php
+array(4) {
+  ["GET"] => array(2) {
+    ["users"] => array(2) {
+      ["controller"] => string(14) "UserController"
+      ["method"] => string(10) "collection"
+    }
+    ["users/{id}"] => array(2) {
+      ["controller"] => string(14) "UserController"
+      ["method"] => string(4) "read"
+    }
+  }
+  ["POST"] => array(1) {
+    ["users"] => array(2) {
+      ["controller"] => string(14) "UserController"
+      ["method"] => string(6) "create"
+    }
+  }
+  ["PUT"] => array(1) {
+    ["users/{id}"] => array(2) {
+      ["controller"] => string(14) "UserController"
+      ["method"] => string(6) "update"
+    }
+  }
+  ["DELETE"] => array(1) {
+    ["users/{id}"] => array(2) {
+      ["controller"] => string(14) "UserController"
+      ["method"] => string(6) "delete"
+    }
+  }
+}
+```
+
+La déclaration `$router->add("users", "UserController", "collection", "GET");` créé un sous-tableau :
+
+```php
+["GET"] => array(2) {
+    ["users"] => array(1) {
+      ["controller"] => string(14) "UserController"
+      ["method"] => string(10) "collection"
+    }
+  }
+```
+
+Ainsi, avec une requête HTTP en méthode `GET` sur la route `/users`, le contrôleur `UserController` sera instancié pour faire appel à la méthode `collection`.
+
+### Exploiter la nouvelle déclaration des routes
+
+---
+
+Le type de méthode utilisée est le premier paramètre à vérifier, car c'est ce paramètre qui dictera le sous-tableau des routes à exploiter.
+
+Une requête en méthode `GET` dictera l'exploitation du sous-tableau `["GET"]` :
+
+```php
+array(4) {
+  ["GET"] => array(2) {
+    ...
+  }
+  ["POST"] => array(1) {
+    ...
+  }
+  ["PUT"] => array(1) {
+    ...
+  }
+  ["DELETE"] => array(1) {
+    ...
+  }
+}
+```
+
+Lorsque le sous-tableau de routes est identifié, il faut exploiter une boucle pour parcourir chaque route déclarée pour cette méthode. Une requête en méthode `GET` sur la route `/users` dictera l'exploitation du sous-tableau `users` :
+
+```php
+array(4) {
+  ["GET"] => array(2) {
+    ["users"] => array(2) {
+      ["controller"] => string(14) "UserController"
+      ["method"] => string(10) "collection"
+    }
+    ...
+  }
+}
+```
+
+Dans la méthode `dispatch`, récupérez l'URI et la méthode HTTP de la requête, puis parcourez le sous-tableau de routes correspondant :
+
+```php
+public function dispatch()
+{
+    $requestUri = $this->parseUri($_SERVER["REQUEST_URI"]);
+    $requestMethod = $_SERVER["REQUEST_METHOD"];
+
+    foreach ($this->routes[$requestMethod] as $route => $target) {
+        ...
+    }
+}
+```
+
+`$route` correspondra au nom de la route et `$target` au sous-tableau contenant le nom du contrôleur et de la méthode.
+
+Il est important de vérifier la structure de la chaîne de caractères de la `$requestUri` pour s'assurer que vous avez prévu un cas pour celle-ci, auquel cas indiquez que la page n'a pas été trouvée.
+
+```php
+public function dispatch()
+{
+    $requestUri = $this->parseUri($_SERVER["REQUEST_URI"]);
+    $requestMethod = $_SERVER["REQUEST_METHOD"];
+
+    foreach ($this->routes[$requestMethod] as $route => $target) {
+        $dynamicParameterPattern = preg_replace('#\{([a-zA-Z0-9_]+)\}#', '([^/]+)', $route);
+
+        if (preg_match("#^$dynamicParameterPattern$#", $requestUri, $matches)) {
+            ...
+        }
+    }
+
+    http_response_code(404);
+    echo "Page non trouvée";
+}
+```
+
+`preg_replace('#\{([a-zA-Z0-9_]+)\}#', '([^/]+)', $route)` exécute une expression régulière sur la route pour remplacer les paramètres dynamiques de l'URL par une autre expression régulière.
+
+Cette étape est nécessaire pour « formater » la route et la faire coïncider avec la `$requestUri`. La route `/users/{id}` devient ainsi `users/([^/]+)`.
+
+La fonction `preg_match` s'assure que la requête de l'URL respecte le format attendu en exploitant le pattern créé par `preg_replace`.
+
+```php
+if (preg_match("#^$dynamicParameterPattern$#", $requestUri, $matches)) {
+    array_shift($matches);
+    ...
+}
+```
+
+La variable `$matches` est retournée par `preg_match` et contient un tableau avec toutes les occurrences de la recherche, dont on supprime la première avec `array_shift`.
+
+Si la condition est respectée, cela indique que vous avez déclaré un cas pour la route saisie dans la requête. Il ne reste donc qu'à instancier le contrôleur adéquat et appeler la méthode. Pour que cela soit réalisé dynamiquement, vous utiliserez deux méthodes privées.
+
+La première se chargera de construire le nom de la classe du contrôleur et de vérifier son existence :
+
+```php
+private function getControllerClass(array $target)
+{
+    $controllerClass = "Src\\Controllers\\" . $target["controller"];
+
+    if (!class_exists($controllerClass)) {
+        http_response_code(500);
+        echo "Contrôleur introuvable : $controllerClass";
+        return;
+    }
+
+    return $controllerClass;
+}
+```
+
+La seconde méthode se chargera d'instancier le contrôleur et de vérifier qu'il possède la méthode prévue :
+
+```php
+private function getController(array $target, string $controllerClass)
+{
+    $controller = new $controllerClass();
+
+    if (!method_exists($controller, $target["method"])) {
+        http_response_code(500);
+        echo "Méthode introuvable : " . $target["method"];
+        return;
+    }
+
+    return $controller;
+}
+```
+
+Avec ces deux nouvelles méthodes, il est possible d'exploiter le sous-tableau de route indiquant le contrôleur et la méthode. La fonction native PHP `call_user_func_array` permet d'exécuter une fonction avec des paramètres :
+
+```php
+public function dispatch()
+{
+    $requestUri = $this->parseUri($_SERVER["REQUEST_URI"]);
+    $requestMethod = $_SERVER["REQUEST_METHOD"];
+
+    foreach ($this->routes[$requestMethod] as $route => $target) {
+        $dynamicParameterPattern = preg_replace('#\{([a-zA-Z0-9_]+)\}#', '([^/]+)', $route);
+
+        if (preg_match("#^$dynamicParameterPattern$#", $requestUri, $matches)) {
+            array_shift($matches);
+
+            $controllerClass = $this->getControllerClass($target);
+            $controller = $this->getController($target, $controllerClass);
+
+            return call_user_func_array([$controller, $target["method"]], $matches);
+        }
+    }
+
+    http_response_code(404);
+    echo "Page non trouvée";
+}
+```
+
+Détails des paramètres de `call_user_func_array` :
+
+1. `[$controller, $target["method"]]` indique d'utiliser la méthode `$target["method"]` du contrôleur.
+2. `$matches` sera passé en paramètre à la méthode exécutée. Cette variable contient le tableau des occurrences des paramètres dynamiques de l'URI, le contrôleur en aura sûrement besoin.
+
+Les données du tableau `$matches` seront distribuées comme paramètres de la méthode appelée :
+
+```php
+public function read($userId) {
+    echo("Détails de l'utilisateur avec l'ID {$userId}");
+}
+```
+
+Le fichier `/src/Router.php` complet :
+
+```php
+<?php
+
+namespace Src;
+
+require_once __DIR__ . "/../conf.php";
+
+class Router
+{
+    private array $routes = [];
+
+    public function add(
+        string $path,
+        string $controller,
+        string $method,
+        string $httpMethod
+    ) {
+        $path = trim($path);
+        $this->routes[$httpMethod][$path] = [
+            "controller" => $controller,
+            "method" => $method,
+        ];
+    }
+
+    public function dispatch()
+    {
+        $requestUri = $this->parseUri($_SERVER["REQUEST_URI"]);
+        $requestMethod = $_SERVER["REQUEST_METHOD"];
+
+        foreach ($this->routes[$requestMethod] as $route => $target) {
+            $dynamicParameterPattern = preg_replace('#\{([a-zA-Z0-9_]+)\}#', '([^/]+)', $route);
+
+            if (preg_match("#^$dynamicParameterPattern$#", $requestUri, $matches)) {
+                array_shift($matches);
+
+                $controllerClass = $this->getControllerClass($target);
+                $controller = $this->getController($target, $controllerClass);
+
+                return call_user_func_array([$controller, $target["method"]], $matches);
+            }
+        }
+
+        http_response_code(404);
+        echo "Page non trouvée";
+    }
+
+    private function getControllerClass(array $target)
+    {
+        $controllerClass = "Src\\Controllers\\" . $target["controller"];
+
+        if (!class_exists($controllerClass)) {
+            http_response_code(500);
+            echo "Contrôleur introuvable : $controllerClass";
+            return;
+        }
+
+        return $controllerClass;
+    }
+
+    private function getController(array $target, string $controllerClass)
+    {
+        $controller = new $controllerClass();
+
+        if (!method_exists($controller, $target["method"])) {
+            http_response_code(500);
+            echo "Méthode introuvable : " . $target["method"];
+            return;
+        }
+
+        return $controller;
+    }
+
+    private function parseUri($uri): string
+    {
+        $trimmedUri = trim($uri);
+        $route = str_replace(BASE_URL, "",  $trimmedUri);
+        $trimmedRoute = ltrim($route, "/");
+
+        return $trimmedRoute;
+    }
+}
+```
+
+## Templating +
+
+---
+
+Actuellement, l'affichage des vues est géré avec un simple `include` dans les contrôleurs. Cette approche fonctionne, mais elle mélange la logique métier et la gestion des templates, ce qui complique la maintenance.
+
+L'objectif de cette amélioration est de centraliser le rendu des vues et de permettre le passage de variables dynamiques aux vues.
+
+Vous exploiterez le système d'héritage de PHP pour faire en sorte que cette nouvelle méthode soit accessible dans tous les contrôleurs grâce à une classe abstraite. La classe `AbstractController` pourra être étendue par tous les contrôleurs et ainsi leur faire bénéficier de la nouvelle méthode.
+
+Créez le fichier `/src/Controllers/AbstractController.php` :
+
+```php
+<?php
+
+namespace Src\Controllers;
+
+class AbstractController
+{
+    protected function render(string $view, array $data = [])
+    {
+        $viewFile = __DIR__ . "/../../templates/" . $view . ".php";
+
+        if (!file_exists($viewFile)) {
+            http_response_code(500);
+            echo "Vue introuvable : $viewFile";
+            return;
+        }
+
+        extract($data);
+
+        include $viewFile;
+    }
+}
+```
+
+La méthode `render` vérifie que la vue existe, auquel cas elle indique que la vue n'a pas été trouvée.
+
+Si la vue existe, la fonction `extract` extrait les variables du tableau `$data` pour qu'elles soient accessibles dans le fichier de vue.
+
+Le contrôleur `UserController` étend désormais `AbstractController` et utilise `$this->render` pour afficher la vue :
+
+```php
+<?php
+
+namespace Src\Controllers;
+
+use Src\Repositories\UserRepository;
+
+class UserController extends AbstractController
+{
+    public function collection()
+    {
+        $userRepository = new UserRepository();
+        $users = $userRepository->findAll();
+
+        $this->render("users_list", [
+            "users" => $users
+        ]);
+    }
+}
+```
+
+## Répertoires +
+
+---
+
+Dans le respect des principes S.O.L.I.D. il est nécessaire d'éviter la duplication de code. Actuellement chaque répertoire gère sa propre connexion à la base de données avec PHP PDO. Cette connexion devrait être commune et, plus important, gérée dans une classe dédiée.
+
+Il existe aussi des méthodes communes à tous les répertoires, comme `findAll` pour récupérer l'ensemble des données, `find` pour récupérer les données d'un enregistrement spécifique grâce à son ID, ou encore `findBy` pour récupérer les données d'enregistrements satisfaisant une condition.
+
+Plutôt que de ré-implémenter ces méthodes dans chaque repository, la solution consiste à créer une classe abstraite qui encapsulera la connexion PDO et les méthodes communes. Cela assure une meilleure réutilisabilité du code et respecte le principe de responsabilité unique.
+
+Créez le fichier `/src/Repositories/AbstractRepository.php` avec une propriété `table` représentant le nom de la table, une propriété `className` représentant le nom de la classe du modèle, ainsi que le constructeur adéquat :
+
+```php
+<?php
+
+namespace Src\Repositories;
+
+class AbstractRepository
+{
+    protected string $table;
+    protected string $className;
+
+    public function __construct(string $table, string $className)
+    {
+        $this->table = $table;
+        $this->className = $className;
+    }
+}
+```
+
+Déplacez le code de connexion à la base de données dans la classe abstraite :
+
+```php
+<?php
+
+namespace Src\Repositories;
+
+use PDO;
+use PDOException;
+
+require_once __DIR__ . "/../../conf.php";
+
+class AbstractRepository
+{
+    protected PDO $database;
+    protected string $table;
+    protected string $className;
+
+    public function __construct(string $table, string $className)
+    {
+        $this->table = $table;
+        $this->className = $className;
+
+        $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME;
+
+        try {
+            $this->database = new PDO($dsn, DB_USER, DB_PSWD);
+        } catch (PDOException $e) {
+            echo "Erreur de connexion : " . $e->getMessage();
+        }
+    }
+}
+```
+
+Le répertoire `UserRepository` doit étendre la classe abstraite pour bénéficier de la connexion PHP PDO. Il doit aussi déclarer le nom de la table et la classe du modèle :
+
+```php
+<?php
+
+namespace Src\Repositories;
+
+use Src\Models\User;
+use Src\Repositories\AbstractRepository;
+
+class UserRepository extends AbstractRepository
+{
+    public function __construct()
+    {
+        parent::__construct("user", User::class);
+    }
+
+    public function findAll()
+    {
+        $query = "SELECT * FROM user";
+        $results = $this->database->query($query);
+
+        return $results->fetchAll(PDO::FETCH_CLASS, User::class);
+    }
+}
+```
+
+Il ne reste qu'à déplacer la méthode `findAll` dans la classe abstraite et la rendre plus générique en s'appuyant sur les propriétés `$table` et `$className` :
+
+```php
+public function findAll()
+{
+    $query = "SELECT * FROM {$this->table}";
+    $results = $this->database->query($query);
+
+    return $results->fetchAll(PDO::FETCH_CLASS, $this->className) ?? [];
+}
+```
+
+Code complet de `AbstractRepository.php` et `UserRepository.php` :
+
+```php
+<?php
+
+namespace Src\Repositories;
+
+use PDO;
+use PDOException;
+
+require_once __DIR__ . "/../../conf.php";
+
+class AbstractRepository
+{
+    protected PDO $database;
+    protected string $table;
+    protected string $className;
+
+    public function __construct(string $table, string $className)
+    {
+        $this->table = $table;
+        $this->className = $className;
+
+        $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME;
+
+        try {
+            $this->database = new PDO($dsn, DB_USER, DB_PSWD);
+        } catch (PDOException $e) {
+            echo "Erreur de connexion : " . $e->getMessage();
+        }
+    }
+
+    public function findAll()
+    {
+        $query = "SELECT * FROM {$this->table}";
+        $results = $this->database->query($query);
+
+        return $results->fetchAll(PDO::FETCH_CLASS, $this->className) ?? [];
+    }
+
+    public function find(int $id)
+    {
+        $query = "SELECT * FROM {$this->table} WHERE id = :id";
+        $request = $this->database->prepare($query);
+
+        $request->execute(["id" => $id]);
+
+        $request->setFetchMode(PDO::FETCH_CLASS, $this->className);
+        $result = $request->fetch();
+
+        return $result ?? null;
+    }
+}
+```
+
+```php
+<?php
+
+namespace Src\Repositories;
+
+use Src\Models\User;
+use Src\Repositories\AbstractRepository;
+
+class UserRepository extends AbstractRepository
+{
+    public function __construct()
+    {
+        parent::__construct("user", User::class);
+    }
+}
+```
+
+## Gestion de la BDD +
+
+---
+
+Les migrations permettent de gérer la structure de la base de données de manière versionnée. Elles assurent que tous les développeurs et environnements ont la même structure de BDD sans modifier manuellement les tables.
+
+Dans un premier temps, vous devrez créer une classe dédiée à l'établissement d'une connexion PHP PDO. Cette classe sera étendue par la classe abstraite `AbstractRepository` qui nécessite une connexion.
+
+Créez le fichier `/src/Database.php` et implémentez une classe qui établit une connexion PHP PDO :
+
+```php
+<?php
+
+namespace Src;
+
+use PDO;
+use PDOException;
+
+require_once __DIR__ . "/../conf.php";
+
+class Database
+{
+    protected PDO $database;
+
+    public function __construct()
+    {
+        $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME;
+
+        try {
+            $this->database = new PDO($dsn, DB_USER, DB_PSWD);
+        } catch (PDOException $e) {
+            echo "Erreur de connexion : " . $e->getMessage();
+        }
+    }
+}
+```
+
+Modifiez `AbstractRepository.php` pour étendre `Database` au lieu de gérer la connexion en interne :
+
+```php
+<?php
+
+namespace Src\Repositories;
+
+use PDO;
+use Src\Database;
+
+class AbstractRepository extends Database
+{
+    protected string $table;
+    protected string $className;
+
+    public function __construct(string $table, string $className)
+    {
+        parent::__construct();
+
+        $this->table = $table;
+        $this->className = $className;
+    }
+
+    ...
+}
+```
+
+Créez le fichier `/src/MigrationManager.php` dont la classe étend `Database`. À chaque instanciation, il vérifie que la table `migrations` existe en base de données, et la crée dans le cas contraire :
+
+```php
+<?php
+
+namespace Src;
+
+class MigrationManager extends Database
+{
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->createMigrationsTable();
+    }
+
+    private function createMigrationsTable()
+    {
+        $sql = "CREATE TABLE IF NOT EXISTS migrations (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            migration VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )";
+
+        $this->database->exec($sql);
+    }
+}
+```
+
+Créez une instance du `MigrationManager` au point d'entrée de votre application. Après avoir consulté votre application, vous devriez trouver une table `migrations` dans votre base de données.
+
+```php
+<?php
+
+use Src\MigrationManager;
+use Src\Router;
+
+require_once __DIR__ . "/../vendor/autoload.php";
+
+$migrationManager = new MigrationManager();
+
+$router = new Router();
+
+$router->add("users", "UserController", "collection", "GET");
+$router->add("users/{id}", "UserController", "read", "GET");
+$router->add("users", "UserController", "create", "POST");
+$router->add("users/{id}", "UserController", "update", "PUT");
+$router->add("users/{id}", "UserController", "delete", "DELETE");
+
+$router->dispatch();
+```
+
+Chaque fichier de migration suit le même modèle. Créez un fichier `/migrations/create_user_table.php` :
+
+```php
+<?php
+
+namespace Src\Database\Migrations;
+
+use PDO;
+
+class create_user_table
+{
+    private PDO $db;
+
+    public function __construct(PDO $db)
+    {
+        $this->db = $db;
+    }
+
+    public function up()
+    {
+        $sql = "CREATE TABLE IF NOT EXISTS user (
+            id int NOT NULL AUTO_INCREMENT,
+            email varchar(255) NOT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY email (email)
+        )";
+
+        $this->db->exec($sql);
+    }
+
+    public function down()
+    {
+        $this->db->exec("DROP TABLE user");
+    }
+}
+```
+
+La méthode `up` applique la migration tandis que la méthode `down` permet de l'annuler. Ce sont uniquement les requêtes SQL qui changent d'un fichier de migration à l'autre.
+
+Implémentez une méthode `runMigrations` dans la classe `MigrationManager` pour exécuter uniquement les migrations non encore appliquées et les enregistrer dans la table `migrations`.
+
+Commencez par deux méthodes utilitaires :
+
+```php
+private function getExecutedMigrations(): array
+{
+    $stmt = $this->database->query("SELECT migration FROM migrations");
+    return $stmt->fetchAll(PDO::FETCH_COLUMN);
+}
+
+private function logMigration(string $migration)
+{
+    $stmt = $this->database->prepare("INSERT INTO migrations (migration) VALUES (:migration)");
+    $stmt->execute(['migration' => $migration]);
+}
+```
+
+La méthode `runMigrations` récupère les migrations déjà exécutées, parcourt les fichiers du dossier `/migrations` et n'exécute que celles qui sont nouvelles :
+
+```php
+public function runMigrations()
+{
+    $executedMigrations = $this->getExecutedMigrations();
+    $migrationFiles = glob(__DIR__ . '/../migrations/*.php');
+
+    foreach ($migrationFiles as $file) {
+        $migrationName = basename($file, '.php');
+
+        if (!in_array($migrationName, $executedMigrations)) {
+            require_once $file;
+
+            $className = "Src\\Database\\Migrations\\$migrationName";
+
+            if (class_exists($className)) {
+                $migration = new $className($this->database);
+                $migration->up();
+
+                $this->logMigration($migrationName);
+            }
+        }
+    }
+}
+```
+
+La fonction `glob` retourne un tableau de noms de fichiers correspondant au pattern, ici tous les fichiers `.php` du dossier `/migrations`. La fonction `basename` extrait le nom du fichier sans le chemin ni l'extension.
+
+Pensez à appeler `runMigrations` au point d'entrée de votre application :
+
+```php
+$migrationManager = new MigrationManager();
+
+$migrationManager->runMigrations();
+```

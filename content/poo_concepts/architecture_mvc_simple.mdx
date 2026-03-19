@@ -1,0 +1,596 @@
+## Introduction
+
+---
+
+Ce document illustre une architecture MVC dans sa version la plus simple pour faciliter sa compréhension. Voir la leçon Architecture MVC avancée pour améliorer l'architecture créée.
+
+L'architecture MVC (Modèle-Vue-Contrôleur) est un patron de conception qui sépare les responsabilités dans une application web. Elle est particulièrement utilisée en PHP pour organiser le code de manière modulaire et évolutive.
+
+PHP étant un langage serveur conçu pour générer des pages dynamiques, un projet mal structuré peut rapidement devenir ingérable. L'architecture MVC organise le projet en trois couches distinctes, chacune ayant une responsabilité bien définie.
+
+- Séparer la logique métier (Modèle), l'affichage (Vue) et la gestion des requêtes (Contrôleur).
+- Faciliter la maintenance : chaque partie a une responsabilité bien définie.
+- Favoriser la réutilisation du code : les modèles et les vues peuvent être utilisés plusieurs fois.
+
+### Modèle et répertoire
+
+---
+
+Le modèle et le répertoire sont responsables des interactions avec la base de données.
+
+Le modèle est une classe qui représente une table de la base de données et en reprend la structure. Il sert à manipuler les données sous forme d'objets. Le répertoire (repository) assure les interactions avec la base de données, notamment grâce à PHP PDO. Il contient les méthodes CRUD (Create, Read, Update, Delete) spécifiques à l'entité à laquelle il est lié.
+
+Exemple : une classe `User` représente un utilisateur avec ses propriétés (nom, email, etc.). Son répertoire, `UserRepository`, contient les méthodes permettant d'effectuer des opérations sur les utilisateurs : ajout, suppression, mise à jour et récupération depuis la base de données.
+
+### Vue
+
+---
+
+La vue est responsable de l'affichage et de la présentation des données. Elle contient du HTML, CSS, JavaScript et PHP, permettant d'afficher dynamiquement les informations transmises par le contrôleur.
+
+Les vues sont gérées par le contrôleur, qui, en réponse à une requête, sélectionne et retourne la vue appropriée à l'utilisateur.
+
+Exemple : un fichier `users_list.php` qui affiche la liste des utilisateurs sous forme de tableau.
+
+### Contrôleur
+
+---
+
+Le contrôleur gère les requêtes utilisateur et fait le lien entre le modèle et la vue. Il exécute la logique métier en fonction des actions de l'utilisateur et transmet les données nécessaires à la vue.
+
+Exemple : une classe `UserController` qui récupère la liste des utilisateurs via le répertoire `UserRepository` et l'envoie à la vue pour affichage, puis retourne cette même vue.
+
+## Le fichier d'env
+
+---
+
+Dans cette illustration du MVC PHP sans dépendances vous exploiterez un fichier PHP comme fichier d'environnement. À la racine de votre projet, créez un fichier `conf.php`, il servira à déclarer des variables d'environnement pour le projet.
+
+Vous pouvez d'ores-et-déjà définir la constante PHP `BASE_URL` avec la base de l'URL de votre application comme valeur.
+
+```php
+<?php
+
+define("BASE_URL", "/~kevin/SIMPLON/PHP/demo_php_mvc/public");
+```
+
+## Le dossier public
+
+---
+
+```
+public/
+├─ index.php
+├─ .htaccess
+.htaccess
+conf.php
+README.md
+```
+
+Dans une architecture PHP basée sur MVC, l'organisation des fichiers joue un rôle crucial dans la sécurité du projet. L'objectif est de centraliser l'accès au site via le fichier `public/index.php` et d'empêcher tout accès direct aux fichiers sensibles du projet.
+
+Le fichier `public/index.php` est l'unique point d'entrée de l'application. Pour garantir que l'utilisateur ne puisse pas accéder directement aux fichiers internes du projet, utilisez un fichier `.htaccess` dans le dossier `public/`. Celui-ci agit comme un entonnoir, redirigeant toutes les requêtes vers `public/index.php`.
+
+```apacheconf
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+```
+
+Ainsi, si le fichier ou dossier demandé n'existe pas, la requête est envoyée à `/public/index.php`.
+
+Pour finir, il est nécessaire de restreindre définitivement l'accès aux fichiers et dossiers sensibles situés en dehors de `public/`. Le fichier `.htaccess` placé à la racine du projet va bloquer ces accès et rediriger toutes les requêtes vers `/public/index.php`.
+
+```apacheconf
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(src|templates|vendor)/ - [F,L]
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ /public/$1 [L]
+</IfModule>
+```
+
+## L'autoload
+
+---
+
+L'autoloading est un mécanisme qui permet de charger automatiquement les classes sans avoir à utiliser `require` ou `include` manuellement à chaque fois. En PHP, lorsqu'une classe est appelée et qu'elle n'a pas encore été incluse, un autoload peut être défini pour retrouver et inclure automatiquement le fichier correspondant.
+
+Avant l'autoload, les développeurs devaient inclure chaque fichier manuellement, ce qui devenait rapidement ingérable dans les projets complexes. L'autoload résout ce problème en permettant à PHP de retrouver et charger uniquement les classes nécessaires, au moment où elles sont demandées.
+
+### Autoload manuel
+
+---
+
+PHP propose la fonction `spl_autoload_register`, qui permet de définir une logique pour retrouver et charger automatiquement les fichiers des classes lorsqu'elles sont instanciées.
+
+```php
+<?php
+
+spl_autoload_register(function ($class) {
+    $file = __DIR__ . '/src/' . str_replace('\\', '/', $class) . '.php';
+    if (file_exists($file)) {
+        require_once $file;
+    }
+});
+```
+
+Avec cette approche, lorsqu'on instancie `new Src\Models\User()`, PHP cherche automatiquement `src/Models/User.php`, ce qui évite d'avoir à le `require` manuellement.
+
+Bien que cette solution fonctionne, elle peut devenir difficile à maintenir dans les projets de grande envergure. Pour pallier cette complexité, Composer propose une solution d'autoloading plus robuste et standardisée.
+
+### Autoload Composer
+
+---
+
+Composer, le gestionnaire de dépendances PHP, propose un autoload normalisé basé sur le standard PSR-4.
+
+L'idée est d'associer des namespaces à des répertoires, permettant à PHP de charger automatiquement les classes via `vendor/autoload.php`, sans intervention manuelle.
+
+Créez un fichier `composer.json` à la racine du projet.
+
+```json
+{
+    "autoload": {
+        "psr-4": {
+            "Src\\": "src/"
+        }
+    }
+}
+```
+
+Ici, on indique que le namespace `Src\` correspond au dossier `src/`. Il est ensuite nécessaire d'exécuter la commande suivante pour que Composer génère l'autoload :
+
+```bash
+composer dump-autoload
+```
+
+Après l'exécution de cette commande, un dossier `/vendor` sera généré à la racine du projet. Ce dossier contient notamment l'autoload de Composer et les fichiers nécessaires à son fonctionnement.
+
+Le dossier `/vendor` ne doit pas être versionné dans un dépôt Git. Il est cependant important d'indiquer dans le fichier `README.md` la procédure pour démarrer le projet et générer l'autoload.
+
+### Exploiter l'autoload
+
+---
+
+Que vous utilisiez un autoload manuel ou celui de Composer, le principe reste le même : il doit être appelé dans le point d'entrée de l'application, c'est-à-dire dans le fichier `/public/index.php`. Cela garantit que l'autoload sera bien exécuté à chaque requête.
+
+```php
+<?php
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use Src\Router;
+
+// Les classes sont chargées automatiquement via leur namespace, sans require manuel.
+$router = new Router();
+$router->dispatch();
+```
+
+## Le router
+
+---
+
+```
+src/
+├─ Router.php
+public/
+├─ index.php
+├─ .htaccess
+.htaccess
+conf.php
+README.md
+```
+
+Dans une architecture MVC, le router joue un rôle essentiel : il analyse l'URL demandée et la fait correspondre à un contrôleur et une action. C'est lui qui permet d'éviter d'avoir une multitude de fichiers PHP accessibles directement dans `public/` et d'avoir des URLs propres, sans `.php` en fin d'URL.
+
+**Sans router**, chaque page de l'application correspondrait à un fichier PHP distinct (`index.php`, `contact.php`, `about.php`). Ce modèle devient vite ingérable à mesure que l'application grandit et devient même impossible lorsque l'accès au dossier `/public` est restreint.
+
+**Avec un router**, toutes les requêtes passent par `public/index.php`, qui décode l'URL et envoie la requête au bon contrôleur.
+
+Implémentez une classe `Router` dans `/src/Router.php`, cette classe mettra à disposition une méthode `dispatch` qui se chargera d'interpréter l'URL demandée pour faire appel au contrôleur adéquat.
+
+```php
+<?php
+
+namespace Src;
+
+class Router
+{
+    private string $route;
+    private string $method;
+
+    public function __construct()
+    {
+        $this->route = $_SERVER["REQUEST_URI"];
+        $this->method = $_SERVER["REQUEST_METHOD"];
+    }
+
+    public function dispatch()
+    {
+        var_dump($this->route);
+        var_dump($this->method);
+        die(); // Testez pour vérifier que le Router fonctionne correctement.
+    }
+}
+```
+
+La route retournée par `REQUEST_URI` est un peu brute, il est pertinent de la traiter pour faciliter son interprétation. Créez une méthode privée `parseUri` et exploitez la variable d'environnement `BASE_URL` pour supprimer les informations inutiles de l'URI.
+
+```php
+private function parseUri($uri)
+{
+    $trimmedUri = trim($uri);
+    $route = str_replace(BASE_URL, "",  $trimmedUri);
+
+    return $route;
+}
+```
+
+Exploitez cette méthode dans le constructeur de la classe et complétez `dispatch` avec un `switch` sur la route :
+
+```php
+<?php
+
+namespace Src;
+
+require_once __DIR__ . "/../conf.php";
+
+class Router
+{
+    private string $route;
+    private string $method;
+
+    public function __construct()
+    {
+        $this->route = $this->parseUri($_SERVER["REQUEST_URI"]);
+        $this->method = $_SERVER["REQUEST_METHOD"];
+    }
+
+    public function dispatch()
+    {
+        switch ($this->route) {
+            case "/":
+                if ($this->method === "GET") {
+                    var_dump("Bienvenue sur la page d'accueil");
+                }
+                break;
+        }
+    }
+
+    private function parseUri($uri)
+    {
+        $trimmedUri = trim($uri);
+        $route = str_replace(BASE_URL, "",  $trimmedUri);
+
+        return $route;
+    }
+}
+```
+
+Il est pertinent de vérifier la méthode de la requête pour prévenir les cas où une route aurait un comportement différent selon la méthode. Avec ce router vous êtes capable d'identifier la route demandée ainsi que la méthode de la requête, ce qui permet d'appeler le contrôleur et la méthode adéquate.
+
+## Les contrôleurs
+
+---
+
+```
+src/
+├─ Router.php
+├─ Controllers/
+│  ├─ UserController.php
+public/
+├─ index.php
+├─ .htaccess
+.htaccess
+conf.php
+README.md
+```
+
+Le contrôleur est responsable de traiter les requêtes entrantes et agit comme le chef d'orchestre de l'application. Son rôle est d'appeler les modèles et les repositories si des données doivent être récupérées ou modifiées, puis de transmettre les résultats aux vues pour l'affichage.
+
+Un contrôleur est souvent lié à un modèle, bien que ce ne soit pas une obligation. Il gère les différentes routes associées à cette entité et contient une méthode pour chaque action (lecture, création, modification, suppression, etc.).
+
+```php
+<?php
+
+namespace Src\Controllers;
+
+class UserController
+{
+    public function allUserPage()
+    {
+        var_dump("Page affichant l'ensemble des utilisateurs");
+    }
+}
+```
+
+Il est maintenant nécessaire de déclarer la route et de lier le contrôleur dans le router :
+
+```php
+<?php
+
+namespace Src;
+
+use Src\Controllers\UserController;
+
+require_once __DIR__ . "/../conf.php";
+
+class Router
+{
+    private string $route;
+    private string $method;
+    private UserController $userController;
+
+    public function __construct()
+    {
+        $this->route = $this->parseUri($_SERVER["REQUEST_URI"]);
+        $this->method = $_SERVER["REQUEST_METHOD"];
+
+        $this->userController = new UserController();
+    }
+
+    public function dispatch()
+    {
+        switch ($this->route) {
+            case "/":
+                if ($this->method === "GET") {
+                    var_dump("Bienvenue sur la page d'accueil");
+                }
+                break;
+            case "/users":
+                if ($this->method === "GET") {
+                    $this->userController->allUserPage();
+                }
+                break;
+        }
+    }
+
+    private function parseUri($uri)
+    {
+        $trimmedUri = ltrim(rtrim($uri));
+        $route = str_replace(BASE_URL, "",  $trimmedUri);
+
+        return $route;
+    }
+}
+```
+
+Il est nécessaire de créer une instance de `UserController` pour pouvoir faire appel à la méthode `allUserPage`. Ici elle est instanciée dans le constructeur de la classe et stockée dans une propriété.
+
+## Modèles et répertoire
+
+---
+
+```
+src/
+├─ Router.php
+├─ Controllers/
+│  ├─ UserController.php
+├─ Models/
+│  ├─ User.php
+├─ Repositories/
+│  ├─ UserRepository.php
+public/
+├─ index.php
+├─ .htaccess
+.htaccess
+conf.php
+README.md
+```
+
+Le contrôleur a besoin de récupérer des données en base de données, par l'intermédiaire du répertoire `UserRepository`.
+
+Script SQL pour créer une base de données minimale pour cette illustration :
+
+```sql
+CREATE DATABASE my_database;
+
+USE my_database;
+
+CREATE TABLE user (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE
+);
+
+INSERT INTO user (email) VALUES
+('alice@example.com'),
+('bob@example.com'),
+('charlie@example.com');
+```
+
+Dans le cadre de la programmation orientée objet, il est nécessaire de transformer les données brutes issues de la base de données en un objet représentant ce modèle. Le modèle doit rigoureusement respecter l'architecture de la table de base de données à laquelle il correspond.
+
+Créez un fichier `/src/Models/User.php` avec ses propriétés, ses méthodes `get` et `set` ainsi que le constructeur.
+
+```php
+<?php
+
+namespace Src\Models;
+
+class User
+{
+    private int $id;
+    private string $email;
+
+    public function __construct(int $id, string $email)
+    {
+        $this->id = $id;
+        $this->email = $email;
+    }
+
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    public function setId(int $id): self
+    {
+        $this->id = $id;
+
+        return $this;
+    }
+
+    public function getEmail(): string
+    {
+        return $this->email;
+    }
+
+    public function setEmail(string $email): self
+    {
+        $this->email = $email;
+
+        return $this;
+    }
+}
+```
+
+Le modèle n'a pas la responsabilité d'interagir avec la base de données, ce rôle revient au répertoire. Le répertoire `UserRepository` exploitera PHP PDO pour interagir avec la base de données et déclare les méthodes nécessaires aux actions CRUD.
+
+Créez un fichier `/src/Repositories/UserRepository.php` avec une connexion PDO dans le constructeur et une méthode `findAll` chargée de récupérer tous les utilisateurs en BDD.
+
+```php
+<?php
+
+namespace Src\Repositories;
+
+use PDO;
+use PDOException;
+use Src\Models\User;
+
+require_once __DIR__ . "/../../conf.php";
+
+class UserRepository
+{
+    private PDO $database;
+
+    public function __construct()
+    {
+        $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME;
+
+        try {
+            $this->database = new PDO($dsn, DB_USER, DB_PSWD);
+        } catch (PDOException $e) {
+            echo "Erreur de connexion : " . $e->getMessage();
+        }
+    }
+
+    public function findAll()
+    {
+        $query = "SELECT * FROM user";
+        $results = $this->database->query($query);
+        $users = [];
+
+        foreach ($results as $result) {
+            $user = new User($result[0], $result[1]);
+            $users[] = $user;
+        }
+
+        return $users;
+    }
+}
+```
+
+Les variables d'environnement utilisées pour la connexion PHP PDO sont déclarées dans `conf.php` :
+
+```php
+<?php
+
+define("BASE_URL", "/~kevin/SIMPLON/PHP/demo_php_mvc/public");
+define("DB_HOST", "localhost");
+define("DB_NAME", "demo_mvc");
+define("DB_USER", "");
+define("DB_PSWD", "");
+```
+
+Exploitez la méthode `findAll` de votre répertoire `UserRepository` dans la méthode `allUserPage` du contrôleur `UserController`. Vous devriez voir s'afficher une liste des utilisateurs.
+
+```php
+<?php
+
+namespace Src\Controllers;
+
+use Src\Repositories\UserRepository;
+
+class UserController
+{
+    public function allUserPage()
+    {
+        $userRepository = new UserRepository();
+        $users = $userRepository->findAll();
+
+        var_dump($users);
+    }
+}
+```
+
+## Les vues
+
+---
+
+```
+src/
+├─ Router.php
+├─ Controllers/
+│  ├─ UserController.php
+├─ Models/
+│  ├─ User.php
+├─ Repositories/
+│  ├─ UserRepository.php
+public/
+├─ index.php
+├─ .htaccess
+templates/
+├─ users_list.php
+.htaccess
+conf.php
+README.md
+```
+
+Contrairement aux modèles, qui gèrent la logique métier et l'accès aux données, et aux contrôleurs, qui orchestrent le tout, les vues ne contiennent aucune logique métier. Elles se concentrent uniquement sur la présentation et peuvent intégrer du HTML, CSS, JavaScript ainsi que du PHP pour afficher dynamiquement les données.
+
+Dans une structure MVC bien organisée, les fichiers de vue sont stockés dans un dossier dédié comme `templates/` ou `views/`. Le contrôleur sélectionne la vue appropriée en fonction de l'action demandée et lui transmet les données nécessaires.
+
+Les vues sont exploitées de la manière suivante par le contrôleur :
+
+```php
+public function allUserPage()
+{
+    $userRepository = new UserRepository();
+    $users = $userRepository->findAll();
+
+    header("Content-Type: text/html");
+    http_response_code(200);
+    include_once __DIR__ . "/../../templates/users_list.php";
+}
+```
+
+Le fichier de la vue est inclus dans le contrôleur, il peut donc bénéficier des variables précédemment déclarées. Ici, le template `/templates/users_list.php` peut exploiter le tableau des utilisateurs stocké dans la variable `$users`.
+
+Créez le fichier `/templates/users_list.php` et implémentez-y une boucle PHP pour créer une liste des utilisateurs :
+
+```php
+<ul>
+    <?php foreach ($users as $user) {
+        echo ("<li>");
+        echo ("<p>{$user->getId()} - {$user->getEmail()}</p>");
+        echo ("</li>");
+    } ?>
+</ul>
+```
+
+## Récapitulatif
+
+---
+
+Vous avez mis en place une architecture MVC. Revoyons le processus étape par étape :
+
+1. Toutes les requêtes sont redirigées vers le point d'entrée du site `/public/index.php`.
+2. Le routeur entre en scène, il interprète la requête et fait appel au contrôleur adéquat.
+3. Le contrôleur orchestre ses tâches comme l'accès à la BDD et retourne une vue.
+4. La vue est construite et retournée au client.
+
+Consultez la leçon Architecture MVC avancée pour améliorer votre architecture et ses composants.
