@@ -1,0 +1,144 @@
+## La dot notation
+
+---
+
+Lorsqu'un document contient des objets imbriqués, Elasticsearch permet d'accéder à leurs champs via la **dot notation** : on enchaîne les noms de clés avec un point pour former le chemin complet vers le champ cible.
+
+```json
+{
+  "driver": {
+    "id": "hamilton",
+    "name": "Lewis Hamilton",
+    "nationality": "british"
+  }
+}
+```
+
+Pour filtrer ou agréger sur le champ `id` de l'objet `driver`, on utilise le chemin `driver.id` :
+
+```json
+{
+  "term": { "driver.id": "hamilton" }
+}
+```
+
+C'est la syntaxe que l'on retrouve dans toutes les queries et agrégations du projet : `driver.id`, `team.id`, `circuit.country`. Elle est directe et fonctionne sans configuration particulière pour les objets simples.
+
+## Les objets plats (type object)
+
+---
+
+Par défaut, lorsqu'un champ contient un objet JSON, Elasticsearch le mappe avec le type `object`. En interne, il **aplatit** l'objet : les champs imbriqués sont indexés comme s'ils étaient des champs indépendants au niveau racine du document.
+
+L'objet :
+
+```json
+{
+  "driver": {
+    "id": "hamilton",
+    "name": "Lewis Hamilton"
+  }
+}
+```
+
+Est indexé en interne comme :
+
+```json
+{
+  "driver.id": "hamilton",
+  "driver.name": "Lewis Hamilton"
+}
+```
+
+Cet aplatissement est transparent et suffit dans la grande majorité des cas. La dot notation fonctionne naturellement avec ce mécanisme.
+
+**La limite : les tableaux d'objets**
+
+L'aplatissement devient problématique lorsque le champ contient un **tableau d'objets**. Imaginons un document avec plusieurs temps au tour :
+
+```json
+{
+  "lap_times": [
+    { "lap": 1, "driver": "hamilton", "time": 95.4 },
+    { "lap": 1, "driver": "verstappen", "time": 94.8 }
+  ]
+}
+```
+
+Après aplatissement, Elasticsearch stocke :
+
+```json
+{
+  "lap_times.lap":    [1, 1],
+  "lap_times.driver": ["hamilton", "verstappen"],
+  "lap_times.time":   [95.4, 94.8]
+}
+```
+
+La corrélation entre les champs de chaque objet est **perdue**. Une requête cherchant `lap_times.driver = "hamilton" AND lap_times.time < 95.0` correspondrait à ce document, même si ce n'est pas Hamilton qui a fait le temps inférieur à 95. Les valeurs sont mélangées dans des tableaux plats.
+
+## Le type nested
+
+---
+
+Pour conserver la corrélation entre les champs d'objets dans un tableau, il faut utiliser le type `nested`. Avec ce type, chaque objet du tableau est indexé comme un document interne indépendant, invisible de l'extérieur mais interrogeable avec une requête dédiée.
+
+> ℹ️ Nested : Type de champ Elasticsearch qui indexe chaque objet d'un tableau comme un mini-document interne, préservant la corrélation entre ses champs.
+
+Une requête sur un champ `nested` doit être encapsulée dans une `nested` query qui précise le chemin (`path`) vers l'objet imbriqué :
+
+```json
+{
+  "query": {
+    "nested": {
+      "path": "lap_times",
+      "query": {
+        "bool": {
+          "filter": [
+            { "term":  { "lap_times.driver": "hamilton" } },
+            { "range": { "lap_times.time":   { "lt": 95.0 } } }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+Avec `nested`, la corrélation est préservée : la requête ci-dessus ne correspond qu'aux documents où **le même objet** du tableau a `driver = "hamilton"` et `time < 95.0` simultanément.
+
+**`object` ou `nested` ?**
+
+- Utilisez `object` (le défaut) pour les objets uniques : `driver`, `team`, `circuit`. La corrélation n'est pas un problème puisqu'il n'y a qu'un seul objet.
+- Utilisez `nested` pour les **tableaux d'objets** où vous devez filtrer ou agréger en combinant plusieurs champs du même objet.
+
+## En pratique
+
+---
+
+Dans le projet, les champs `driver`, `team` et `circuit` sont de simples objets (pas des tableaux) : le type `object` est suffisant et la dot notation fonctionne directement.
+
+```json
+{
+  "filter": [
+    { "term": { "driver.id":      "hamilton" } },
+    { "term": { "circuit.country": "Bahrain" } }
+  ]
+}
+```
+
+Si demain le modèle évoluait pour stocker un historique de changements d'équipe par pilote dans chaque document, sous forme d'un tableau d'objets `{ team_id, from_date, to_date }`, il faudrait passer ce champ en `nested` pour pouvoir filtrer correctement sur une période donnée.
+
+En PHP, la `nested` query se construit de la même façon que les autres :
+
+```php
+use Elastica\Query;
+
+$nestedFilter = new Query\BoolQuery();
+$nestedFilter->addFilter(new Query\Term(['lap_times.driver' => 'hamilton']));
+$nestedFilter->addFilter(new Query\Range('lap_times.time', ['lt' => 95.0]));
+
+$nestedQuery = new Query\Nested();
+$nestedQuery->setPath('lap_times');
+$nestedQuery->setQuery($nestedFilter);
+```

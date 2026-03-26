@@ -43,6 +43,12 @@ const courses: Course[] = [
     slug: "php_tests",
     emoji: "/emoji/alembic.png",
   },
+  {
+    id: 8,
+    label: "Elasticsearch",
+    slug: "elasticsearch",
+    emoji: "/emoji/books.png",
+  },
 ];
 
 export default courses;

@@ -1,0 +1,153 @@
+## FOS Elastica et le mapping
+
+---
+
+FOS Elastica est un bundle Symfony qui intègre Elasticsearch dans une application PHP. Parmi ses responsabilités, il prend en charge la **création et la mise à jour du mapping** : à partir d'une configuration YAML, il génère et envoie le mapping correspondant à Elasticsearch lors de la commande de population de l'index.
+
+> ℹ️ FOS Elastica : Bundle Symfony qui fait le pont entre une application PHP et Elasticsearch. Il gère la configuration des index, la synchronisation des données et la construction des requêtes via la bibliothèque Elastica.
+
+Concrètement, cela signifie que vous ne gérez jamais le mapping Elasticsearch directement : vous déclarez la structure dans `config/packages/fos_elastica.yaml`, et le bundle se charge de la traduire en mapping ES et de l'appliquer.
+
+## Structure du YAML
+
+---
+
+La configuration FOS Elastica suit une hiérarchie précise : le bundle déclare les index, et chaque index déclare ses propriétés.
+
+```yaml
+fos_elastica:
+  clients:
+    default:
+      host: '%env(ELASTICSEARCH_HOST)%'
+      port: '%env(ELASTICSEARCH_PORT)%'
+
+  indexes:
+    results:
+      properties:
+        season:
+          type: integer
+        round:
+          type: integer
+        race_id:
+          type: keyword
+        position:
+          type: integer
+        points:
+          type: integer
+        fastest_lap:
+          type: boolean
+        driver:
+          type: object
+          properties:
+            id:
+              type: keyword
+            name:
+              type: text
+            nationality:
+              type: keyword
+            number:
+              type: integer
+        team:
+          type: object
+          properties:
+            id:
+              type: keyword
+            name:
+              type: keyword
+        circuit:
+          type: object
+          properties:
+            id:
+              type: keyword
+            name:
+              type: keyword
+            country:
+              type: keyword
+```
+
+Chaque entrée sous `properties` correspond à un champ du document. Les champs imbriqués dans un `object` récursent simplement la même structure.
+
+## Correspondances type YAML → type ES
+
+---
+
+Les types déclarés dans le YAML sont directement les types Elasticsearch. Il n'y a pas de couche de traduction : FOS Elastica transmet le nom du type tel quel à l'API de mapping ES.
+
+| Type YAML | Type ES | Usage |
+|-----------|---------|-------|
+| `keyword` | `keyword` | Valeur exacte, filtrage, tri, agrégation |
+| `text` | `text` | Recherche full-text analysée |
+| `integer` | `integer` | Entier 32 bits |
+| `long` | `long` | Entier 64 bits |
+| `float` | `float` | Nombre décimal |
+| `boolean` | `boolean` | Vrai / faux |
+| `date` | `date` | Date ou datetime |
+| `object` | `object` | Objet imbriqué (aplatissement interne) |
+| `nested` | `nested` | Tableau d'objets avec corrélation préservée |
+
+## Ce que chaque type implique
+
+---
+
+Le choix du type n'est pas uniquement sémantique : il détermine comment Elasticsearch traite le champ en interne.
+
+**`text`** : le champ est passé par un analyseur à l'indexation et à la recherche. Par défaut, l'analyseur standard découpe par espaces et ponctuation, passe en minuscules et supprime les mots vides. Cela permet la recherche approximative mais interdit le tri et l'agrégation directe. Si vous avez besoin des deux (recherche full-text et agrégation), déclarez deux sous-champs : un `text` et un `keyword`.
+
+```yaml
+name:
+  type: text
+  fields:
+    raw:
+      type: keyword
+```
+
+**`keyword`** : le champ est stocké tel quel, sans analyse. Il supporte le tri, le filtrage exact et les agrégations. Les valeurs sont sensibles à la casse.
+
+**`date`** : Elasticsearch stocke les dates en interne comme des timestamps UTC (nombre de millisecondes depuis l'epoch). Le format par défaut reconnaît les dates ISO 8601 (`2024-03-02T15:00:00Z`). Vous pouvez personnaliser les formats acceptés.
+
+```yaml
+race_date:
+  type: date
+  format: 'yyyy-MM-dd'
+```
+
+**`object`** : aucun traitement particulier. Les champs de l'objet sont indexés en suivant leurs propres types, accessibles via la dot notation. Si le champ `type: object` est omis, Elasticsearch le déduit automatiquement dès qu'il voit un objet avec `properties`.
+
+**`nested`** : chaque objet du tableau est indexé comme un document interne. Cela a un coût en mémoire et en performance d'indexation. N'utilisez `nested` que lorsque la corrélation inter-champs dans un tableau est réellement nécessaire.
+
+## En pratique
+
+---
+
+Pour inspecter le mapping effectivement appliqué à l'index `results` dans Elasticsearch, utilisez l'API `_mapping` :
+
+```bash
+GET /results/_mapping
+```
+
+La réponse retourne le mapping complet tel qu'Elasticsearch l'a enregistré :
+
+```json
+{
+  "results": {
+    "mappings": {
+      "properties": {
+        "season":   { "type": "integer" },
+        "race_id":  { "type": "keyword" },
+        "position": { "type": "integer" },
+        "points":   { "type": "integer" },
+        "driver": {
+          "properties": {
+            "id":          { "type": "keyword" },
+            "name":        { "type": "text" },
+            "nationality": { "type": "keyword" },
+            "number":      { "type": "integer" }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Comparer cette réponse avec votre YAML est le moyen le plus fiable de vérifier que le mapping appliqué correspond bien à ce que vous attendez. En cas de divergence, la commande FOS Elastica `fos:elastica:reset` recrée l'index avec le mapping à jour, attention, cela supprime les données existantes.

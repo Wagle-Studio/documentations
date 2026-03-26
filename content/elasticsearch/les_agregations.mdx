@@ -1,0 +1,188 @@
+## Introduction
+
+---
+
+Une requête Elasticsearch répond à la question "quels documents correspondent à ces critères ?" et retourne une liste de documents. Une agrégation répond à "que représentent ces documents dans leur ensemble ?" et retourne des statistiques, des regroupements, des calculs.
+
+**Analogie**
+
+C'est la différence entre chercher une liste de courses (`SELECT * FROM results WHERE driver_id = 'hamilton'`) et demander le total de points marqués par saison (`SELECT season, SUM(points) FROM results WHERE driver_id = 'hamilton' GROUP BY season`). Les agrégations Elasticsearch couvrent ce second cas, et vont bien plus loin.
+
+Il existe trois familles d'agrégations : les agrégations **bucket** (regroupement), les agrégations **metric** (calcul) et les agrégations **pipeline** (calcul sur les résultats d'autres agrégations).
+
+## Agrégations bucket
+
+---
+
+Les agrégations bucket répartissent les documents dans des "seaux" selon un critère. Chaque bucket contient un sous-ensemble de documents et peut lui-même contenir des sous-agrégations.
+
+### Terms
+
+---
+
+`Terms` crée un bucket par valeur unique d'un champ. C'est l'équivalent d'un `GROUP BY` SQL.
+
+```json
+{
+  "aggs": {
+    "by_driver": {
+      "terms": {
+        "field": "driver.id",
+        "size": 20
+      }
+    }
+  }
+}
+```
+
+Le paramètre `size` limite le nombre de buckets retournés (par défaut 10). Elasticsearch retourne les buckets par ordre décroissant de nombre de documents.
+
+### Filter
+
+---
+
+`Filter` crée un unique bucket contenant les documents correspondant à une condition. Utile pour isoler un sous-ensemble et lui appliquer des métriques.
+
+```json
+{
+  "aggs": {
+    "podiums": {
+      "filter": {
+        "range": { "position": { "lte": 3 } }
+      }
+    }
+  }
+}
+```
+
+## Agrégations metric
+
+---
+
+Les agrégations metric calculent une valeur numérique à partir des documents d'un bucket. Elles s'utilisent généralement en sous-agrégations d'un bucket.
+
+**`sum`** : somme des valeurs d'un champ.
+
+**`min`** / **`max`** : valeur minimale ou maximale.
+
+**`avg`** : moyenne.
+
+**`value_count`** : nombre de documents ayant une valeur pour le champ (équivalent de `COUNT`).
+
+```json
+{
+  "aggs": {
+    "total_points": { "sum": { "field": "points" } },
+    "best_result":  { "min": { "field": "position" } },
+    "avg_position": { "avg": { "field": "position" } },
+    "race_count":   { "value_count": { "field": "race_id" } }
+  }
+}
+```
+
+## Agrégations pipeline
+
+---
+
+Les agrégations pipeline opèrent non pas sur les documents, mais sur les résultats d'autres agrégations. Elles permettent de trier des buckets selon une métrique calculée, ou d'identifier le bucket avec la valeur la plus haute.
+
+**`bucket_sort`** : trie les buckets d'une agrégation parente selon une métrique.
+
+**`max_bucket`** : identifie le bucket ayant la valeur la plus élevée pour une métrique donnée.
+
+```json
+{
+  "aggs": {
+    "by_driver": {
+      "terms": { "field": "driver.id", "size": 20 },
+      "aggs": {
+        "total_points": { "sum": { "field": "points" } },
+        "rank": {
+          "bucket_sort": {
+            "sort": [{ "total_points": { "order": "desc" } }]
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+## En pratique
+
+---
+
+La `DriverSeasonStatsQuery` du projet produit les statistiques complètes de chaque pilote sur une saison : total de points, nombre de victoires, nombre de podiums, meilleur résultat. C'est une agrégation `Terms` sur `driver.id`, avec plusieurs sous-agrégations metric.
+
+```json
+{
+  "query": {
+    "bool": {
+      "filter": [
+        { "term":  { "season": 2023 } },
+        { "range": { "position": { "gte": 1 } } }
+      ]
+    }
+  },
+  "size": 0,
+  "aggs": {
+    "by_driver": {
+      "terms": {
+        "field": "driver.id",
+        "size": 30
+      },
+      "aggs": {
+        "total_points": {
+          "sum": { "field": "points" }
+        },
+        "best_result": {
+          "min": { "field": "position" }
+        },
+        "wins": {
+          "filter": { "term": { "position": 1 } }
+        },
+        "podiums": {
+          "filter": { "range": { "position": { "lte": 3 } } }
+        },
+        "rank_by_points": {
+          "bucket_sort": {
+            "sort": [{ "total_points": { "order": "desc" } }]
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+`"size": 0` indique qu'on ne souhaite pas récupérer les documents correspondants, uniquement les agrégations, ce qui est systématiquement le cas lorsqu'on n'a besoin que de statistiques.
+
+Pour chaque bucket `driver.id`, Elasticsearch retourne :
+- `total_points.value`, la somme des points sur la saison
+- `best_result.value`, la meilleure position obtenue (le minimum)
+- `wins.doc_count`, le nombre de victoires (position = 1)
+- `podiums.doc_count`, le nombre de podiums (position ≤ 3)
+
+En PHP avec FOS Elastica :
+
+```php
+use Elastica\Aggregation;
+use Elastica\Query;
+
+$boolQuery = new Query\BoolQuery();
+$boolQuery->addFilter(new Query\Term(['season' => 2023]));
+$boolQuery->addFilter(new Query\Range('position', ['gte' => 1]));
+
+$byDriver = new Aggregation\Terms('by_driver');
+$byDriver->setField('driver.id');
+$byDriver->setSize(30);
+
+$byDriver->addAggregation((new Aggregation\Sum('total_points'))->setField('points'));
+$byDriver->addAggregation((new Aggregation\Min('best_result'))->setField('position'));
+$byDriver->addAggregation((new Aggregation\Filter('wins'))->setFilter(new Query\Term(['position' => 1])));
+$byDriver->addAggregation((new Aggregation\Filter('podiums'))->setFilter(new Query\Range('position', ['lte' => 3])));
+
+$query = new Query($boolQuery);
+$query->setSize(0);
+$query->addAggregation($byDriver);
+```

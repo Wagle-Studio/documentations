@@ -1,0 +1,90 @@
+## Introduction
+
+---
+
+Avant d'écrire la moindre query, il faut maîtriser les quatre briques sur lesquelles repose tout Elasticsearch : l'index, le document, le mapping et les types de champs. Ce sont les concepts qui structurent la façon dont les données sont organisées, stockées et interrogées.
+
+## L'index
+
+---
+
+Un index est le conteneur principal de vos données. C'est l'équivalent d'une table en SQL : il regroupe des documents partageant la même nature et le même mapping.
+
+> ℹ️ Index : Structure de stockage dans Elasticsearch. Un index porte un nom en minuscules, définit un mapping, et distribue ses données sur un ou plusieurs shards.
+
+En interne, Elasticsearch distribue les données d'un index sur plusieurs shards (fragments), eux-mêmes répliqués sur plusieurs nœuds du cluster pour assurer la tolérance aux pannes et la scalabilité. En tant que développeur, cette mécanique est transparente : vous interrogez l'index par son nom, Elasticsearch orchestre le reste.
+
+Dans le projet, l'index `results` contient l'ensemble des résultats de course : un document par entrée pilote/course.
+
+## Le document
+
+---
+
+Un document est l'unité de données élémentaire dans Elasticsearch. C'est un objet JSON, identifié par un champ `_id` unique au sein de son index.
+
+```json
+{
+  "_index": "results",
+  "_id": "2024_BAH_44",
+  "_source": {
+    "season": 2024,
+    "round": 1,
+    "race_id": "BAH_2024",
+    "position": 2,
+    "points": 18,
+    "driver": {
+      "id": "hamilton",
+      "name": "Lewis Hamilton",
+      "nationality": "british"
+    },
+    "team": {
+      "id": "mercedes",
+      "name": "Mercedes-AMG Petronas"
+    },
+    "circuit": {
+      "id": "bahrain",
+      "name": "Bahrain International Circuit",
+      "country": "Bahrain"
+    }
+  }
+}
+```
+
+La structure d'un document est souple : Elasticsearch accepte n'importe quel JSON valide. Cependant, en production, on définit toujours un mapping explicite pour contrôler les types des champs et garantir leur comportement lors des requêtes.
+
+## Le mapping
+
+---
+
+Le mapping est la définition de la structure d'un index : il indique à Elasticsearch comment interpréter chaque champ d'un document. C'est l'équivalent du schéma en SQL.
+
+Sans mapping explicite, Elasticsearch active le dynamic mapping : il infère automatiquement le type de chaque champ à partir du premier document indexé. C'est pratique pour prototyper, mais dangereux en production, un entier détecté comme `float`, une date mal parsée, ou un identifiant indexé comme `text` au lieu de `keyword` sont des erreurs silencieuses qui coûtent cher à corriger une fois l'index en production.
+
+## Les types de champs
+
+---
+
+Le type d'un champ détermine comment Elasticsearch le stocke, l'indexe et le traite lors des requêtes. Voici les types fondamentaux.
+
+**`keyword`** : valeur exacte, non analysée. Utilisé pour les identifiants, les statuts, les valeurs sur lesquelles on filtre, trie ou agrège. Exemples : `driver.id`, `team.id`, `nationality`.
+
+**`text`** : chaîne analysée pour la recherche full-text. Le texte est découpé en tokens par un analyseur (passage en minuscules, suppression des mots vides, etc.). Utilisé pour les champs en langage naturel. Exemple : `circuit.name` si vous souhaitez une recherche par mots.
+
+**`integer` / `long` / `float`** : valeurs numériques. `integer` pour des entiers 32 bits, `long` pour des entiers 64 bits, `float` pour les décimaux. Exemples : `position`, `points`, `round`.
+
+**`boolean`** : vrai ou faux. Exemple : `fastest_lap`.
+
+**`date`** : date ou datetime. Elasticsearch stocke les dates en interne comme des timestamps UTC. Exemple : `race_date`.
+
+**`object`** : objet JSON imbriqué. Les champs internes sont accessibles via la dot notation (`driver.id`, `team.name`). C'est le type par défaut lorsqu'un champ contient un objet.
+
+**`nested`** : variante de `object` pour les tableaux d'objets où l'on souhaite conserver la corrélation entre les champs de chaque entrée. Ce type est détaillé dans la leçon dédiée.
+
+| Type | Filtrable | Triable | Agrégable | Full-text |
+|------|-----------|---------|-----------|-----------|
+| `keyword` | ✓ | ✓ | ✓ | ✗ |
+| `text` | ✗ | ✗ | ✗ | ✓ |
+| `integer` | ✓ | ✓ | ✓ | ✗ |
+| `date` | ✓ | ✓ | ✓ | ✗ |
+| `boolean` | ✓ | ✓ | ✗ | ✗ |
+| `object` | ✓ | ✓ | ✓ | - |

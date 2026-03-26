@@ -1,0 +1,47 @@
+## Introduction
+
+---
+
+Elasticsearch est un moteur de recherche et d'analyse distribué, basé sur la bibliothèque Apache Lucene. Contrairement à une base de données relationnelle, il n'est pas conçu pour stocker des données transactionnelles et en garantir la cohérence : il est conçu pour les retrouver rapidement, les analyser en temps quasi-réel, et les rendre accessibles à une recherche efficace.
+
+> ℹ️ Elasticsearch : Moteur de recherche distribué open source développé par Elastic. Il stocke les données au format JSON et les expose via une API HTTP RESTful.
+
+Les données sont stockées sous forme de documents JSON dans des structures appelées index. Chaque document peut être récupéré en quelques millisecondes, et des recherches full-text peuvent porter sur des millions de documents en une fraction de seconde.
+
+## Elasticsearch vs SQL
+
+---
+
+Si vous venez du monde des bases de données relationnelles, voici comment se positionnent les concepts l'un par rapport à l'autre.
+
+| SQL | Elasticsearch | Description |
+|-----|---------------|-------------|
+| Base de données | Cluster | L'ensemble du système |
+| Table | Index | Un ensemble de documents de même nature |
+| Ligne | Document | Une entrée, au format JSON |
+| Colonne | Champ (field) | Une propriété du document |
+| Schéma | Mapping | La définition des types de champs |
+
+Ces correspondances sont utiles pour s'orienter, mais elles s'arrêtent là. Elasticsearch ne fonctionne pas comme une base de données relationnelle et plusieurs différences fondamentales s'imposent :
+
+**Pas de JOIN** : Elasticsearch ne permet pas de joindre deux index à la volée comme SQL joint deux tables. Les relations doivent être résolues au moment de l'indexation, pas de la requête.
+
+**Pas de transactions** : il n'y a pas de mécanisme ACID. Si vous indexez plusieurs documents, l'un peut réussir et l'autre échouer sans rollback automatique.
+
+**Near real-time** : un document indexé devient visible dans les recherches après un délai de l'ordre d'une seconde (le cycle de rafraîchissement de l'index). Ce n'est pas de l'instantané.
+
+**Optimisé pour la lecture** : l'écriture est plus coûteuse que dans une base relationnelle. Elasticsearch est taillé pour être massivement interrogé, pas mis à jour en continu ligne par ligne.
+
+## Cas d'usage
+
+---
+
+Elasticsearch répond à des besoins qui dépassent les capacités naturelles d'une base de données relationnelle.
+
+**Recherche full-text** : retrouver des documents en langage naturel, avec tolérance aux variations de casse, synonymes, et classement par pertinence. C'est le cas d'usage fondateur d'Elasticsearch.
+
+**Autocomplétion et suggestions** : proposer des résultats en cours de saisie, avec une latence de quelques millisecondes même sur un corpus volumineux.
+
+**Analytics et tableaux de bord** : agréger des millions de documents pour produire des statistiques, des histogrammes, des classements. Kibana (de la suite Elastic) est entièrement bâti sur cette capacité.
+
+**Centralisation de logs** : la stack ELK (Elasticsearch, Logstash, Kibana) est l'une des solutions les plus répandues pour ingérer et analyser des logs applicatifs en temps réel.

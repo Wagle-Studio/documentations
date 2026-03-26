@@ -1,0 +1,104 @@
+## Introduction
+
+---
+
+Logstash est un pipeline de traitement de données open source. Son rôle dans la stack ELK est d'ingérer des données depuis une ou plusieurs sources, de les transformer, puis de les envoyer vers une destination, le plus souvent Elasticsearch.
+
+> ℹ️ Logstash : Composant de la stack ELK développé par Elastic. Il fonctionne comme un pipeline ETL (Extract, Transform, Load) : il collecte des données, les filtre ou les enrichit, puis les transmet à une sortie.
+
+Ce qui distingue Logstash d'un simple script d'import, c'est son architecture en plugins. Chaque étape du pipeline (entrée, filtre, sortie) est configurée via des plugins interchangeables. Un pipeline peut lire des logs depuis un fichier, les enrichir avec des données géographiques, reformater les timestamps, et les envoyer vers Elasticsearch en une seule configuration.
+
+## Architecture d'un pipeline
+
+---
+
+Un pipeline Logstash se compose de trois sections obligatoires.
+
+**`input`** : définit la ou les sources de données. Logstash peut lire depuis un fichier, écouter sur un port TCP, consommer un topic Kafka, recevoir des données via HTTP, et bien d'autres sources.
+
+**`filter`** : transforme les données en transit. C'est ici qu'on parse, qu'on enrichit, qu'on renomme ou qu'on supprime des champs.
+
+**`output`** : envoie les données vers une ou plusieurs destinations. Elasticsearch est la destination la plus courante, mais Logstash peut aussi écrire dans un fichier, envoyer vers un topic Kafka, ou appeler une API HTTP.
+
+```java
+input  → filter → output
+```
+
+La configuration s'écrit dans un fichier `.conf` :
+
+```yaml
+input {
+  file {
+    path    => "/var/log/app/*.log"
+    start_position => "beginning"
+  }
+}
+
+filter {
+  grok {
+    match => {
+      "message" => "%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:level} %{GREEDYDATA:msg}"
+    }
+  }
+
+  date {
+    match  => ["timestamp", "ISO8601"]
+    target => "@timestamp"
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => ["http://localhost:9200"]
+    index => "app-logs-%{+YYYY.MM.dd}"
+  }
+}
+```
+
+## Les plugins essentiels
+
+---
+
+**Inputs courants**
+
+**`file`** : lit un fichier ligne par ligne, avec suivi de position pour reprendre après un redémarrage.
+
+**`beats`** : reçoit des données depuis Filebeat ou d'autres agents de la famille Beats. C'est l'input standard dans une infrastructure de logs distribuée.
+
+**`http`** : expose un endpoint HTTP pour recevoir des données en push.
+
+**Filtres courants**
+
+**`grok`** : parse un champ texte libre en champs structurés à partir d'expressions régulières nommées. C'est le filtre le plus utilisé pour structurer des logs applicatifs.
+
+**`mutate`** : renomme, supprime, ajoute ou convertit des champs. Opération de base pour nettoyer et normaliser la structure d'un document avant indexation.
+
+**`date`** : parse un champ date et le définit comme `@timestamp`, le champ de référence temporelle d'Elasticsearch.
+
+**`geoip`** : enrichit un document avec des informations géographiques (ville, pays, coordonnées) à partir d'une adresse IP.
+
+**Outputs courants**
+
+**`elasticsearch`** : envoie les documents vers un index Elasticsearch. Supporte la définition dynamique du nom d'index à partir des champs du document.
+
+**`stdout`** : écrit dans la sortie standard. Utile pour déboguer un pipeline.
+
+## Logstash vs Beats
+
+---
+
+Logstash est souvent comparé à Filebeat, un agent léger également développé par Elastic. La distinction est nette.
+
+Filebeat est conçu pour la collecte : il lit des fichiers de logs et les transmet à Logstash ou directement à Elasticsearch. Il est léger, déployé sur chaque machine qui produit des logs.
+
+Logstash est conçu pour la transformation : il reçoit des données, les enrichit, les structure, et les envoie vers Elasticsearch. Il tourne généralement sur un serveur centralisé.
+
+Dans une infrastructure classique : Filebeat collecte sur chaque nœud, transmet à Logstash qui transforme, Logstash envoie vers Elasticsearch, Kibana visualise.
+
+## En pratique
+
+---
+
+Dans le projet, les données sont indexées directement via l'API HTTP d'Elasticsearch à travers FOS Elastica : le besoin est d'indexer des données structurées depuis une base relationnelle, pas d'ingérer des flux de logs. Logstash n'intervient pas dans ce cas d'usage.
+
+Logstash devient pertinent lorsqu'on ingère des données semi-structurées ou non structurées : logs applicatifs, événements système, flux d'événements temps réel. Si le projet venait à centraliser ses logs d'accès ou ses logs applicatifs dans Elasticsearch pour les analyser avec Kibana, Logstash (ou Filebeat + Logstash) serait le composant naturel pour cette ingestion.

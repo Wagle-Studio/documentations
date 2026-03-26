@@ -1,0 +1,73 @@
+## Introduction
+
+---
+
+Kibana est l'interface de visualisation de la stack ELK. C'est une application web qui se connecte à Elasticsearch et permet d'explorer les données, de construire des dashboards, et d'exécuter des requêtes manuellement.
+
+> ℹ️ Kibana : Interface web développée par Elastic. Elle se connecte à un cluster Elasticsearch et expose ses données sous forme de tableaux, graphiques, cartes et dashboards interactifs.
+
+Kibana ne stocke rien : toutes les données restent dans Elasticsearch. Kibana est uniquement une couche de lecture et de visualisation. Les dashboards, les configurations de vues et les paramètres sont eux-mêmes stockés dans un index Elasticsearch dédié (`.kibana`), ce qui les rend exportables et versionnables.
+
+## Discover
+
+---
+
+Discover est l'outil d'exploration brute des données. Il permet d'interroger un index directement depuis l'interface, de filtrer par champs, de définir une plage temporelle, et de consulter les documents un par un.
+
+C'est la première destination lorsqu'on veut vérifier qu'une donnée est bien indexée, comprendre la structure réelle d'un document, ou tester un filtre avant de le formaliser dans une requête.
+
+## Visualizations et Lens
+
+---
+
+Les visualisations sont les briques de base d'un dashboard. Kibana propose plusieurs types de visualisations natives.
+
+**Lens** est l'éditeur de visualisation principal. Il fonctionne par glisser-déposer : on sélectionne les champs à représenter, Kibana suggère automatiquement le type de graphique adapté (barre, ligne, camembert, tableau, etc.). Lens traduit les sélections en agrégations Elasticsearch sans que l'utilisateur ait à écrire de JSON.
+
+**TSVB** (Time Series Visual Builder) est orienté séries temporelles. Il est plus adapté que Lens pour des visualisations sur `@timestamp` avec des fenêtres glissantes ou des calculs de type rolling average.
+
+**Maps** permet de représenter des données géographiques sur une carte, à partir de champs de type `geo_point`.
+
+## Dashboards
+
+---
+
+Un dashboard est un assemblage de visualisations sur une même page. Les visualisations restent indépendantes mais partagent les filtres appliqués au niveau du dashboard : ajouter un filtre sur `season : 2024` l'applique simultanément à toutes les visualisations de la page.
+
+Les dashboards peuvent être exportés au format NDJSON et versionnés dans le dépôt de code, ce qui permet de les partager ou de les rejouer sur un autre environnement.
+
+## Dev Tools
+
+---
+
+Dev Tools est la console HTTP intégrée à Kibana. Elle permet d'envoyer des requêtes directement à l'API d'Elasticsearch depuis le navigateur, avec autocomplétion et coloration syntaxique.
+
+```json
+GET results/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        { "term": { "driver.id": "verstappen" } },
+        { "term": { "season": 2023 } }
+      ]
+    }
+  }
+}
+```
+
+C'est l'outil de référence pour explorer le mapping d'un index, tester des requêtes, vérifier le résultat d'une agrégation, ou diagnostiquer un problème d'indexation. La commande `GET <index>/_mapping` y est particulièrement utile pour inspecter la structure réelle d'un index tel qu'Elasticsearch l'a interprétée.
+
+```json
+GET results/_mapping
+```
+
+## En pratique
+
+---
+
+Dans le projet, Dev Tools est l'outil le plus directement utile. Toutes les queries et agrégations documentées dans ce cours peuvent être testées directement depuis la console Kibana avant d'être implémentées en PHP.
+
+Discover permet de vérifier qu'un document est bien indexé après une opération d'indexation, et d'inspecter sa structure réelle champ par champ. C'est utile pour détecter une erreur de mapping (un champ indexé en `text` à la place de `keyword`, un objet `nested` mal résolu) avant qu'elle ne se manifeste dans les résultats d'une requête.
+
+Un dashboard minimal sur les données de résultats permettrait de visualiser la répartition des points par pilote sur une saison, ou l'évolution des performances course par course, à partir des agrégations déjà écrites.

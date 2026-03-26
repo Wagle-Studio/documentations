@@ -114,6 +114,8 @@
 }
 
 .homepage {
+  margin: var(--space-3) 0;
+
   &__welcome {
     display: flex;
     flex-direction: column;

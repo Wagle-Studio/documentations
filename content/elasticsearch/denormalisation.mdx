@@ -1,0 +1,78 @@
+## Le problème des JOIN
+
+---
+
+Dans une base de données relationnelle, les données sont normalisées : chaque entité vit dans sa propre table, et les relations se matérialisent par des clés étrangères. Pour reconstruire une entité complète, le moteur effectue des JOIN, des opérations qui rapprochent les lignes de plusieurs tables selon une condition.
+
+> ℹ️ Normalisation : Technique de modélisation qui consiste à éliminer la redondance en décomposant les données en tables liées par des clés étrangères. L'objectif est de n'avoir qu'une seule source de vérité pour chaque information.
+
+Elasticsearch est un système distribué : ses données sont réparties sur plusieurs nœuds du cluster. Effectuer un JOIN reviendrait à coordonner plusieurs nœuds simultanément pour chaque requête, un coût réseau et CPU prohibitif à l'échelle. Elasticsearch ne propose donc aucun mécanisme de JOIN natif entre index.
+
+Cette contrainte n'est pas un oubli : elle est assumée. Le modèle de données d'Elasticsearch répond à un impératif de lecture rapide, et il demande en échange que les relations soient résolues au moment de l'écriture, pas de la lecture.
+
+## La dénormalisation
+
+---
+
+La réponse à l'absence de JOIN est la **dénormalisation** : au lieu de référencer une entité liée par son identifiant, on embarque ses données directement dans le document.
+
+**Analogie**
+
+Imaginez deux approches pour constituer un dossier de candidature. La première consiste à noter "voir le CV en pièce jointe n°3", c'est la normalisation : on pointe vers une source externe. La seconde consiste à photocopier le CV et à l'agrafer directement au dossier, c'est la dénormalisation : on embarque.
+
+La première approche économise l'espace et maintient une source de vérité unique. La seconde rend le dossier autosuffisant : pour lire le dossier, on n'a plus besoin d'aller chercher la pièce jointe. Elasticsearch privilégie la seconde approche, car chaque requête doit se résoudre localement, sans dépendance vers un autre index.
+
+## En pratique
+
+---
+
+Dans le projet, l'index `results` illustre parfaitement ce principe. En SQL, une table `results` contiendrait des colonnes `driver_id`, `team_id`, `circuit_id`, et des JOIN permettraient de récupérer les noms correspondants au moment de la requête.
+
+Dans Elasticsearch, le document embarque toutes ces informations directement :
+
+```json
+{
+  "_id": "2024_BAH_44",
+  "_source": {
+    "season": 2024,
+    "round": 1,
+    "race_id": "BAH_2024",
+    "position": 2,
+    "points": 18,
+    "fastest_lap": false,
+    "driver": {
+      "id": "hamilton",
+      "name": "Lewis Hamilton",
+      "nationality": "british",
+      "number": 44
+    },
+    "team": {
+      "id": "mercedes",
+      "name": "Mercedes-AMG Petronas",
+      "nationality": "german"
+    },
+    "circuit": {
+      "id": "bahrain",
+      "name": "Bahrain International Circuit",
+      "country": "Bahrain",
+      "location": "Sakhir"
+    }
+  }
+}
+```
+
+Pour afficher un résultat de course avec le nom du pilote, l'équipe et le circuit, aucun JOIN n'est nécessaire : toutes les informations sont dans un seul document, récupéré en une seule requête.
+
+## Les compromis
+
+---
+
+La dénormalisation a un coût qu'il faut accepter consciemment.
+
+**Duplication des données** : si un pilote change d'équipe en cours de saison, les résultats antérieurs conservent les anciennes informations d'équipe. C'est souvent souhaitable, les résultats historiques restent corrects tels quels, mais ce n'est pas toujours le cas selon le domaine.
+
+**Mise à jour complexe** : si l'on souhaite corriger le nom d'un circuit dans tous les documents qui le référencent, il faut mettre à jour chaque document individuellement. Il n'y a pas d'équivalent d'un `UPDATE circuits SET name = '...' WHERE id = 'bahrain'` qui se propagerait automatiquement.
+
+**Taille des documents** : embarquer des objets riches augmente la taille de chaque document et donc la consommation mémoire et disque.
+
+Ces compromis sont acceptables dans la grande majorité des cas d'usage où Elasticsearch est pertinent : les données sont principalement lues, rarement mises à jour en masse, et la rapidité de lecture prime sur l'économie de stockage.

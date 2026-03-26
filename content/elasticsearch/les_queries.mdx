@@ -1,0 +1,128 @@
+## Full-text vs term queries
+
+---
+
+Avant d'assembler une requête complexe, il faut comprendre la distinction fondamentale entre deux familles de requêtes : les requêtes **full-text** et les requêtes **term**.
+
+> ℹ️ Analyseur : Composant Elasticsearch qui transforme un texte en tokens lors de l'indexation et lors de la recherche. L'analyseur par défaut passe en minuscules, supprime les mots vides et découpe par les espaces et la ponctuation.
+
+**Les requêtes full-text** (`match`, `match_phrase`) passent la valeur recherchée par l'analyseur avant de la comparer aux tokens stockés dans l'index. Elles sont conçues pour les champs de type `text` et permettent une recherche en langage naturel, tolérante aux variations de casse et aux formulations approchantes.
+
+**Les requêtes term** (`term`, `terms`, `range`) comparent une valeur exacte, sans aucune analyse. Elles sont conçues pour les champs de type `keyword`, `integer`, `boolean`, `date`. La valeur fournie doit correspondre exactement à la valeur stockée.
+
+Chercher `"hamilton"` sur un champ `keyword` avec une requête `term` fonctionnera. Chercher `"Hamilton"` avec une majuscule sur ce même champ ne retournera rien, car la valeur stockée est `"hamilton"` et `term` ne transforme pas la casse. La correspondance doit être exacte.
+
+## Les term/filter queries
+
+---
+
+Les requêtes `term`, `terms` et `range` s'utilisent presque toujours dans un contexte de **filtre**. Dans ce contexte, elles répondent à une question binaire : "ce document correspond-il à ce critère ?" sans calculer de score de pertinence.
+
+**`term`**, filtre sur une valeur exacte unique :
+
+```json
+{
+  "term": {
+    "driver.id": "hamilton"
+  }
+}
+```
+
+**`terms`**, filtre sur une liste de valeurs (équivalent d'un `IN` SQL) :
+
+```json
+{
+  "terms": {
+    "driver.id": ["hamilton", "verstappen", "leclerc"]
+  }
+}
+```
+
+**`range`**, filtre sur une plage de valeurs. Supporte `gte` (≥), `gt` (strictement supérieur), `lte` (≤), `lt` (strictement inférieur) :
+
+```json
+{
+  "range": {
+    "season": {
+      "gte": 2020,
+      "lte": 2024
+    }
+  }
+}
+```
+
+## La BoolQuery
+
+---
+
+La `bool` query est la requête principale pour combiner plusieurs conditions. Elle s'articule autour de quatre clauses, chacune avec une sémantique précise.
+
+**`must`** : les conditions sont obligatoires. Un document qui n'y répond pas est exclu. Ces conditions **contribuent au score** de pertinence, elles sont faites pour les recherches full-text où le classement par pertinence a un sens.
+
+**`filter`** : les conditions sont obligatoires. Un document qui n'y répond pas est exclu. Ces conditions **ne contribuent pas au score**, elles sont binaires. Les résultats de `filter` sont mis en cache par Elasticsearch, ce qui les rend plus performants que `must` pour des critères répétitifs (filtres sur des valeurs exactes, des plages, des identifiants).
+
+**`should`** : les conditions sont optionnelles. Un document qui y répond voit son score augmenté ; un document qui n'y répond pas n'est pas exclu pour autant. Cela permet de "booster" certains documents sans en éliminer d'autres.
+
+**`must_not`** : les conditions sont des exclusions. Un document qui y répond est écarté des résultats. Comme `filter`, ces conditions ne calculent pas de score.
+
+```json
+{
+  "query": {
+    "bool": {
+      "must": [],
+      "filter": [],
+      "should": [],
+      "must_not": []
+    }
+  }
+}
+```
+
+La règle à retenir : si la condition ne doit pas influencer le classement par pertinence (identifiant, saison, valeur exacte, plage numérique), mettez-la dans `filter`. Réservez `must` aux recherches full-text où le score a une signification pour l'utilisateur.
+
+## En pratique
+
+---
+
+Dans le projet, une query typique consiste à récupérer les résultats d'un pilote sur une saison, en excluant les non-classements (position inférieure à 1), et en boostant les podiums pour qu'ils remontent en tête.
+
+```json
+{
+  "query": {
+    "bool": {
+      "filter": [
+        { "term":  { "driver.id": "verstappen" } },
+        { "term":  { "season": 2023 } },
+        { "range": { "position": { "gte": 1 } } }
+      ],
+      "should": [
+        { "range": { "position": { "lte": 3 } } }
+      ]
+    }
+  },
+  "sort": [
+    { "round": { "order": "asc" } }
+  ]
+}
+```
+
+Les trois conditions dans `filter` sont obligatoires et binaires : pilote Verstappen, saison 2023, position renseignée (≥ 1). Aucune d'elles n'influence le score.
+
+La condition dans `should` booste les documents correspondant à un podium (position ≤ 3) sans en exclure aucun : les résultats hors podium apparaissent également, avec un score plus bas.
+
+En PHP avec FOS Elastica, cette même query se construit avec les objets correspondants :
+
+```php
+use Elastica\Query;
+
+$boolQuery = new Query\BoolQuery();
+
+$boolQuery->addFilter(new Query\Term(['driver.id' => 'verstappen']));
+$boolQuery->addFilter(new Query\Term(['season' => 2023]));
+$boolQuery->addFilter(new Query\Range('position', ['gte' => 1]));
+
+$boolQuery->addShould(new Query\Range('position', ['lte' => 3]));
+
+$query = new Query($boolQuery);
+$query->addSort(['round' => ['order' => 'asc']]);
+```
