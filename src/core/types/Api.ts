@@ -10,6 +10,12 @@ export type Course = {
   label: string;
   slug: string;
   emoji: string;
+  category: string;
+};
+
+export type CourseGroup = {
+  category: string;
+  courses: Course[];
 };
 
 export type Lesson = {

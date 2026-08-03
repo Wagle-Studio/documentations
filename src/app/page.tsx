@@ -2,7 +2,7 @@ import { ListCourses } from "@/ui";
 import RegisterManager from "@/core/managers/RegisterManager";
 
 export default function HomePage() {
-  const courses = RegisterManager.getCourses().data;
+  const groups = RegisterManager.getCoursesGroupedByCategory().data;
 
   return (
     <div className="page--homepage homepage">
@@ -21,7 +21,7 @@ export default function HomePage() {
           pour les informations les plus à jour.
         </p>
       </div>
-      <ListCourses courses={courses} />
+      <ListCourses groups={groups} />
     </div>
   );
 }

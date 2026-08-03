@@ -3,6 +3,7 @@ import {
   CoreResult,
   CoreResultSuccess,
   Course,
+  CourseGroup,
   Lesson,
   Reference,
   Register,
@@ -18,6 +19,25 @@ export default class RegisterManager {
     return {
       success: true,
       data: this.register.courses,
+    };
+  };
+
+  static getCoursesGroupedByCategory = (): CoreResultSuccess<CourseGroup[]> => {
+    const groups: CourseGroup[] = [];
+
+    for (const course of this.register.courses) {
+      const group = groups.find((group) => group.category === course.category);
+
+      if (group) {
+        group.courses.push(course);
+      } else {
+        groups.push({ category: course.category, courses: [course] });
+      }
+    }
+
+    return {
+      success: true,
+      data: groups,
     };
   };
 
