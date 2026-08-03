@@ -1,0 +1,184 @@
+## Introduction
+
+---
+
+Le composant Security de Symfony répond à deux questions distinctes : **qui êtes-vous ?** (authentification) et **avez-vous le droit ?** (autorisation). Le confondre est une source classique d'architecture confuse ; le composant les sépare nettement, et cette leçon suit la même séparation.
+
+## Architecture générale
+
+---
+
+Tout est déclaré dans `config/packages/security.yaml` :
+
+```yaml
+security:
+  password_hashers:
+    Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+
+  providers:
+    app_user_provider:
+      entity:
+        class: App\Entity\User
+        property: email
+
+  firewalls:
+    api:
+      pattern: ^/api
+      stateless: true
+      access_token:
+        token_handler: App\Security\ApiTokenHandler
+    main:
+      lazy: true
+      provider: app_user_provider
+      form_login:
+        login_path: app_login
+        check_path: app_login
+
+  access_control:
+    - { path: ^/admin, roles: ROLE_ADMIN }
+    - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
+```
+
+- Le **user provider** sait recharger un utilisateur (depuis Doctrine, LDAP, etc.).
+- Le **firewall** intercepte les requêtes correspondant à son `pattern` et orchestre l'authentification. Un seul firewall s'applique par requête : ici `/api` est stateless (pas de session), le reste du site utilise le login par formulaire.
+- `access_control` applique une première couche d'autorisation par URL.
+
+## Authentification : les authenticators
+
+---
+
+Depuis Symfony 6, toute authentification passe par un **authenticator** qui produit un `Passport` : un conteneur de **badges**, chacun portant une partie de la preuve d'identité.
+
+```php
+final class ApiKeyAuthenticator extends AbstractAuthenticator
+{
+    public function supports(Request $request): ?bool
+    {
+        return $request->headers->has('X-API-KEY');
+    }
+
+    public function authenticate(Request $request): Passport
+    {
+        $apiKey = $request->headers->get('X-API-KEY');
+
+        return new SelfValidatingPassport(
+            new UserBadge($apiKey, $this->users->findOneByApiKey(...)),
+        );
+    }
+
+    public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
+    {
+        return new JsonResponse(['error' => 'Invalid credentials'], 401);
+    }
+
+    public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
+    {
+        return null; // laisser la requête continuer vers le contrôleur
+    }
+}
+```
+
+Les badges composent le comportement sans héritage : `PasswordCredentials` déclenche la vérification du hash, `CsrfTokenBadge` la vérification CSRF, `RememberMeBadge` le cookie de persistance. Pour un login par formulaire standard, `form_login` fournit tout cela sans écrire une ligne de PHP.
+
+Pour une API, les options modernes sont :
+
+- **`access_token`** avec un `TokenHandler` maison (tokens opaques en base) ;
+- **JWT** via LexikJWTAuthenticationBundle quand les consommateurs sont externes et que le stateless complet est requis.
+
+## Autorisation : rôles et hiérarchie
+
+---
+
+Chaque utilisateur porte des rôles (`ROLE_USER`, `ROLE_ADMIN`...). La hiérarchie évite de dupliquer les attributions :
+
+```yaml
+security:
+  role_hierarchy:
+    ROLE_ADMIN: ROLE_USER
+    ROLE_SUPER_ADMIN: [ROLE_ADMIN, ROLE_ALLOWED_TO_SWITCH]
+```
+
+La vérification se fait par attribut, dans les contrôleurs ou les services :
+
+```php
+#[IsGranted('ROLE_ADMIN')]
+#[Route('/admin/orders')]
+final class AdminOrderController extends AbstractController
+{
+}
+```
+
+Les rôles répondent à des questions **globales** : « est-il administrateur ? ». Dès que la question dépend de l'objet (« peut-il modifier *cette* commande ? »), les rôles ne suffisent plus.
+
+## Autorisation fine : les voters
+
+---
+
+Un voter encapsule une règle d'autorisation portant sur un objet précis. C'est l'endroit unique où vivre la logique « propriétaire ou admin ».
+
+```php
+final class OrderVoter extends Voter
+{
+    public const VIEW = 'ORDER_VIEW';
+    public const CANCEL = 'ORDER_CANCEL';
+
+    protected function supports(string $attribute, mixed $subject): bool
+    {
+        return in_array($attribute, [self::VIEW, self::CANCEL], true)
+            && $subject instanceof Order;
+    }
+
+    protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
+    {
+        $user = $token->getUser();
+        if (!$user instanceof User) {
+            return false;
+        }
+
+        /** @var Order $order */
+        $order = $subject;
+
+        return match ($attribute) {
+            self::VIEW => $order->getCustomer()->getUser() === $user,
+            self::CANCEL => $order->getCustomer()->getUser() === $user
+                && $order->isCancellable(),
+        };
+    }
+}
+```
+
+```php
+#[Route('/orders/{id}/cancel', methods: ['POST'])]
+public function cancel(#[IsGranted(OrderVoter::CANCEL, 'order')] Order $order): Response
+{
+    // ...
+}
+```
+
+Tous les voters qui supportent l'attribut votent, et la **stratégie de décision** (par défaut : un seul vote favorable suffit) tranche. La logique d'accès est ainsi testable unitairement, réutilisable (contrôleurs, Twig, services) et jamais dupliquée dans des `if` éparpillés.
+
+> Règle de répartition : `access_control` pour le gros grain par URL, `ROLE_*` pour les capacités globales, voters pour toute décision dépendant d'un objet métier.
+
+## Bonnes pratiques transverses
+
+---
+
+- **Hash de mots de passe** : `'auto'` sélectionne le meilleur algorithme disponible (bcrypt/argon2) et permet la migration transparente des anciens hashes.
+- **Stateless pour les API** : pas de session, chaque requête porte sa preuve ; c'est ce qui permet de scaler horizontalement sans affinité de session.
+- **`security:check`** (Composer audit des CVE) et mises à jour régulières du composant.
+- Ne jamais reconstruire soi-même un mécanisme fourni : CSRF, remember-me, throttling de login (`login_throttling`) existent et sont éprouvés.
+
+## Résumé
+
+---
+
+| Brique | Rôle |
+| --- | --- |
+| **Firewall** | Intercepte les requêtes et orchestre l'authentification |
+| **Authenticator / Passport** | Produit la preuve d'identité sous forme de badges |
+| **User provider** | Recharge l'utilisateur entre les requêtes |
+| **access_control** | Autorisation gros grain par motif d'URL |
+| **Rôles + hiérarchie** | Capacités globales de l'utilisateur |
+| **Voters** | Décisions fines dépendant d'un objet métier |
+
+Authentification et autorisation sont deux problèmes distincts avec deux outillages distincts. La maturité d'une base de code Symfony se mesure souvent à l'usage des voters : si les règles d'accès vivent dans des `if` de contrôleurs, il y a un chantier.

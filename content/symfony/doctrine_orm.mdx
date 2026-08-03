@@ -1,0 +1,167 @@
+## Introduction
+
+---
+
+Doctrine ORM fait le pont entre le modèle objet et la base relationnelle. Mal utilisé, c'est une source classique de problèmes de performance (N+1, hydratation massive) ; bien utilisé, il permet de garder un modèle métier riche tout en contrôlant précisément le SQL généré.
+
+Cette leçon se concentre sur les mécanismes qu'un développeur doit comprendre pour dépasser le simple CRUD : l'unit of work, les stratégies de chargement et l'optimisation des requêtes.
+
+## Entités et mapping
+
+---
+
+Une entité est une classe PHP mappée à une table via des attributs :
+
+```php
+#[ORM\Entity(repositoryClass: OrderRepository::class)]
+class Order
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    private ?int $id = null;
+
+    #[ORM\Column(length: 20, enumType: OrderStatus::class)]
+    private OrderStatus $status = OrderStatus::Pending;
+
+    #[ORM\ManyToOne(inversedBy: 'orders')]
+    #[ORM\JoinColumn(nullable: false)]
+    private Customer $customer;
+
+    /** @var Collection<int, OrderLine> */
+    #[ORM\OneToMany(mappedBy: 'order', targetEntity: OrderLine::class, cascade: ['persist'], orphanRemoval: true)]
+    private Collection $lines;
+}
+```
+
+Bonnes pratiques de modélisation :
+
+- **Protéger les invariants** : pas de setters anémiques systématiques. Une méthode `cancel()` qui vérifie le statut vaut mieux qu'un `setStatus()` ouvert à tout.
+- **Encapsuler les collections** : exposer `addLine()` / `removeLine()`, jamais la `Collection` mutable elle-même.
+- Utiliser les **enums PHP** (`enumType`) pour les statuts plutôt que des chaînes libres.
+
+## L'EntityManager et l'unit of work
+
+---
+
+L'`EntityManager` ne touche pas la base à chaque modification. Il maintient un **unit of work** : une carte de toutes les entités chargées et de leur état d'origine.
+
+```php
+$order->cancel();              // rien en base
+$em->persist($newCustomer);    // rien en base, l'entité est juste suivie
+$em->flush();                  // calcul du diff, puis SQL dans une transaction
+```
+
+Au `flush()`, Doctrine compare chaque entité suivie à son instantané d'origine (*change tracking*), calcule le SQL minimal et exécute le tout **dans une transaction unique**.
+
+Conséquences pratiques :
+
+- `persist()` n'est nécessaire que pour les **nouvelles** entités ; les entités chargées sont déjà suivies.
+- Un `flush()` par requête suffit dans la majorité des cas : le regroupement est un avantage, pas un défaut.
+- Pour des règles métier multi-agrégats, encadrer explicitement avec `$em->wrapInTransaction(fn () => ...)`.
+
+## Repositories et QueryBuilder
+
+---
+
+Le repository centralise les requêtes d'une entité. Pour rester testable et expressif, il expose des **méthodes métier nommées**, pas des QueryBuilder bruts :
+
+```php
+final class OrderRepository extends ServiceEntityRepository
+{
+    /** @return list<Order> */
+    public function findAwaitingShipmentFor(Customer $customer): array
+    {
+        return $this->createQueryBuilder('o')
+            ->andWhere('o.customer = :customer')
+            ->andWhere('o.status = :status')
+            ->setParameter('customer', $customer)
+            ->setParameter('status', OrderStatus::Paid)
+            ->orderBy('o.placedAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+}
+```
+
+Le QueryBuilder construit du **DQL**, qui raisonne en entités et propriétés, pas en tables et colonnes. Doctrine le traduit ensuite en SQL natif. Pour les requêtes hors de portée du DQL (CTE, fonctions spécifiques PostgreSQL), `Connection` permet d'écrire du SQL natif paramétré.
+
+## Lazy loading et problème N+1
+
+---
+
+Par défaut, les associations sont chargées **paresseusement** : Doctrine injecte un proxy, et la requête SQL ne part qu'au premier accès.
+
+Le piège classique :
+
+```php
+$orders = $orderRepository->findAll();        // 1 requête
+
+foreach ($orders as $order) {
+    echo $order->getCustomer()->getName();    // 1 requête PAR commande
+}
+```
+
+Pour 200 commandes, ce code exécute **201 requêtes** : c'est le problème N+1. La solution est le *fetch join* : remonter l'association dans la requête initiale.
+
+```php
+return $this->createQueryBuilder('o')
+    ->addSelect('c')
+    ->join('o.customer', 'c')
+    ->getQuery()
+    ->getResult();              // 1 seule requête, customers hydratés
+```
+
+Le profiler Symfony (onglet Doctrine) affiche le nombre de requêtes par page et signale les doublons : c'est le premier réflexe de diagnostic.
+
+> Le fetch join sur une collection (`OneToMany`) gonfle le résultat par produit cartésien. Sur de gros volumes, deux requêtes distinctes sont souvent plus efficaces qu'un join massif.
+
+## Hydratation et lectures volumineuses
+
+---
+
+L'hydratation d'objets complets est coûteuse en mémoire et en CPU. Pour les écrans de liste et les exports, hydrater des tableaux ou des DTO suffit :
+
+```php
+$query->getArrayResult();   // tableaux associatifs, pas d'objets ni d'unit of work
+```
+
+```php
+->select(sprintf('NEW %s(o.id, o.total, c.name)', OrderSummary::class))
+```
+
+La syntaxe `NEW` hydrate directement un DTO en lecture seule : idéal pour découpler la lecture (besoins d'affichage) de l'écriture (modèle riche), dans l'esprit CQRS.
+
+Pour les traitements en masse, `toIterable()` streame les résultats, et un `$em->clear()` périodique vide l'unit of work pour contenir la mémoire.
+
+## Migrations
+
+---
+
+Le schéma de base évolue avec le code via des migrations versionnées :
+
+```bash
+php bin/console doctrine:migrations:diff      # génère la migration depuis le mapping
+php bin/console doctrine:migrations:migrate   # applique les migrations en attente
+```
+
+Règles de fiabilité en équipe :
+
+- **Toujours relire** la migration générée : `diff` produit parfois des `DROP` inattendus.
+- Une migration appliquée en production ne se modifie plus : on en crée une nouvelle.
+- Les migrations font partie du déploiement, jamais `doctrine:schema:update` en production.
+
+## Résumé
+
+---
+
+| Concept | À retenir |
+| --- | --- |
+| **Unit of work** | Le SQL ne part qu'au `flush()`, dans une transaction unique |
+| **persist()** | Uniquement pour les nouvelles entités |
+| **N+1** | Lazy loading dans une boucle ; se corrige par fetch join |
+| **getArrayResult / NEW** | Hydratation allégée pour les lectures volumineuses |
+| **Repository** | Méthodes métier nommées, pas de QueryBuilder qui fuit |
+| **Migrations** | Schéma versionné, relu, immuable une fois appliqué |
+
+Doctrine récompense ceux qui comprennent ce qu'il fait à leur place. Le profiler et le comptage de requêtes doivent faire partie de la routine de développement au même titre que les tests.

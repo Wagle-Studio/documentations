@@ -156,6 +156,196 @@ const references: Reference[] = [
     label: "Article - Headers",
     url: "https://http.dev/headers",
   },
+  {
+    id: 32,
+    label: "Symfony - Composant HttpKernel",
+    url: "https://symfony.com/doc/current/components/http_kernel.html",
+  },
+  {
+    id: 33,
+    label: "Symfony - Événements du framework",
+    url: "https://symfony.com/doc/current/reference/events.html",
+  },
+  {
+    id: 34,
+    label: "Symfony - Conteneur de services",
+    url: "https://symfony.com/doc/current/service_container.html",
+  },
+  {
+    id: 35,
+    label: "Symfony - EventDispatcher",
+    url: "https://symfony.com/doc/current/event_dispatcher.html",
+  },
+  {
+    id: 36,
+    label: "Symfony - Doctrine et les bases de données",
+    url: "https://symfony.com/doc/current/doctrine.html",
+  },
+  {
+    id: 37,
+    label: "Doctrine - Documentation ORM",
+    url: "https://www.doctrine-project.org/projects/doctrine-orm/en/current/index.html",
+  },
+  {
+    id: 38,
+    label: "Symfony - Sécurité",
+    url: "https://symfony.com/doc/current/security.html",
+  },
+  {
+    id: 39,
+    label: "Symfony - Les voters",
+    url: "https://symfony.com/doc/current/security/voters.html",
+  },
+  {
+    id: 40,
+    label: "Symfony - Messenger",
+    url: "https://symfony.com/doc/current/messenger.html",
+  },
+  {
+    id: 41,
+    label: "Symfony - Sessions",
+    url: "https://symfony.com/doc/current/session.html",
+  },
+  {
+    id: 42,
+    label: "Symfony - Firewalls stateless et authentification",
+    url: "https://symfony.com/doc/current/security.html#stateless-firewalls",
+  },
+  {
+    id: 43,
+    label: "Symfony - Hachage des mots de passe",
+    url: "https://symfony.com/doc/current/security/passwords.html",
+  },
+  {
+    id: 44,
+    label: "Symfony - Limiter les tentatives de connexion",
+    url: "https://symfony.com/doc/current/security.html#limiting-login-attempts",
+  },
+  {
+    id: 45,
+    label: "Symfony - Authenticators personnalisés",
+    url: "https://symfony.com/doc/current/security/custom_authenticator.html",
+  },
+  {
+    id: 46,
+    label: "Symfony - Événements de sécurité",
+    url: "https://symfony.com/doc/current/security.html#security-events",
+  },
+  {
+    id: 47,
+    label: "Symfony - Remember Me",
+    url: "https://symfony.com/doc/current/security/remember_me.html",
+  },
+  {
+    id: 48,
+    label: "Symfony - Login Link",
+    url: "https://symfony.com/doc/current/security/login_link.html",
+  },
+  {
+    id: 49,
+    label: "Symfony - Protection CSRF",
+    url: "https://symfony.com/doc/current/security/csrf.html",
+  },
+  {
+    id: 50,
+    label: "LexikJWTAuthenticationBundle - Documentation",
+    url: "https://github.com/lexik/LexikJWTAuthenticationBundle",
+  },
+  {
+    id: 51,
+    label: "RFC 7519 - JSON Web Token",
+    url: "https://datatracker.ietf.org/doc/html/rfc7519",
+  },
+  {
+    id: 52,
+    label: "OpenID Connect - Documentation",
+    url: "https://openid.net/developers/how-connect-works/",
+  },
+  {
+    id: 53,
+    label: "Symfony - Créer un bundle réutilisable",
+    url: "https://symfony.com/doc/current/bundles.html",
+  },
+  {
+    id: 54,
+    label: "Symfony - Configuration d'un bundle",
+    url: "https://symfony.com/doc/current/bundles/configuration.html",
+  },
+  {
+    id: 55,
+    label: "Symfony - Compiler Pass",
+    url: "https://symfony.com/doc/current/service_container/compiler_passes.html",
+  },
+  {
+    id: 56,
+    label: "Symfony - Utiliser Symfony Flex",
+    url: "https://symfony.com/doc/current/setup/flex.html",
+  },
+  {
+    id: 57,
+    label: "Symfony - L'outil en ligne de commande",
+    url: "https://symfony.com/download",
+  },
+  {
+    id: 58,
+    label: "Symfony - Maker Bundle",
+    url: "https://symfony.com/bundles/SymfonyMakerBundle/current/index.html",
+  },
+  {
+    id: 59,
+    label: "Symfony - Le Profiler",
+    url: "https://symfony.com/doc/current/profiler.html",
+  },
+  {
+    id: 60,
+    label: "API Platform - Documentation",
+    url: "https://api-platform.com/docs/",
+  },
+  {
+    id: 61,
+    label: "EasyAdmin - Documentation",
+    url: "https://symfony.com/bundles/EasyAdminBundle/current/index.html",
+  },
+  {
+    id: 62,
+    label: "VichUploaderBundle - Documentation",
+    url: "https://github.com/dustin10/VichUploaderBundle",
+  },
+  {
+    id: 63,
+    label: "Symfony - Les composants",
+    url: "https://symfony.com/components",
+  },
+  {
+    id: 64,
+    label: "Symfony - Le composant Console",
+    url: "https://symfony.com/doc/current/components/console.html",
+  },
+  {
+    id: 65,
+    label: "Symfony - Le composant Serializer",
+    url: "https://symfony.com/doc/current/components/serializer.html",
+  },
+  {
+    id: 66,
+    label: "Symfony - Le composant Workflow",
+    url: "https://symfony.com/doc/current/workflow.html",
+  },
+  {
+    id: 67,
+    label: "Symfony - Le composant HttpClient",
+    url: "https://symfony.com/doc/current/http_client.html",
+  },
+  {
+    id: 68,
+    label: "Symfony - Le composant Lock",
+    url: "https://symfony.com/doc/current/components/lock.html",
+  },
+  {
+    id: 69,
+    label: "Symfony - Verrouiller des ressources",
+    url: "https://symfony.com/doc/current/lock.html",
+  },
 ];
 
 export default references;

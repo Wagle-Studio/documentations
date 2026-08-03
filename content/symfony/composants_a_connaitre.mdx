@@ -1,0 +1,165 @@
+## Introduction
+
+---
+
+Symfony est souvent perçu comme un framework monolithique, alors qu'il s'agit d'un ensemble de **composants** indépendants, utilisables séparément (Laravel, Drupal et bien d'autres en consomment). Les leçons précédentes ont détaillé HttpKernel, le conteneur, l'EventDispatcher, Doctrine, Security et Messenger. Cette leçon balaie les autres composants que tout développeur Symfony finit par croiser, pour savoir lequel mobiliser face à un besoin donné.
+
+## Console
+
+---
+
+Le composant Console permet de créer des **commandes en ligne** : tâches planifiées, imports, scripts de maintenance, traitements batch. C'est la porte d'entrée de tout ce qui n'est pas une requête HTTP.
+
+```php
+#[AsCommand(name: 'app:import-products', description: 'Importe les produits depuis un CSV')]
+final class ImportProductsCommand extends Command
+{
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $io = new SymfonyStyle($input, $output);
+        $io->title('Import des produits');
+        $io->progressStart($total);
+        // ...
+        $io->success('Import terminé.');
+
+        return Command::SUCCESS;
+    }
+}
+```
+
+`SymfonyStyle` fournit une mise en forme cohérente (titres, tableaux, barres de progression, questions interactives). Toute commande métier devrait l'utiliser plutôt que d'écrire directement sur la sortie.
+
+## Form et Validator
+
+---
+
+Deux composants étroitement liés au coeur du développement d'applications avec interface.
+
+**Form** construit, affiche et traite les formulaires. Il mappe automatiquement les données d'une requête vers un objet (et inversement), gère le rendu HTML et le CSRF :
+
+```php
+$form = $this->createForm(ProductType::class, $product);
+$form->handleRequest($request);
+
+if ($form->isSubmitted() && $form->isValid()) {
+    $this->em->flush();
+    return $this->redirectToRoute('product_list');
+}
+```
+
+**Validator** vérifie qu'un objet respecte un ensemble de contraintes, déclarées par attributs. Il est utilisé par Form, mais aussi seul (validation d'une entité avant persistance, d'un payload d'API) :
+
+```php
+class Product
+{
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 3, max: 255)]
+    private string $name;
+
+    #[Assert\Positive]
+    private int $price;
+}
+```
+
+La validation par contraintes centralise les règles métier sur l'objet lui-même, plutôt que de les éparpiller dans les contrôleurs.
+
+## Serializer
+
+---
+
+Le composant Serializer convertit des objets en formats d'échange (JSON, XML, CSV) et inversement. C'est la pièce maîtresse de toute API construite à la main, et le moteur sous-jacent d'API Platform.
+
+```php
+$json = $serializer->serialize($product, 'json', ['groups' => ['product:read']]);
+$product = $serializer->deserialize($json, Product::class, 'json');
+```
+
+Les **groupes de sérialisation** contrôlent finement quelles propriétés sont exposées selon le contexte (lecture publique, lecture admin, écriture), évitant de fuiter des données sensibles ou de créer des DTO par cas.
+
+## Mailer et Notifier
+
+---
+
+**Mailer** envoie des emails via un DSN unifié (SMTP, ou un service tiers comme Mailgun ou Brevo via un bridge). Il s'intègre à Twig pour les emails HTML et à Messenger pour l'envoi asynchrone :
+
+```php
+$email = (new TemplatedEmail())
+    ->to($user->getEmail())
+    ->subject('Bienvenue')
+    ->htmlTemplate('emails/welcome.html.twig')
+    ->context(['user' => $user]);
+
+$mailer->send($email);
+```
+
+**Notifier** généralise l'idée à d'autres canaux : SMS, notifications de chat (Slack, Discord), notifications push. Un même message peut partir sur plusieurs canaux selon les préférences du destinataire.
+
+## HttpClient
+
+---
+
+Le composant HttpClient effectue des **requêtes HTTP sortantes** vers des API tierces, en remplacement de cURL ou Guzzle. Il est performant (requêtes concurrentes, streaming) et bien intégré (profiler, retry, scoping par domaine).
+
+```php
+$response = $httpClient->request('GET', 'https://api.example.com/products', [
+    'headers' => ['Authorization' => 'Bearer ' . $token],
+    'query' => ['page' => 2],
+]);
+
+$data = $response->toArray(); // décode le JSON, lève une exception si statut d'erreur
+```
+
+Les réponses sont **paresseuses** : la requête n'est réellement déclenchée qu'au moment où l'on lit la réponse, ce qui permet d'émettre plusieurs requêtes en parallèle sans effort.
+
+## Workflow
+
+---
+
+Le composant Workflow modélise les **machines à états** et les transitions autorisées d'un objet métier : le cycle de vie d'une commande (panier, payée, expédiée, livrée), d'un article (brouillon, relecture, publié). Plutôt que de disséminer des `if ($status === ...)`, on déclare les états et transitions une fois.
+
+```yaml
+framework:
+  workflows:
+    order_processing:
+      type: state_machine
+      marking_store: { type: method, property: status }
+      supports: [App\Entity\Order]
+      places: [cart, paid, shipped, delivered]
+      transitions:
+        pay:    { from: cart,   to: paid }
+        ship:   { from: paid,   to: shipped }
+        deliver:{ from: shipped, to: delivered }
+```
+
+```php
+if ($workflow->can($order, 'ship')) {
+    $workflow->apply($order, 'ship');
+}
+```
+
+Le bénéfice : les transitions illégales (livrer une commande non payée) deviennent impossibles par construction, et la logique de cycle de vie est lisible d'un coup d'oeil. Le composant émet aussi des événements à chaque transition, points d'accroche naturels pour les effets de bord (envoyer un email à l'expédition).
+
+## Cache et RateLimiter
+
+---
+
+Deux composants transverses déjà aperçus ailleurs :
+
+- **Cache** offre une abstraction PSR-6 et un contrat simplifié, avec de nombreux adaptateurs (Redis, APCu, filesystem) et le pattern cache-aside intégré.
+- **RateLimiter** limite la fréquence d'une opération (tentatives de login, appels d'API). C'est lui qui sous-tend `login_throttling`.
+
+## Résumé
+
+---
+
+| Composant | Répond au besoin |
+| --- | --- |
+| **Console** | Commandes CLI, scripts, traitements batch |
+| **Form** | Construction et traitement des formulaires |
+| **Validator** | Contraintes de validation sur les objets |
+| **Serializer** | Conversion objets ↔ JSON/XML, base des API |
+| **Mailer / Notifier** | Emails et notifications multicanal |
+| **HttpClient** | Appels HTTP sortants vers des API tierces |
+| **Workflow** | Machines à états et transitions métier |
+
+Voir Symfony comme une collection de composants plutôt qu'un bloc change la façon de l'aborder : face à un besoin, la question devient « quel composant le couvre déjà ? ». La réponse est presque toujours oui, et c'est ce qui distingue un développement Symfony mature d'un empilement de code maison.

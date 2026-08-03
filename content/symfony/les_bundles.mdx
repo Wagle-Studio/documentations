@@ -1,0 +1,154 @@
+## Introduction
+
+---
+
+Le mot « bundle » revient sans cesse dans l'écosystème Symfony, au point qu'on l'emploie souvent sans en saisir la mécanique. Un bundle n'est pourtant rien de mystérieux : c'est l'unité de **distribution et d'intégration** de Symfony, le format par lequel une fonctionnalité réutilisable s'enfiche dans une application et s'y configure. Comprendre son anatomie, c'est comprendre comment Symfony assemble des briques tierces aussi proprement que son propre code.
+
+## Qu'est-ce qu'un bundle, et pourquoi
+
+---
+
+Un bundle est un ensemble de code (services, contrôleurs, configuration, ressources) packagé pour être intégré dans n'importe quelle application Symfony. C'est l'équivalent d'un plugin, mais profondément intégré au conteneur de services et au système de configuration du framework.
+
+L'intérêt par rapport à une simple librairie Composer :
+
+- Un bundle peut **enregistrer ses services** dans le conteneur automatiquement.
+- Il peut **exposer une configuration** validée (la fameuse section `nom_du_bundle:` dans `config/packages/`).
+- Il peut **brancher des routes, des commandes, des templates, des traductions** sans intervention manuelle.
+- Il peut **modifier le conteneur** d'autres bundles via les compiler pass.
+
+Une librairie pure (par exemple un client HTTP générique) ignore tout de Symfony. Un bundle, lui, sait dialoguer avec le framework. C'est pourquoi beaucoup de librairies sont distribuées sous deux formes : la librairie agnostique, et un bundle qui l'intègre à Symfony.
+
+> Depuis Symfony 4, le code de votre propre application n'est plus un bundle (`AppBundle` a disparu). Les bundles sont aujourd'hui réservés au code partagé entre projets. Tout ce qui est spécifique à une application vit directement dans `src/`.
+
+## Anatomie d'un bundle
+
+---
+
+Un bundle moderne s'articule autour de quelques pièces. La classe principale est minimale :
+
+```php
+namespace Acme\PaymentBundle;
+
+use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
+
+final class AcmePaymentBundle extends AbstractBundle
+{
+}
+```
+
+`AbstractBundle` (Symfony 6.1+) regroupe en une seule classe ce qui demandait auparavant plusieurs fichiers. Les responsabilités d'un bundle se répartissent ainsi :
+
+| Élément | Rôle |
+| --- | --- |
+| Classe `Bundle` | Point d'entrée, déclare la configuration et charge les services |
+| `Configuration` | Définit et valide l'arbre de configuration exposé |
+| `Extension` | Transforme la configuration de l'utilisateur en paramètres et services |
+| Compiler pass | Modifie le conteneur après son assemblage (tags, décoration) |
+| Ressources | Routes, templates, traductions, assets, migrations |
+
+## Configuration et chargement des services
+
+---
+
+Avec `AbstractBundle`, définir la configuration exposée et charger les services tient dans deux méthodes :
+
+```php
+final class AcmePaymentBundle extends AbstractBundle
+{
+    // Décrit la config attendue sous "acme_payment:" dans config/packages/
+    public function configure(DefinitionConfigurator $definition): void
+    {
+        $definition->rootNode()
+            ->children()
+                ->scalarNode('api_key')->isRequired()->end()
+                ->booleanNode('sandbox')->defaultTrue()->end()
+            ->end();
+    }
+
+    // Reçoit la config validée et configure le conteneur
+    public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
+    {
+        $container->import('../config/services.yaml');
+
+        // La config de l'utilisateur devient un paramètre exploitable par les services
+        $container->services()
+            ->get(PaymentClient::class)
+            ->arg('$apiKey', $config['api_key'])
+            ->arg('$sandbox', $config['sandbox']);
+    }
+}
+```
+
+Côté application, l'intégration se résume alors à un fichier de configuration :
+
+```yaml
+# config/packages/acme_payment.yaml
+acme_payment:
+  api_key: '%env(ACME_API_KEY)%'
+  sandbox: false
+```
+
+Cette séparation est ce qui rend les bundles si pratiques : l'auteur définit un contrat de configuration clair et validé, l'utilisateur ne renseigne que quelques clés, sans connaître la plomberie interne.
+
+## Les compiler pass : modifier le conteneur
+
+---
+
+Un compiler pass s'exécute au moment de la compilation du conteneur et peut le manipuler : récupérer tous les services portant un tag, décorer un service existant, ajouter des arguments. C'est le mécanisme qui sous-tend les points d'extension comme les tagged iterators.
+
+```php
+final class PaymentGatewayPass implements CompilerPassInterface
+{
+    public function process(ContainerBuilder $container): void
+    {
+        $registry = $container->findDefinition(GatewayRegistry::class);
+
+        // Injecter dans le registre tous les services tagués "acme.payment_gateway"
+        foreach ($container->findTaggedServiceIds('acme.payment_gateway') as $id => $tags) {
+            $registry->addMethodCall('register', [new Reference($id)]);
+        }
+    }
+}
+```
+
+C'est exactement le pattern qui permet à un bundle d'offrir un point d'extension : il déclare un tag, et toute application ou bundle tiers qui tague un service vient s'enficher dans le mécanisme, sans que l'auteur du bundle ait à connaître ces extensions.
+
+## Symfony Flex et les recipes
+
+---
+
+Installer un bundle ne se limite plus à `composer require`. **Symfony Flex** est le plugin Composer qui, à l'installation d'un paquet, applique une **recipe** : un script déclaratif qui crée les fichiers de configuration par défaut, enregistre le bundle dans `config/bundles.php`, ajoute des variables dans `.env`, etc.
+
+```bash
+composer require symfony/mailer
+# Flex crée config/packages/mailer.yaml, ajoute MAILER_DSN dans .env,
+# et enregistre le bundle automatiquement
+```
+
+Le fichier `config/bundles.php` reste le registre central : il liste les bundles actifs et les environnements dans lesquels ils tournent.
+
+```php
+return [
+    Symfony\Bundle\FrameworkBundle\FrameworkBundle::class => ['all' => true],
+    Symfony\Bundle\MakerBundle\MakerBundle::class => ['dev' => true],
+    Acme\PaymentBundle\AcmePaymentBundle::class => ['all' => true],
+];
+```
+
+Flex transforme ainsi l'installation d'un bundle, jadis manuelle et faillible, en une opération en une commande. C'est l'une des raisons de la productivité de Symfony moderne.
+
+## Résumé
+
+---
+
+| Notion | À retenir |
+| --- | --- |
+| **Bundle** | Unité d'intégration de code réutilisable dans une application Symfony |
+| **Librairie vs bundle** | La librairie ignore Symfony, le bundle dialogue avec le conteneur et la config |
+| **`AbstractBundle`** | Regroupe config et chargement des services en une classe |
+| **`Configuration`/`Extension`** | Définissent et valident le contrat de configuration exposé |
+| **Compiler pass** | Modifie le conteneur, base des points d'extension par tag |
+| **Flex et recipes** | Automatisent l'installation et la configuration d'un bundle |
+
+Le bundle est la réponse de Symfony à une question d'architecture : comment partager une fonctionnalité entre projets sans copier-coller, et l'intégrer proprement plutôt que la bricoler. Les leçons suivantes passent en revue les bundles tierces et les outils qui peuplent cet écosystème.

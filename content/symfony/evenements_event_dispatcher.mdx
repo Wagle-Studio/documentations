@@ -1,0 +1,146 @@
+## Introduction
+
+---
+
+L'EventDispatcher est le composant qui implémente le pattern **observateur** dans Symfony. Il permet de découpler l'émetteur d'un événement de ses conséquences : le code qui crée une commande n'a pas à connaître l'envoi d'email, la mise à jour du stock ou la notification analytics qui en découlent.
+
+C'est aussi le mécanisme d'extension central du framework : le cycle de vie du kernel, les workflows, la sécurité et de nombreux bundles exposent leurs points d'extension sous forme d'événements.
+
+## Listener ou subscriber ?
+
+---
+
+Deux écritures coexistent pour réagir à un événement.
+
+Le **listener** moderne s'appuie sur l'attribut `#[AsEventListener]` :
+
+```php
+#[AsEventListener]
+final class SendOrderConfirmationListener
+{
+    public function __invoke(OrderPlacedEvent $event): void
+    {
+        // le type de l'argument détermine l'événement écouté
+    }
+}
+```
+
+Le **subscriber** regroupe plusieurs écoutes dans une classe et déclare lui-même ce qu'il écoute :
+
+```php
+final class OrderSubscriber implements EventSubscriberInterface
+{
+    public static function getSubscribedEvents(): array
+    {
+        return [
+            OrderPlacedEvent::class => 'onOrderPlaced',
+            OrderCancelledEvent::class => ['onOrderCancelled', 10],
+        ];
+    }
+}
+```
+
+En pratique, l'attribut `#[AsEventListener]` couvre tous les cas, y compris plusieurs écoutes sur la même classe, avec moins de cérémonie. Les subscribers restent utiles dans les bundles réutilisables, où la configuration doit voyager avec la classe.
+
+## Créer un événement métier
+
+---
+
+Un événement est un simple objet immuable qui transporte un contexte :
+
+```php
+final class OrderPlacedEvent extends Event
+{
+    public function __construct(
+        public readonly Order $order,
+    ) {
+    }
+}
+```
+
+```php
+final class PlaceOrderHandler
+{
+    public function __construct(
+        private readonly EventDispatcherInterface $dispatcher,
+    ) {
+    }
+
+    public function handle(PlaceOrder $command): void
+    {
+        $order = // ... logique métier
+
+        $this->dispatcher->dispatch(new OrderPlacedEvent($order));
+    }
+}
+```
+
+Le service émetteur ne connaît **aucun** des écouteurs. Ajouter une conséquence (programme de fidélité, webhook partenaire) ne modifie pas le code existant.
+
+## Priorités et propagation
+
+---
+
+Les écouteurs d'un même événement s'exécutent par **priorité décroissante** (défaut : `0`). À priorité égale, l'ordre d'enregistrement s'applique.
+
+```php
+#[AsEventListener(priority: 100)]
+```
+
+Un écouteur peut interrompre la chaîne :
+
+```php
+$event->stopPropagation();
+```
+
+Les écouteurs suivants ne seront pas appelés. À utiliser avec parcimonie : un `stopPropagation()` enfoui rend le comportement de l'application difficile à suivre.
+
+```bash
+php bin/console debug:event-dispatcher kernel.request
+```
+
+Cette commande affiche tous les écouteurs d'un événement **dans leur ordre réel d'exécution**, ce qui est indispensable pour diagnostiquer un problème d'ordre.
+
+## Événements du framework
+
+---
+
+Au-delà des événements métier, plusieurs familles d'événements sont dispatchées par le framework et ses bundles :
+
+| Famille | Exemples | Usage typique |
+| --- | --- | --- |
+| **Kernel** | `kernel.request`, `kernel.response`, `kernel.exception` | Comportements transverses HTTP |
+| **Console** | `console.command`, `console.error` | Instrumentation des commandes CLI |
+| **Sécurité** | `LoginSuccessEvent`, `LogoutEvent` | Audit, mise à jour de `last_login` |
+| **Workflow** | `workflow.transition`, `workflow.guard` | Bloquer ou tracer les transitions |
+| **Doctrine** | `postPersist`, `preUpdate` | Réactions au cycle de vie des entités |
+
+> Les événements Doctrine passent par le dispatcher de Doctrine, pas celui de Symfony. On y réagit avec `#[AsEntityListener]` ou `#[AsDoctrineListener]`, et ils s'exécutent au cœur du `flush()` : on n'y fait jamais d'opération lourde ou faillible.
+
+## Quand ne pas utiliser d'événements
+
+---
+
+L'EventDispatcher est **synchrone** : tous les écouteurs s'exécutent dans la requête, et une exception dans un écouteur fait échouer l'ensemble. C'est un outil de découplage, pas d'asynchronisme.
+
+Quelques repères de conception :
+
+- **La conséquence fait partie du contrat métier** (débiter le stock lors d'une commande) : un appel explicite dans le service est plus honnête qu'un événement. Le code dit ce qu'il fait.
+- **La conséquence est annexe et synchrone** (logging, audit) : événement.
+- **La conséquence est lourde ou faillible** (email, appel API externe) : message **Messenger asynchrone**, pas un écouteur.
+
+L'abus d'événements produit un *spaghetti événementiel* : pour comprendre ce que fait une action, il faut chasser les écouteurs dans toute la base de code. Un événement se justifie quand le découplage apporte une vraie valeur d'extension.
+
+## Résumé
+
+---
+
+| Concept | À retenir |
+| --- | --- |
+| **#[AsEventListener]** | Forme moderne, l'événement est déduit du type-hint |
+| **Subscriber** | Utile dans les bundles, configuration embarquée |
+| **Priorité** | Décroissante, défaut 0, visible via `debug:event-dispatcher` |
+| **stopPropagation()** | Interrompt la chaîne, à utiliser avec parcimonie |
+| **Synchrone** | Tout écouteur s'exécute dans la requête courante |
+
+Les événements découplent l'action de ses conséquences annexes. Pour les conséquences essentielles, préférer un appel explicite ; pour les conséquences lourdes, préférer Messenger. L'événement synchrone occupe la place du milieu.

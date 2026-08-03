@@ -1,0 +1,195 @@
+## Introduction
+
+---
+
+Dès qu'une application tourne sur plusieurs processus, workers ou serveurs en parallèle, une question surgit : comment garantir qu'une portion de code ne s'exécute pas deux fois en même temps ? Deux requêtes qui débitent le même stock, deux exécutions d'un cron qui se chevauchent, deux workers qui traitent le même message : ce sont des **accès concurrents**, et sans coordination ils corrompent les données. Le composant Lock fournit cette coordination, à l'échelle d'un serveur comme d'un parc entier.
+
+## Le problème : la race condition
+
+---
+
+Une race condition apparaît quand le résultat dépend de l'ordre, non déterministe, dans lequel des exécutions parallèles s'entrelacent. L'exemple classique est le décrément de stock :
+
+```php
+$product = $repository->find($id);   // stock = 1
+
+if ($product->getStock() > 0) {       // deux requêtes lisent 1 en même temps
+    $product->decrement();            // les deux décrémentent
+    $em->flush();                     // stock = 0, mais deux commandes validées
+}
+```
+
+Les deux requêtes ont lu `1` avant que l'une ait écrit `0` : on vend un article qu'on ne possède pas. Le verrou résout ce problème en garantissant qu'**une seule exécution à la fois** entre dans la section critique. Les autres attendent ou abandonnent.
+
+> Un verrou ne ralentit pas le code « pour rien » : il échange un peu de débit contre une garantie de cohérence. La bonne section critique est la plus petite possible, juste autour de l'opération qui ne tolère pas la concurrence.
+
+## Acquérir et relâcher un verrou
+
+---
+
+Le point d'entrée est la `LockFactory`, autowirable. On crée un verrou nommé par une **clé** : tous les processus qui veulent la même exclusion mutuelle utilisent la même clé.
+
+```php
+final class CheckoutService
+{
+    public function __construct(private LockFactory $lockFactory) {}
+
+    public function purchase(Product $product): void
+    {
+        // La clé identifie la ressource protégée, ici un produit précis
+        $lock = $this->lockFactory->createLock('product-stock-' . $product->getId());
+
+        if (!$lock->acquire()) {
+            throw new ConflictException('Opération déjà en cours, réessayez.');
+        }
+
+        try {
+            // Section critique : un seul processus à la fois pour ce produit
+            $this->decrementStock($product);
+        } finally {
+            $lock->release(); // toujours relâcher, même en cas d'exception
+        }
+    }
+}
+```
+
+Deux points cruciaux :
+
+- La libération doit être dans un `finally`. Un verrou jamais relâché bloque tous les autres processus jusqu'à son expiration.
+- La clé doit identifier **la ressource**, pas l'action. Verrouiller `product-stock-42` permet à deux produits différents d'être traités en parallèle, là où une clé globale `checkout` sérialiserait inutilement tout le monde.
+
+## Bloquant ou non bloquant
+
+---
+
+`acquire()` est **non bloquant** par défaut : il renvoie immédiatement `true` (verrou obtenu) ou `false` (déjà pris). C'est le bon choix quand on préfère échouer vite et renvoyer une erreur plutôt que faire patienter l'utilisateur.
+
+Pour attendre que le verrou se libère, on passe en mode **bloquant** :
+
+```php
+$lock->acquire(true); // attend jusqu'à obtenir le verrou
+```
+
+À réserver aux traitements de fond où l'attente est acceptable. Dans un contexte HTTP, le mode non bloquant est presque toujours préférable : mieux vaut répondre « réessayez » que laisser une requête se figer.
+
+## L'expiration : le verrou qui se relâche tout seul
+
+---
+
+Que se passe-t-il si le processus qui détient le verrou plante (segfault, kill, panne réseau) avant d'avoir relâché ? Sans garde-fou, le verrou resterait éternellement, bloquant tout. La parade est le **TTL** : un verrou peut expirer automatiquement après une durée.
+
+```php
+$lock = $this->lockFactory->createLock('import-catalog', ttl: 300); // 5 minutes
+```
+
+Cela introduit un compromis délicat :
+
+- TTL trop court : le verrou expire alors que le traitement légitime tourne encore, et un second processus démarre en parallèle. La protection saute.
+- TTL trop long : après un crash, la ressource reste bloquée longtemps.
+
+Pour les traitements dont la durée est imprévisible, on **rafraîchit** le verrou périodiquement plutôt que de miser sur un TTL généreux :
+
+```php
+$lock = $this->lockFactory->createLock('long-job', ttl: 30);
+$lock->acquire();
+
+foreach ($batches as $batch) {
+    $this->process($batch);
+    $lock->refresh(); // repousse l'expiration tant que le travail avance
+}
+```
+
+> Tant que le processus vit, il rafraîchit ; s'il meurt, plus de rafraîchissement et le verrou expire de lui-même après le TTL. C'est le pattern robuste pour les jobs longs.
+
+## Les stores : la portée du verrou
+
+---
+
+Ce qui rend Lock puissant, c'est l'abstraction du **store**, le backend qui matérialise le verrou. Le store détermine la portée de l'exclusion.
+
+| Store | Portée | Usage |
+| --- | --- | --- |
+| `FlockStore` | Un seul serveur (verrou fichier) | Mono-serveur, défaut local |
+| `SemaphoreStore` | Un seul serveur (sémaphore système) | Mono-serveur, performant |
+| `RedisStore` | Distribuée | Plusieurs serveurs partageant un Redis |
+| `DoctrineDbalStore` | Distribuée | Verrous en base, sans infra supplémentaire |
+| `ZookeeperStore` | Distribuée | Coordination de cluster |
+
+La configuration se fait par DSN, et le code applicatif reste identique quel que soit le store :
+
+```yaml
+# config/packages/lock.yaml
+framework:
+  lock:
+    default: '%env(LOCK_DSN)%'   # flock en local, redis en production
+```
+
+C'est le point essentiel : un verrou `flock` sur fichier ne coordonne que les processus d'**une seule machine**. Dès qu'on déploie sur plusieurs serveurs derrière un load balancer, il faut un store **distribué** (Redis, base de données), sinon chaque machine verrouille dans son coin et la concurrence inter-serveurs n'est pas protégée.
+
+## Cas d'usage : empêcher le chevauchement d'une commande
+
+---
+
+L'application la plus fréquente est d'éviter qu'un cron lancé toutes les minutes ne se chevauche si une exécution dure plus longtemps que prévu :
+
+```php
+#[AsCommand(name: 'app:sync-inventory')]
+final class SyncInventoryCommand extends Command
+{
+    public function __construct(private LockFactory $lockFactory)
+    {
+        parent::__construct();
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $lock = $this->lockFactory->createLock('app-sync-inventory');
+
+        if (!$lock->acquire()) {
+            $output->writeln('Une synchronisation est déjà en cours, on passe.');
+            return Command::SUCCESS;
+        }
+
+        try {
+            $this->synchronize();
+        } finally {
+            $lock->release();
+        }
+
+        return Command::SUCCESS;
+    }
+}
+```
+
+Le même pattern protège un handler Messenger contre le double traitement d'un message, ou un endpoint contre les double-clics et les soumissions multiples.
+
+## Verrous partagés : lecteurs et rédacteurs
+
+---
+
+Pour les cas où plusieurs lecteurs peuvent cohabiter mais un rédacteur exige l'exclusivité, le composant propose le **verrou partagé** (read/write). Plusieurs acquisitions en lecture sont autorisées simultanément, mais l'acquisition en écriture attend que tous les lecteurs aient relâché.
+
+```php
+$lock = $this->lockFactory->createLock('report-generation');
+
+$lock->acquireRead();  // plusieurs lecteurs en parallèle
+// ... lecture
+$lock->release();
+```
+
+Tous les stores ne supportent pas ce mode ; le `RedisStore` et le `FlockStore`, oui. C'est utile pour protéger une ressource lue souvent et écrite rarement, sans sérialiser inutilement les lectures.
+
+## Résumé
+
+---
+
+| Notion | À retenir |
+| --- | --- |
+| **Race condition** | Corruption due à des accès concurrents non coordonnés |
+| **`LockFactory` / clé** | La clé identifie la ressource protégée, pas l'action |
+| **`acquire()`** | Non bloquant par défaut, `acquire(true)` pour attendre |
+| **TTL et `refresh()`** | Le verrou expire seul après un crash ; on rafraîchit les jobs longs |
+| **Stores** | `flock` est local, Redis/Doctrine sont distribués |
+| **Verrou partagé** | Plusieurs lecteurs, un seul rédacteur |
+
+Le composant Lock règle une classe entière de bugs sournois, ceux qui n'apparaissent qu'en charge ou en parallèle et sont quasi impossibles à reproduire. La seule erreur structurante à éviter est le choix du store : un verrou local sur une infrastructure multi-serveurs donne une fausse impression de sécurité.

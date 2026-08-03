@@ -1,0 +1,139 @@
+## Introduction
+
+---
+
+Dès qu'une API doit être consommée par un client externe (application mobile, SPA, service tiers), la session côté serveur devient un handicap. Le standard de fait est alors le **token signé** : le client le porte à chaque requête, le serveur le valide sans rien stocker. Cette leçon couvre le JWT pour l'authentification stateless, puis OAuth2 et OpenID Connect pour déléguer l'authentification à un fournisseur d'identité (login social, SSO d'entreprise).
+
+## Anatomie d'un JWT
+
+---
+
+Un JSON Web Token est une chaîne en trois parties séparées par des points, chacune encodée en base64url :
+
+```
+header.payload.signature
+```
+
+- **Header** : l'algorithme de signature (`RS256`, `HS256`...).
+- **Payload** : les claims, c'est-à-dire les données portées par le token (identifiant, rôles, expiration `exp`, émetteur `iss`).
+- **Signature** : calculée sur le header et le payload avec une clé secrète ou privée.
+
+Le point crucial : le payload est seulement **encodé**, pas chiffré. N'importe qui peut le lire. Ce qui empêche de le falsifier, c'est la signature : modifier un claim invalide la signature. On ne met donc jamais de secret dans un JWT, et on s'appuie sur la signature pour la confiance.
+
+```json
+{
+  "iat": 1718000000,
+  "exp": 1718003600,
+  "roles": ["ROLE_USER"],
+  "username": "alice@example.com"
+}
+```
+
+## JWT avec LexikJWTAuthenticationBundle
+
+---
+
+Le bundle de référence dans l'écosystème Symfony est `LexikJWTAuthenticationBundle`. Il s'appuie sur une paire de clés asymétriques (RS256) : la clé privée signe les tokens, la clé publique les vérifie.
+
+```bash
+composer require lexik/jwt-authentication-bundle
+php bin/console lexik:jwt:generate-keypair
+```
+
+```yaml
+security:
+  firewalls:
+    login:
+      pattern: ^/api/login
+      stateless: true
+      json_login:
+        check_path: /api/login
+        success_handler: lexik_jwt_authentication.handler.authentication_success
+        failure_handler: lexik_jwt_authentication.handler.authentication_failure
+    api:
+      pattern: ^/api
+      stateless: true
+      jwt: ~   # valide le token Bearer sur chaque requête
+```
+
+Le flux est en deux temps : l'utilisateur poste ses identifiants sur `/api/login` et reçoit un JWT, puis il le présente sur chaque requête suivante via `Authorization: Bearer <token>`. Le firewall `api` valide la signature et l'expiration, reconstruit l'utilisateur, le tout sans session.
+
+## Le talon d'Achille : l'invalidation
+
+---
+
+Un JWT signé est valide jusqu'à son `exp`, quoi qu'il arrive. Si un utilisateur se déconnecte ou si son token est volé, on ne peut pas l'invalider côté serveur aussi simplement qu'en supprimant une session. Les parades :
+
+- **Durée de vie courte** : un access token de quelques minutes limite la fenêtre d'exposition.
+- **Refresh token** : un token de longue durée, stocké en base et révocable, sert à obtenir de nouveaux access tokens courts. Révoquer le refresh token coupe l'accès à la prochaine rotation.
+- **Liste de révocation (blocklist)** : stocker les identifiants de tokens révoqués jusqu'à leur expiration. Cela réintroduit un état serveur, à n'utiliser que si l'invalidation immédiate est un vrai besoin.
+
+> Le stateless est un compromis : on gagne le scaling et on perd l'invalidation triviale. Choisir le JWT, c'est accepter ce compromis en connaissance de cause, pas par défaut.
+
+## Déléguer l'authentification : OAuth2 et OpenID Connect
+
+---
+
+JWT répond à « comment transporter une identité déjà établie ». OAuth2 et OpenID Connect répondent à une autre question : « comment établir cette identité en s'appuyant sur un tiers de confiance » (Google, GitHub, un annuaire d'entreprise).
+
+Il faut distinguer deux protocoles souvent confondus :
+
+| Protocole | Répond à | Produit |
+| --- | --- | --- |
+| **OAuth2** | Autorisation : « cette app a-t-elle le droit d'accéder à mes ressources ? » | Un access token vers une API |
+| **OpenID Connect** | Authentification : « qui est cet utilisateur ? » | Un ID token (un JWT décrivant l'utilisateur) |
+
+OpenID Connect est une couche d'authentification construite au-dessus d'OAuth2. Pour un simple « se connecter avec Google », c'est OpenID Connect qu'on utilise, même si on dit souvent « login OAuth » par abus de langage.
+
+## Le flow Authorization Code
+
+---
+
+Le flux standard pour une application web est l'Authorization Code Flow :
+
+1. L'utilisateur clique sur « Se connecter avec Google ». L'application le **redirige** vers Google avec son `client_id` et l'URL de retour.
+2. L'utilisateur s'authentifie chez Google et consent au partage.
+3. Google redirige vers l'application avec un **code d'autorisation** temporaire.
+4. L'application échange ce code, côté serveur, contre un access token et un ID token (en présentant son `client_secret`).
+5. L'application lit l'ID token pour connaître l'utilisateur, et crée ou retrouve le compte local correspondant.
+
+Le code intermédiaire évite que le token transite par le navigateur. Côté Symfony, on s'appuie sur `knpuniversity/oauth2-client-bundle` (qui fédère les providers via la librairie League OAuth2) ou sur un client OpenID Connect dédié.
+
+```yaml
+# config/packages/knpu_oauth2_client.yaml
+knpu_oauth2_client:
+  clients:
+    google:
+      type: google
+      client_id: '%env(GOOGLE_CLIENT_ID)%'
+      client_secret: '%env(GOOGLE_CLIENT_SECRET)%'
+      redirect_route: connect_google_check
+```
+
+L'authentification proprement dite reste un authenticator Symfony classique : il récupère l'utilisateur Google via le client OAuth2 et le mappe sur un `User` local, exactement le pattern vu dans la leçon sur les authenticators sur mesure.
+
+## Choisir entre les approches
+
+---
+
+| Besoin | Approche |
+| --- | --- |
+| API stateless, identités gérées par l'app | JWT (LexikJWT) |
+| « Se connecter avec Google/GitHub » | OpenID Connect via oauth2-client |
+| SSO d'entreprise (un seul login pour N apps) | OpenID Connect vers le fournisseur interne (Keycloak, Azure AD) |
+| Accès délégué à une API tierce au nom de l'utilisateur | OAuth2 (access token) |
+
+## Résumé
+
+---
+
+| Notion | À retenir |
+| --- | --- |
+| **JWT** | Token signé en trois parties, payload lisible, non falsifiable |
+| **LexikJWT** | Le bundle de référence, clés asymétriques RS256 |
+| **Invalidation** | Le point faible du stateless : durée courte + refresh token |
+| **OAuth2** | Autorisation, délègue l'accès à des ressources |
+| **OpenID Connect** | Authentification, le bon choix pour le login social et le SSO |
+| **Authorization Code Flow** | Le flux web standard, le token ne transite jamais par le navigateur |
+
+JWT, OAuth2 et OpenID Connect ne sont pas concurrents mais répondent à des questions différentes. La confusion la plus courante est d'utiliser OAuth2 pour authentifier alors qu'il sert à autoriser : pour savoir qui est l'utilisateur, c'est OpenID Connect.

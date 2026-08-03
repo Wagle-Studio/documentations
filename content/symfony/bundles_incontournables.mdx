@@ -1,0 +1,152 @@
+## Introduction
+
+---
+
+L'écosystème Symfony tient en grande partie à ses bundles communautaires. Plutôt que de tout réécrire, un projet réel assemble des briques éprouvées : une interface d'administration, une couche API, l'authentification par token, la gestion des fichiers. Connaître ce catalogue, c'est savoir ne pas réinventer ce qui existe, et faire les bons choix d'architecture en début de projet. Cette leçon présente les bundles qu'on croise le plus souvent, ce qu'ils résolvent et quand les choisir.
+
+## API Platform
+
+---
+
+`api-platform/core` est sans doute le bundle le plus structurant de l'écosystème. À partir d'entités annotées par des attributs, il génère une **API REST et GraphQL complète** : endpoints CRUD, pagination, filtres, négociation de contenu, documentation OpenAPI/Swagger interactive, et même des formats hypermedia (JSON-LD/Hydra).
+
+```php
+#[ApiResource(
+    operations: [new Get(), new GetCollection(), new Post()],
+    normalizationContext: ['groups' => ['product:read']],
+)]
+class Product
+{
+    #[Groups(['product:read'])]
+    private string $name;
+}
+```
+
+Quand l'utiliser : un projet dont l'API est centrale, où l'on veut une base conforme aux standards sans écrire chaque contrôleur. Quand s'en méfier : pour quelques endpoints simples, sa courbe d'apprentissage et son niveau d'abstraction peuvent être disproportionnés.
+
+## EasyAdmin
+
+---
+
+`easycorp/easyadmin-bundle` génère un **back-office** complet à partir des entités Doctrine. On décrit les champs et les actions en PHP, et le bundle produit listes, formulaires, filtres et tableaux de bord, sans écrire de templates.
+
+```php
+class ProductCrudController extends AbstractCrudController
+{
+    public function configureFields(string $pageName): iterable
+    {
+        return [
+            TextField::new('name'),
+            MoneyField::new('price')->setCurrency('EUR'),
+            AssociationField::new('category'),
+        ];
+    }
+}
+```
+
+Quand l'utiliser : un panneau d'administration interne, rapide à monter. C'est l'alternative légère et moderne à Sonata pour la majorité des besoins.
+
+## Sonata Admin
+
+---
+
+`sonata-project/admin-bundle` est l'ancêtre des générateurs d'admin, plus puissant et plus lourd qu'EasyAdmin. Il offre une très grande richesse (gestion fine des relations, workflows d'édition, écosystème de bundles Sonata pour les médias, les pages, les utilisateurs) au prix d'une configuration plus verbeuse et d'une courbe d'apprentissage plus raide.
+
+Quand le choisir : de gros back-offices aux besoins complexes, ou un projet déjà investi dans la suite Sonata. Pour un besoin neuf et standard, EasyAdmin est généralement préférable.
+
+## LexikJWTAuthenticationBundle
+
+---
+
+`lexik/jwt-authentication-bundle` est le standard pour l'**authentification par JWT** des API stateless. Il signe les tokens avec une paire de clés et les valide sur chaque requête. Détaillé dans la leçon JWT et SSO, il se combine souvent avec API Platform pour sécuriser une API consommée par un front découplé ou une application mobile.
+
+Compagnon fréquent : `gesdinet/jwt-refresh-token-bundle` pour la gestion des refresh tokens révocables.
+
+## Doctrine et ses extensions
+
+---
+
+Au-delà de l'ORM lui-même, deux bundles reviennent constamment :
+
+- **`stof/doctrine-extensions-bundle`** (qui intègre les Gedmo extensions) ajoute des comportements automatiques aux entités : `Timestampable` (dates de création/modification), `Sluggable` (génération de slug), `SoftDeleteable` (suppression logique), `Tree` (structures hiérarchiques).
+- **`doctrine/doctrine-fixtures-bundle`** charge des jeux de données de test ou d'amorçage en base, indispensable pour les tests fonctionnels et les environnements de développement.
+
+```php
+class Article
+{
+    #[Gedmo\Timestampable(on: 'create')]
+    private \DateTimeImmutable $createdAt;
+
+    #[Gedmo\Slug(fields: ['title'])]
+    private string $slug;
+}
+```
+
+## VichUploaderBundle
+
+---
+
+`vich/uploader-bundle` automatise la **gestion des fichiers uploadés** liés à une entité : il prend en charge le nommage, le déplacement, la suppression du fichier quand l'entité est supprimée, et l'injection du chemin dans une propriété. Cela évite la plomberie fastidieuse et source de bugs autour des uploads.
+
+```php
+#[Vich\Uploadable]
+class Product
+{
+    #[Vich\UploadableField(mapping: 'product_images', fileNameProperty: 'imageName')]
+    private ?File $imageFile = null;
+
+    private ?string $imageName = null;
+}
+```
+
+## NelmioCorsBundle et NelmioApiDocBundle
+
+---
+
+Deux bundles de l'éditeur Nelmio, utiles dès qu'on expose une API :
+
+- **`nelmio/cors-bundle`** gère les en-têtes **CORS**, indispensables pour qu'une SPA hébergée sur un autre domaine puisse consommer l'API depuis le navigateur. Il se configure entièrement en YAML, par motif d'URL.
+- **`nelmio/api-doc-bundle`** génère une **documentation OpenAPI** à partir des contrôleurs et des attributs. API Platform fournissant déjà cette documentation, ce bundle vise surtout les API construites à la main.
+
+## FOSElastica et autres intégrations
+
+---
+
+Beaucoup de bundles servent de pont entre Symfony et un service externe :
+
+| Bundle | Intègre |
+| --- | --- |
+| `friendsofsymfony/elastica-bundle` | Elasticsearch (indexation et recherche des entités Doctrine) |
+| `symfony/messenger` + transports | RabbitMQ, Redis, Amazon SQS pour l'asynchrone |
+| `scheb/2fa-bundle` | Authentification à deux facteurs (TOTP, email) |
+| `knpuniversity/oauth2-client-bundle` | Login social via OAuth2/OpenID Connect |
+| `knplabs/knp-paginator-bundle` | Pagination de résultats Doctrine ou de tableaux |
+
+Le point commun de tous ces bundles : ils encapsulent l'intégration d'une technologie à Symfony, exactement selon le mécanisme de configuration et de services vu dans la leçon sur les bundles.
+
+## Comment choisir un bundle
+
+---
+
+Avant d'ajouter une dépendance, quelques critères de bon sens valent mieux que la popularité brute :
+
+- **Maintenance** : dernière release, compatibilité avec la version de Symfony visée, activité du dépôt.
+- **Adéquation** : un bundle puissant mais surdimensionné (Sonata pour trois pages d'admin) coûte plus qu'il ne rapporte.
+- **Coût de sortie** : à quel point le bundle s'infiltre-t-il dans le code ? Plus il est intrusif, plus en changer sera douloureux.
+- **Standard de fait** : à fonctionnalité égale, le bundle le plus largement adopté aura plus de documentation, de réponses et de pérennité.
+
+## Résumé
+
+---
+
+| Bundle | Résout |
+| --- | --- |
+| **API Platform** | API REST/GraphQL complète à partir d'entités |
+| **EasyAdmin** | Back-office généré, léger et moderne |
+| **Sonata Admin** | Back-office riche pour besoins complexes |
+| **LexikJWT** | Authentification JWT des API stateless |
+| **Doctrine Extensions / Fixtures** | Comportements d'entités et jeux de données |
+| **VichUploader** | Gestion des fichiers uploadés liés aux entités |
+| **Nelmio CORS / ApiDoc** | CORS et documentation OpenAPI |
+
+Maîtriser l'écosystème, ce n'est pas tout connaître par coeur mais savoir qu'une brique existe avant de la réécrire. Le réflexe utile face à un besoin récurrent (admin, API, upload, recherche) est de chercher le bundle de référence avant d'ouvrir l'éditeur.

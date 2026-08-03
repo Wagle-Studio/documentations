@@ -1,0 +1,191 @@
+## Introduction
+
+---
+
+La leçon Sécurité a présenté l'authenticator et le Passport sous leur forme la plus simple. Mais dès qu'on sort des cas couverts par `form_login` ou `access_token`, il faut écrire le sien : authentification par signature de requête, par header propriétaire, par token à usage unique, intégration d'un fournisseur d'identité maison. Cette leçon décortique l'anatomie complète d'un authenticator et le cycle d'événements qui l'entoure.
+
+## Le contrat : `AbstractAuthenticator`
+
+---
+
+Tout authenticator personnalisé étend `AbstractAuthenticator` et implémente quatre méthodes. Elles sont appelées dans un ordre précis par le système de sécurité.
+
+```php
+final class SignatureAuthenticator extends AbstractAuthenticator
+{
+    public function __construct(private UserRepository $users) {}
+
+    // 1. Faut-il que cet authenticator traite la requête ?
+    public function supports(Request $request): ?bool
+    {
+        return $request->headers->has('X-Signature')
+            && $request->headers->has('X-Client-Id');
+    }
+
+    // 2. Construire la preuve d'identité
+    public function authenticate(Request $request): Passport
+    {
+        $clientId = $request->headers->get('X-Client-Id');
+
+        return new SelfValidatingPassport(
+            new UserBadge($clientId, fn (string $id) => $this->users->findOneByClientId($id)),
+            [new SignatureBadge($request)], // badge custom, vérifié plus bas
+        );
+    }
+
+    // 3. Que faire en cas de succès ?
+    public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
+    {
+        return null; // null = laisser la requête continuer vers le contrôleur
+    }
+
+    // 4. Que faire en cas d'échec ?
+    public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
+    {
+        return new JsonResponse(['error' => $exception->getMessageKey()], 401);
+    }
+}
+```
+
+Le point clé du retour de `supports()` :
+
+- `true` : cet authenticator traite la requête.
+- `false` : il est ignoré pour cette requête.
+- `null` : il pourra être réessayé plus tard dans le cycle (utile pour le mode lazy).
+
+## Le Passport et ses badges
+
+---
+
+`authenticate()` ne vérifie rien lui-même : il **déclare** ce qu'il faut vérifier sous forme de badges. C'est de la composition, pas de l'héritage. Le système de sécurité résout ensuite chaque badge.
+
+| Type de Passport | Usage |
+| --- | --- |
+| `Passport` | Cas général, attend au moins un `UserBadge` et des credentials |
+| `SelfValidatingPassport` | Quand l'identité est déjà prouvée par la requête (token opaque, signature) et qu'il n'y a pas de mot de passe à vérifier |
+
+Les badges les plus courants :
+
+| Badge | Rôle |
+| --- | --- |
+| `UserBadge` | Identifie l'utilisateur et fournit le moyen de le charger |
+| `PasswordCredentials` | Déclenche la vérification du mot de passe haché |
+| `CsrfTokenBadge` | Exige un token CSRF valide |
+| `RememberMeBadge` | Autorise la pose d'un cookie remember-me |
+| `PasswordUpgradeBadge` | Permet le rehachage transparent du mot de passe |
+
+Le `UserBadge` mérite une attention particulière : son second argument est un **user loader**. S'il est omis, c'est le user provider du firewall qui charge l'utilisateur. Le fournir explicitement permet de contourner le provider, par exemple pour charger par un identifiant non standard.
+
+## Un badge sur mesure
+
+---
+
+Pour vérifier la signature de notre exemple, on crée un badge et son resolver. Le badge porte la donnée, le resolver porte la logique de vérification.
+
+```php
+final class SignatureBadge implements BadgeInterface
+{
+    private bool $resolved = false;
+
+    public function __construct(public readonly Request $request) {}
+
+    public function markResolved(): void { $this->resolved = true; }
+    public function isResolved(): bool { return $this->resolved; }
+}
+```
+
+```php
+// Un listener vérifie le badge pendant l'authentification
+#[AsEventListener(event: CheckPassportEvent::class)]
+final class SignatureBadgeListener
+{
+    public function __construct(private ClientSecretProvider $secrets) {}
+
+    public function __invoke(CheckPassportEvent $event): void
+    {
+        $passport = $event->getPassport();
+        if (!$passport->hasBadge(SignatureBadge::class)) {
+            return;
+        }
+
+        /** @var SignatureBadge $badge */
+        $badge = $passport->getBadge(SignatureBadge::class);
+        $request = $badge->request;
+
+        $expected = hash_hmac('sha256', $request->getContent(), $this->secrets->forUser($passport->getUser()));
+        if (!hash_equals($expected, (string) $request->headers->get('X-Signature'))) {
+            throw new BadCredentialsException('Signature invalide.');
+        }
+
+        $badge->markResolved(); // un badge non résolu fait échouer l'authentification
+    }
+}
+```
+
+> Tout badge présent dans le Passport doit être marqué résolu avant la fin du `CheckPassportEvent`, sinon l'authentification échoue. C'est ce qui garantit qu'aucune vérification déclarée n'est silencieusement ignorée.
+
+## Le cycle d'événements de l'authentification
+
+---
+
+Au-delà de l'authenticator, Symfony émet une série d'événements qui sont les bons points d'accroche pour la logique transverse (audit, MAJ de date de connexion, blocage conditionnel).
+
+| Événement | Moment | Usage typique |
+| --- | --- | --- |
+| `CheckPassportEvent` | Après `authenticate()` | Résoudre les badges, vérifications supplémentaires |
+| `AuthenticationTokenCreatedEvent` | Le token est créé | Enrichir le token (attributs, rôles dynamiques) |
+| `LoginSuccessEvent` | Authentification réussie | Mettre à jour `lastLogin`, journaliser |
+| `LoginFailureEvent` | Authentification échouée | Compter les échecs, alerter |
+| `LogoutEvent` | Déconnexion | Invalider un token, nettoyer |
+
+```php
+#[AsEventListener]
+final class UpdateLastLoginListener
+{
+    public function __construct(private EntityManagerInterface $em) {}
+
+    public function __invoke(LoginSuccessEvent $event): void
+    {
+        $user = $event->getUser();
+        if ($user instanceof User) {
+            $user->setLastLoginAt(new \DateTimeImmutable());
+            $this->em->flush();
+        }
+    }
+}
+```
+
+Placer cette logique dans des listeners plutôt que dans `onAuthenticationSuccess()` la garde réutilisable quel que soit l'authenticator employé : login par formulaire, JWT ou signature passent tous par `LoginSuccessEvent`.
+
+## Enregistrer l'authenticator
+
+---
+
+Il suffit de le référencer dans le firewall via la clé `custom_authenticators` :
+
+```yaml
+security:
+  firewalls:
+    api:
+      pattern: ^/api
+      stateless: true
+      custom_authenticators:
+        - App\Security\SignatureAuthenticator
+```
+
+L'autowiring fait le reste : pas de déclaration de service à écrire.
+
+## Résumé
+
+---
+
+| Notion | À retenir |
+| --- | --- |
+| **`supports()`** | Décide si l'authenticator traite la requête (`true`/`false`/`null`) |
+| **`authenticate()`** | Déclare les vérifications via un Passport et ses badges, ne vérifie rien lui-même |
+| **`SelfValidatingPassport`** | Pour les preuves sans mot de passe (token, signature) |
+| **Badge non résolu** | Fait échouer l'authentification : aucune vérification n'est oubliée |
+| **Événements d'auth** | `LoginSuccessEvent` et consorts : la place de la logique transverse |
+| **`custom_authenticators`** | La seule ligne de config pour brancher son authenticator |
+
+Un authenticator bien écrit ne contient que de la plomberie : extraire la preuve et déclarer les badges. Toute la logique de vérification vit dans des badges et des listeners, testables isolément et réutilisables d'un firewall à l'autre.

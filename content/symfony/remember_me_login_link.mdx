@@ -1,0 +1,130 @@
+## Introduction
+
+---
+
+Une grande partie de l'authentification quotidienne ne consiste pas à écrire des authenticators, mais à activer des mécanismes que Symfony fournit déjà : rester connecté entre deux sessions, se connecter sans mot de passe via un lien reçu par email, se protéger contre la falsification de requête. Réinventer ces briques est non seulement du travail perdu mais une source classique de failles. Cette leçon fait le tour de ces mécanismes prêts à l'emploi.
+
+## Remember-me : rester connecté
+
+---
+
+Par défaut, fermer le navigateur termine la session et déconnecte l'utilisateur. Le mécanisme remember-me pose un cookie de longue durée qui réauthentifie l'utilisateur automatiquement à sa prochaine visite, même après expiration de la session.
+
+```yaml
+security:
+  firewalls:
+    main:
+      remember_me:
+        secret: '%kernel.secret%'
+        lifetime: 604800          # 7 jours
+        path: /
+        secure: true
+        samesite: lax
+```
+
+Deux stratégies de signature existent :
+
+- **Signature (par défaut)** : le cookie contient l'identifiant utilisateur, une date d'expiration et une signature HMAC. Aucun stockage serveur, mais on ne peut pas révoquer un cookie individuel avant son expiration.
+- **Persistante (token en base)** : chaque cookie correspond à une ligne en base, ce qui permet de révoquer une session précise (utile pour un bouton « déconnecter mes autres appareils »).
+
+Côté formulaire, il faut un champ qui déclenche la pose du cookie, et l'authenticator doit ajouter le `RememberMeBadge` à son Passport (ce que `form_login` fait automatiquement) :
+
+```twig
+<label>
+  <input type="checkbox" name="_remember_me"> Se souvenir de moi
+</label>
+```
+
+> Un utilisateur réauthentifié par remember-me n'est pas « pleinement » authentifié. Les zones les plus sensibles doivent exiger `IS_AUTHENTICATED_FULLY` pour forcer une vraie ressaisie du mot de passe, plutôt que `IS_AUTHENTICATED_REMEMBERED`.
+
+## Login link : la connexion sans mot de passe
+
+---
+
+Le passwordless gagne du terrain : plutôt qu'un mot de passe, l'utilisateur reçoit par email (ou SMS) un lien à usage unique et à durée limitée. Cliquer dessus l'authentifie. Cela supprime le risque de mot de passe faible ou réutilisé.
+
+Symfony fournit le composant complet via le `LoginLinkHandler`.
+
+```yaml
+security:
+  firewalls:
+    main:
+      login_link:
+        check_route: login_check
+        signature_properties: [id, email]  # propriétés signées dans le lien
+        lifetime: 600                        # 10 minutes
+        max_uses: 1                          # à usage unique
+```
+
+```php
+final class LoginLinkController extends AbstractController
+{
+    #[Route('/login-link-request', methods: ['POST'])]
+    public function request(Request $request, LoginLinkHandlerInterface $handler, UserRepository $users, MailerInterface $mailer): Response
+    {
+        $user = $users->findOneByEmail($request->request->get('email'));
+        if ($user) {
+            $details = $handler->createLoginLink($user);
+
+            $mailer->send((new Email())
+                ->to($user->getEmail())
+                ->subject('Votre lien de connexion')
+                ->text('Connectez-vous : ' . $details->getUrl()));
+        }
+
+        // Toujours la même réponse, que l'email existe ou non (anti-énumération)
+        return $this->render('security/link_sent.html.twig');
+    }
+}
+```
+
+La sécurité repose sur la signature : le lien contient les `signature_properties` signées avec le secret de l'application. Inclure une propriété qui change quand le mot de passe ou l'email change invalide automatiquement les anciens liens.
+
+> Renvoyez toujours la même réponse, que l'adresse existe ou non. Sinon, le formulaire devient un oracle qui permet d'énumérer les comptes existants.
+
+## CSRF : protéger les actions authentifiées
+
+---
+
+Le Cross-Site Request Forgery exploite le fait qu'un navigateur joint automatiquement les cookies de session à toute requête, y compris celles déclenchées par un site malveillant. Sans protection, un formulaire caché sur un site tiers pourrait déclencher une action sur votre application au nom de l'utilisateur connecté.
+
+La parade : un **token CSRF**, valeur imprévisible liée à la session, exigée pour toute action mutante. Un site tiers ne peut pas le connaître.
+
+Dans un formulaire Twig classique, c'est automatique avec le composant Form. Pour un formulaire manuel :
+
+```twig
+<form action="{{ path('app_delete_account') }}" method="post">
+  <input type="hidden" name="_token" value="{{ csrf_token('delete-account') }}">
+  <button>Supprimer mon compte</button>
+</form>
+```
+
+```php
+#[Route('/account/delete', methods: ['POST'])]
+public function delete(Request $request): Response
+{
+    if (!$this->isCsrfTokenValid('delete-account', $request->request->get('_token'))) {
+        throw $this->createAccessDeniedException('Token CSRF invalide.');
+    }
+    // ... suppression
+}
+```
+
+Le login lui-même peut être protégé via le `CsrfTokenBadge` ajouté au Passport, ou la clé `enable_csrf: true` sous `form_login`.
+
+À noter : une API stateless en `Authorization: Bearer` n'est pas vulnérable au CSRF, puisque le navigateur n'ajoute pas automatiquement ce header. La protection CSRF concerne avant tout l'authentification par cookie de session. Le réglage `cookie_samesite: lax` constitue une défense complémentaire.
+
+## Résumé
+
+---
+
+| Mécanisme | À retenir |
+| --- | --- |
+| **Remember-me** | Cookie longue durée, par signature ou token persistant pour pouvoir révoquer |
+| **`IS_AUTHENTICATED_FULLY`** | À exiger sur les zones sensibles, remember-me ne suffit pas |
+| **Login link** | Connexion passwordless par lien signé, à usage unique et à durée limitée |
+| **Anti-énumération** | Réponse identique que le compte existe ou non |
+| **CSRF** | Token imprévisible lié à la session, requis pour les actions mutantes par cookie |
+| **API Bearer** | Non concernée par le CSRF, mais le token a ses propres règles |
+
+Ces mécanismes partagent une même philosophie : ils sont fournis, éprouvés et configurables. Le réflexe correct n'est jamais de les réécrire mais de savoir lequel activer et avec quels réglages.

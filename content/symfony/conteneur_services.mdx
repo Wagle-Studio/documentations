@@ -1,0 +1,205 @@
+## Introduction
+
+---
+
+Le conteneur de services est le cœur de Symfony : c'est lui qui instancie, configure et connecte tous les objets de l'application. Bien le maîtriser permet d'écrire un code découplé, testable et conforme aux principes SOLID, en particulier l'inversion de dépendances.
+
+Un **service** est simplement un objet qui rend un service : envoyer un email, interroger une API, calculer un prix. Le conteneur en est l'annuaire et l'usine.
+
+## Injection de dépendances
+
+---
+
+Plutôt que de laisser une classe créer ses dépendances (`new Mailer()`), on les lui **injecte** par le constructeur. La classe ne connaît que des abstractions, pas des implémentations concrètes.
+
+```php
+final class OrderConfirmationService
+{
+    public function __construct(
+        private readonly MailerInterface $mailer,
+        private readonly InvoiceGeneratorInterface $invoiceGenerator,
+        private readonly LoggerInterface $logger,
+    ) {
+    }
+}
+```
+
+Les bénéfices sont directs :
+
+- **Testabilité** : on remplace les dépendances par des doubles de test.
+- **Découplage** : changer d'implémentation ne modifie pas la classe consommatrice.
+- **Lisibilité** : le constructeur documente exactement ce dont la classe a besoin.
+
+## Autowiring et autoconfiguration
+
+---
+
+La configuration par défaut de `config/services.yaml` active deux mécanismes :
+
+```yaml
+services:
+  _defaults:
+    autowire: true      # injection automatique par type-hint
+    autoconfigure: true # tags automatiques selon les interfaces implémentées
+
+  App\:
+    resource: '../src/'
+    exclude:
+      - '../src/Entity/'
+      - '../src/Kernel.php'
+```
+
+- **Autowire** : le conteneur lit les types des arguments du constructeur et injecte le service correspondant.
+- **Autoconfigure** : une classe implémentant `EventSubscriberInterface` est automatiquement taguée `kernel.event_subscriber`, une commande héritant de `Command` est taguée `console.command`, etc.
+
+Quand plusieurs services implémentent la même interface, le type-hint ne suffit plus. L'attribut `#[Autowire]` lève l'ambiguïté :
+
+```php
+public function __construct(
+    #[Autowire(service: 'monolog.logger.payment')]
+    private readonly LoggerInterface $logger,
+    #[Autowire(env: 'STRIPE_API_KEY')]
+    private readonly string $stripeApiKey,
+) {
+}
+```
+
+On peut aussi déclarer une implémentation comme alias par défaut d'une interface avec `#[AsAlias]`.
+
+## Tagged iterators : le pattern strategy sans switch
+
+---
+
+Les services tagués permettent d'injecter **toutes les implémentations d'une interface** d'un coup. C'est l'outil idéal pour respecter le principe ouvert/fermé.
+
+```php
+interface PaymentProviderInterface
+{
+    public function supports(string $method): bool;
+    public function pay(Order $order): PaymentResult;
+}
+```
+
+```php
+final class PaymentProcessor
+{
+    /** @param iterable<PaymentProviderInterface> $providers */
+    public function __construct(
+        #[AutowireIterator(PaymentProviderInterface::class)]
+        private readonly iterable $providers,
+    ) {
+    }
+
+    public function process(Order $order, string $method): PaymentResult
+    {
+        foreach ($this->providers as $provider) {
+            if ($provider->supports($method)) {
+                return $provider->pay($order);
+            }
+        }
+
+        throw new UnsupportedPaymentMethodException($method);
+    }
+}
+```
+
+Ajouter un moyen de paiement revient à créer une classe : **aucun code existant n'est modifié**. La variante `#[AutowireLocator]` injecte un `ServiceLocatorInterface` pour une résolution paresseuse par clé.
+
+## Décoration de services
+
+---
+
+La décoration permet d'envelopper un service existant (y compris un service d'un bundle tiers) sans le modifier ni y toucher. Le décorateur remplace le service décoré dans tout le conteneur.
+
+```php
+#[AsDecorator(decorates: ProductRepositoryInterface::class)]
+final class CachedProductRepository implements ProductRepositoryInterface
+{
+    public function __construct(
+        private readonly ProductRepositoryInterface $inner,
+        private readonly CacheInterface $cache,
+    ) {
+    }
+
+    public function find(int $id): ?Product
+    {
+        return $this->cache->get(
+            "product_$id",
+            fn () => $this->inner->find($id),
+        );
+    }
+}
+```
+
+C'est l'application directe du principe de substitution de Liskov : le code consommateur ne voit aucune différence, mais le comportement est enrichi.
+
+## Compilation du conteneur
+
+---
+
+Le conteneur n'est pas résolu à chaque requête. Au premier démarrage (ou après un `cache:clear`), Symfony **compile** toute la configuration en une classe PHP optimisée dans `var/cache/`.
+
+Conséquences importantes :
+
+- La résolution de l'autowiring a un coût **nul à l'exécution** : tout est figé à la compilation.
+- Les services non utilisés sont supprimés du conteneur compilé.
+- Les paramètres d'environnement (`%env(...)%`) restent dynamiques, contrairement aux paramètres classiques.
+
+Pour intervenir pendant cette phase, on écrit une **compiler pass** :
+
+```php
+final class CollectExportersPass implements CompilerPassInterface
+{
+    public function process(ContainerBuilder $container): void
+    {
+        // modifier les définitions de services avant le gel du conteneur
+    }
+}
+```
+
+C'est un outil de créateur de bundle : dans une application classique, les attributs (`#[AutowireIterator]`, `#[AsDecorator]`) couvrent la quasi-totalité des besoins.
+
+## Services lazy
+
+---
+
+Un service coûteux à instancier (connexion externe, gros graphe d'objets) peut être marqué `lazy`. Le conteneur injecte alors un **proxy** qui n'instancie le vrai service qu'au premier appel de méthode.
+
+```php
+#[Autoconfigure(lazy: true)]
+final class ImageOptimizer
+{
+    // instancié seulement si réellement utilisé
+}
+```
+
+À réserver aux services dont l'instanciation est lourde **et** qui ne sont pas systématiquement utilisés : le proxy a lui-même un léger coût.
+
+## Débogage
+
+---
+
+```bash
+php bin/console debug:container              # liste tous les services
+php bin/console debug:container App\Service\PaymentProcessor
+php bin/console debug:autowiring Logger     # types disponibles à l'injection
+php bin/console lint:container              # vérifie les injections sans exécuter l'app
+```
+
+`lint:container` est précieux en CI : il détecte les erreurs de câblage (type-hint sans service correspondant) sans avoir à exécuter le moindre scénario.
+
+## Résumé
+
+---
+
+| Mécanisme | Usage |
+| --- | --- |
+| **Autowiring** | Injection automatique par type-hint |
+| **Autoconfiguration** | Tags automatiques selon les interfaces |
+| **#[Autowire]** | Lever une ambiguïté, injecter un paramètre ou une env var |
+| **#[AutowireIterator]** | Injecter toutes les implémentations d'une interface |
+| **#[AsDecorator]** | Envelopper un service sans le modifier |
+| **Compiler pass** | Modifier le conteneur à la compilation (bundles) |
+| **Lazy** | Différer l'instanciation d'un service coûteux |
+
+Le conteneur n'est pas qu'un outil de confort : utilisé avec les interfaces, les tagged iterators et la décoration, il devient le support concret des principes SOLID dans une application Symfony.

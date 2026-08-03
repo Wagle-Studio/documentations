@@ -1,0 +1,163 @@
+## Introduction
+
+---
+
+Messenger est le composant de bus de messages de Symfony. Il répond à deux besoins distincts : **structurer** l'application autour de commandes et de requêtes explicites (CQRS léger), et **différer** les traitements lourds hors de la requête HTTP (asynchrone via RabbitMQ, Redis ou Doctrine).
+
+Envoyer un email, générer un PDF, indexer un document dans Elasticsearch : aucune de ces opérations ne devrait faire attendre l'utilisateur ni faire échouer sa requête.
+
+## Message, handler, bus
+
+---
+
+Un **message** est un objet immuable qui décrit une intention ou un fait :
+
+```php
+final class SendOrderConfirmation
+{
+    public function __construct(
+        public readonly int $orderId,
+    ) {
+    }
+}
+```
+
+> Un message asynchrone est sérialisé : il transporte des **identifiants**, jamais des entités Doctrine. Le handler rechargera l'entité, dans son propre contexte, au moment du traitement.
+
+Un **handler** traite ce message :
+
+```php
+#[AsMessageHandler]
+final class SendOrderConfirmationHandler
+{
+    public function __invoke(SendOrderConfirmation $message): void
+    {
+        $order = $this->orderRepository->find($message->orderId)
+            ?? throw new UnrecoverableMessageHandlingException("Order {$message->orderId} not found");
+
+        // construction et envoi de l'email
+    }
+}
+```
+
+Et le **bus** les relie :
+
+```php
+$this->bus->dispatch(new SendOrderConfirmation($order->getId()));
+```
+
+L'appelant ne sait pas si le traitement est synchrone ou asynchrone : c'est une décision de **configuration**, pas de code. On peut basculer un traitement en asynchrone sans toucher au métier.
+
+## Transports et routage
+
+---
+
+Le transport détermine où et comment un message circule :
+
+```yaml
+framework:
+  messenger:
+    failure_transport: failed
+
+    transports:
+      async:
+        dsn: '%env(MESSENGER_TRANSPORT_DSN)%'   # amqp://, redis://, doctrine://
+        retry_strategy:
+          max_retries: 3
+          delay: 1000
+          multiplier: 2          # 1s, 2s, 4s
+      failed:
+        dsn: 'doctrine://default?queue_name=failed'
+
+    routing:
+      App\Message\SendOrderConfirmation: async
+      App\Message\IndexProductInSearch: async
+      # non routé = traité en synchrone, dans la requête
+```
+
+Choix du transport en pratique :
+
+| Transport | Quand |
+| --- | --- |
+| **Doctrine** | Démarrage simple, faible volume, aucune infra supplémentaire |
+| **Redis (streams)** | Volume moyen, Redis déjà présent pour le cache |
+| **AMQP (RabbitMQ)** | Volume élevé, routage avancé, plusieurs consommateurs |
+
+## Le worker
+
+---
+
+Les messages asynchrones sont consommés par un processus séparé :
+
+```bash
+php bin/console messenger:consume async --time-limit=3600 --memory-limit=128M
+```
+
+Le worker est un processus PHP longue durée, ce qui impose une hygiène particulière :
+
+- **Supervision obligatoire** (systemd, Supervisor, ou un conteneur dédié avec restart policy) : un worker finit toujours par s'arrêter.
+- `--time-limit` / `--memory-limit` provoquent des redémarrages propres et évitent les fuites mémoire accumulées.
+- Après un déploiement, `messenger:stop-workers` signale aux workers de redémarrer pour charger le nouveau code.
+- Le conteneur de services n'est pas reconstruit entre deux messages : attention aux services à état.
+
+## Échecs et retries
+
+---
+
+Quand un handler lève une exception, Messenger applique la stratégie de retry du transport (avec délai exponentiel), puis déplace le message vers le **failure transport** :
+
+```bash
+php bin/console messenger:failed:show          # inspecter les échecs
+php bin/console messenger:failed:retry         # rejouer après correction
+php bin/console messenger:failed:remove 42     # abandonner un message
+```
+
+Deux familles d'erreurs à distinguer dans le handler :
+
+- **Transitoire** (API tierce indisponible, deadlock) : laisser l'exception remonter, le retry fera son travail.
+- **Définitive** (donnée invalide, entité supprimée) : lever `UnrecoverableMessageHandlingException` pour court-circuiter les retries inutiles.
+
+> Conséquence directe des retries : un handler doit être **idempotent**. Il peut être exécuté deux fois pour le même message (retry après un échec partiel, redelivery du broker). Vérifier l'état avant d'agir, par exemple « cet email a-t-il déjà été envoyé ? », fait partie du contrat.
+
+## Fiabilité : le piège du dispatch avant commit
+
+---
+
+Un bug subtil et fréquent :
+
+```php
+$em->persist($order);
+$this->bus->dispatch(new SendOrderConfirmation($order->getId())); // trop tôt !
+$em->flush();
+```
+
+Si le `flush()` échoue, le message part quand même : le handler cherchera une commande qui n'existe pas. Inversement, dispatcher après le flush expose au crash entre les deux.
+
+Le middleware `dispatch_after_current_bus` (activé par défaut) règle le cas courant : les messages dispatchés **pendant le traitement d'un autre message ou dans une transaction de bus** ne partent qu'après le succès du handler principal. Pour les garanties fortes de bout en bout, le pattern *transactional outbox* (le message est écrit en base dans la même transaction, puis relayé) reste la référence.
+
+## Messenger et architecture
+
+---
+
+Au-delà de l'asynchrone, Messenger structure le code. Avec plusieurs bus (`command.bus`, `query.bus`, `event.bus`), on obtient un CQRS léger :
+
+- une **commande** a exactement un handler et ne retourne rien ;
+- une **requête** a exactement un handler et retourne un résultat ;
+- un **événement** peut avoir zéro ou plusieurs handlers.
+
+Les contrôleurs se réduisent alors à : valider l'entrée, dispatcher, formater la sortie. La logique métier vit dans les handlers, testables sans HTTP. Ce découpage s'aligne naturellement avec une approche DDD où les commandes expriment le langage du domaine.
+
+## Résumé
+
+---
+
+| Concept | À retenir |
+| --- | --- |
+| **Message** | Objet immuable, transporte des identifiants, pas des entités |
+| **Handler** | `#[AsMessageHandler]`, idempotent, distingue erreurs transitoires/définitives |
+| **Routage** | Sync ou async par configuration, sans changer le code |
+| **Worker** | Processus supervisé, limites de temps/mémoire, redémarré au déploiement |
+| **Retry + failure transport** | Backoff exponentiel puis file d'échec inspectable |
+| **dispatch_after_current_bus** | Les messages imbriqués partent après le succès du handler |
+
+Messenger transforme « ce traitement est lent » en décision de configuration. En contrepartie, il impose les disciplines du distribué : idempotence, supervision et gestion explicite des échecs.

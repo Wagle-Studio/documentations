@@ -1,0 +1,104 @@
+## Introduction
+
+---
+
+La leçon Sécurité a montré comment Symfony tranche les questions « qui êtes-vous ? » et « avez-vous le droit ? ». Reste une question plus fondamentale, souvent passée sous silence : une fois authentifié, **comment l'application se souvient-elle de vous à la requête suivante ?** HTTP est sans état (stateless) par nature, chaque requête arrive vierge de tout contexte. Les mécanismes d'authentification ne sont rien d'autre que des stratégies pour recoller ce contexte d'une requête à l'autre.
+
+Cette leçon compare les deux grandes familles : l'identité portée par une **session côté serveur** et l'identité portée par un **token côté client**.
+
+## Le problème : HTTP ne se souvient de rien
+
+---
+
+Quand un utilisateur soumet son mot de passe, le serveur le vérifie une fois. Mais la requête suivante (afficher son profil, par exemple) est une connexion TCP totalement neuve. Sans mécanisme dédié, il faudrait redemander le mot de passe à chaque clic.
+
+Deux approches existent pour éviter cela :
+
+- **Stateful** : le serveur garde la trace de qui est connecté (en session) et le client ne transporte qu'un identifiant opaque.
+- **Stateless** : le serveur ne garde rien, le client transporte à chaque requête une preuve auto-suffisante de son identité (un token).
+
+## L'approche stateful : la session
+
+---
+
+C'est le mode par défaut d'un firewall Symfony classique (`lazy: true`, sans `stateless`). Le déroulé :
+
+1. À l'authentification réussie, Symfony stocke le **token de sécurité** sérialisé dans la session côté serveur.
+2. Le serveur renvoie un cookie `PHPSESSID` (par défaut) contenant uniquement l'**identifiant** de session, pas les données.
+3. À chaque requête suivante, le navigateur renvoie ce cookie. Symfony retrouve la session, désérialise le token, recharge l'utilisateur via le **user provider**, et l'utilisateur est de nouveau authentifié.
+
+```yaml
+# config/packages/framework.yaml
+framework:
+  session:
+    handler_id: '%env(REDIS_URL)%' # stockage partagé entre serveurs
+    cookie_secure: auto            # cookie envoyé seulement en HTTPS
+    cookie_samesite: lax           # protection CSRF de base
+    gc_maxlifetime: 3600           # expiration côté serveur
+```
+
+Le rechargement de l'utilisateur à chaque requête a une conséquence importante : si vous modifiez les rôles d'un utilisateur en base, le changement est pris en compte à la requête suivante. C'est le rôle de la méthode `refreshUser()` du provider, et c'est pour cela que l'entité `User` doit implémenter `EquatableInterface` si vous voulez déconnecter automatiquement un utilisateur dont les données sensibles ont changé.
+
+> Le cookie de session ne contient jamais de données métier, seulement une référence. Toute la confiance repose sur le caractère imprévisible de l'identifiant de session et sur le stockage serveur.
+
+## L'approche stateless : le token
+
+---
+
+Pour une API, conserver une session par client pose deux problèmes : il faut un stockage de sessions partagé entre tous les serveurs (affinité de session ou Redis), et cela va à l'encontre de la contrainte « stateless » de REST. La solution : `stateless: true`.
+
+```yaml
+security:
+  firewalls:
+    api:
+      pattern: ^/api
+      stateless: true
+```
+
+Avec ce réglage, Symfony ne crée aucune session et ne stocke rien entre les requêtes. Chaque requête doit donc porter elle-même sa preuve d'identité, typiquement dans un header :
+
+```
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR...
+```
+
+Le serveur valide ce token à chaque requête (signature, expiration) et reconstruit l'utilisateur à partir de son contenu, sans rien aller chercher en session. C'est ce qui permet de scaler horizontalement : n'importe quel serveur derrière le load balancer peut traiter n'importe quelle requête, puisqu'aucun n'a besoin de connaître l'état des autres.
+
+La contrepartie est l'**invalidation** : un token signé reste valide jusqu'à son expiration, même si l'utilisateur se déconnecte. On y revient dans la leçon dédiée au JWT.
+
+## Tableau de décision
+
+---
+
+| Critère | Session (stateful) | Token (stateless) |
+| --- | --- | --- |
+| Stockage serveur | Oui (fichier, Redis, base) | Aucun |
+| Scaling horizontal | Nécessite un store partagé | Naturel |
+| Invalidation immédiate | Triviale (supprimer la session) | Difficile (liste de révocation) |
+| Cible typique | Application web avec navigateur | API consommée par mobile, SPA, tiers |
+| Vol de la preuve | Cookie (limité par `HttpOnly`, `Secure`) | Token souvent stocké en JS, plus exposé |
+
+## Cookies : les attributs qui sécurisent
+
+---
+
+Quelle que soit l'approche, dès qu'un cookie transporte une preuve d'authentification, ses attributs sont une ligne de défense :
+
+- **`HttpOnly`** : le cookie est inaccessible au JavaScript, ce qui neutralise le vol par XSS. Activé par défaut sur le cookie de session.
+- **`Secure`** : le cookie n'est transmis qu'en HTTPS, jamais en clair.
+- **`SameSite`** : `lax` ou `strict` empêche le navigateur d'envoyer le cookie sur des requêtes cross-site, première barrière contre le CSRF.
+
+C'est précisément parce que les cookies bénéficient de `HttpOnly` que stocker un JWT dans un cookie sécurisé est parfois préférable à le stocker dans le `localStorage`, exposé au moindre XSS.
+
+## Résumé
+
+---
+
+| Notion | À retenir |
+| --- | --- |
+| **Stateful** | Le serveur retient l'identité en session, le client n'a qu'un identifiant |
+| **Stateless** | Le client porte toute la preuve, le serveur ne retient rien |
+| **`refreshUser()`** | Recharge l'utilisateur à chaque requête en mode session |
+| **`stateless: true`** | Désactive la session sur le firewall, indispensable pour scaler une API |
+| **Attributs de cookie** | `HttpOnly`, `Secure`, `SameSite` : la sécurité du transport de la preuve |
+
+Le choix stateful vs stateless n'est pas une question de mode mais de cible : un back-office consulté depuis un navigateur vit très bien en session, une API consommée par un mobile et trois services tiers veut du stateless. Les leçons suivantes détaillent les mécanismes qui s'appuient sur ce socle.

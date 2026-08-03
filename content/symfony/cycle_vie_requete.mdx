@@ -1,0 +1,166 @@
+## Introduction
+
+---
+
+Comprendre comment Symfony transforme une requête HTTP en réponse est le socle de toute maîtrise avancée du framework. Chaque mécanisme important (sécurité, routing, résolution de contrôleur, sérialisation) s'insère dans ce cycle de vie via des événements.
+
+Symfony repose sur une idée simple : **une application est une fonction qui prend une `Request` et retourne une `Response`**. Tout le reste n'est que de l'orchestration autour de cette transformation.
+
+## Le front controller
+
+---
+
+Toutes les requêtes HTTP passent par un point d'entrée unique : `public/index.php`. C'est le serveur web (Nginx, Apache, FrankenPHP) qui réécrit les URLs vers ce fichier.
+
+```php
+<?php
+// public/index.php
+
+use App\Kernel;
+
+require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
+
+return function (array $context) {
+    return new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
+};
+```
+
+Le composant **Runtime** se charge ensuite de :
+
+1. Créer l'objet `Request` à partir des superglobales PHP (`$_GET`, `$_POST`, `$_SERVER`...).
+2. Appeler `$kernel->handle($request)` pour obtenir une `Response`.
+3. Envoyer la réponse au client avec `$response->send()`.
+4. Appeler `$kernel->terminate($request, $response)` après l'envoi.
+
+## HttpKernel : le chef d'orchestre
+
+---
+
+La méthode `HttpKernel::handle()` ne contient presque aucune logique métier. Elle se contente de **dispatcher des événements** à des moments précis et de laisser des écouteurs faire le travail.
+
+```bash
+Request
+  │
+  ├─ kernel.request        → routing, firewall, locale
+  ├─ kernel.controller     → résolution du contrôleur
+  ├─ kernel.controller_arguments → résolution des arguments
+  │
+  ├─ [exécution du contrôleur]
+  │
+  ├─ kernel.view           → si le contrôleur ne retourne pas une Response
+  ├─ kernel.response       → modification des headers, cache, CORS
+  │
+Response envoyée
+  │
+  └─ kernel.terminate      → tâches lourdes après l'envoi
+```
+
+C'est cette architecture événementielle qui rend Symfony aussi extensible : le routing, la sécurité ou le profiler ne sont **pas codés en dur dans le kernel**, ce sont de simples écouteurs.
+
+## Les événements du kernel
+
+---
+
+### kernel.request
+
+---
+
+Premier événement dispatché. C'est ici que le `RouterListener` fait correspondre l'URL à une route et stocke le résultat dans les attributs de la requête (`_controller`, `_route`). Le firewall de sécurité s'exécute également à ce moment.
+
+Un écouteur peut **court-circuiter tout le cycle** en définissant une réponse directement : c'est ainsi que fonctionnent les redirections de maintenance ou le cache HTTP applicatif.
+
+### kernel.controller et kernel.controller_arguments
+
+---
+
+Une fois le contrôleur identifié, le `ControllerResolver` le transforme en callable. Puis l'`ArgumentResolver` construit la liste des arguments à lui passer : l'objet `Request`, les paramètres de route, les services injectés, ou les objets mappés depuis la requête.
+
+```php
+#[Route('/api/products/{id}', methods: ['GET'])]
+public function show(
+    Product $product,                          // ParamConverter via Doctrine
+    #[MapQueryString] SearchFilters $filters,  // query string → DTO
+): JsonResponse {
+    // ...
+}
+```
+
+Les attributs `#[MapQueryString]` et `#[MapRequestPayload]` s'appuient sur ce mécanisme : un *value resolver* désérialise et valide la requête avant même l'entrée dans le contrôleur.
+
+### kernel.view
+
+---
+
+Dispatché **uniquement** si le contrôleur retourne autre chose qu'une `Response`. Un écouteur doit alors transformer cette valeur en réponse. C'est le mécanisme exploité par API Platform pour sérialiser automatiquement les objets retournés.
+
+### kernel.response
+
+---
+
+Dernier point de passage avant l'envoi. Idéal pour ajouter des headers globaux (CORS, sécurité, cache), compresser le contenu ou injecter la barre de debug en environnement de développement.
+
+### kernel.exception
+
+---
+
+Si une exception est levée à n'importe quel moment du cycle, le kernel dispatche `kernel.exception`. Un écouteur peut convertir l'exception en réponse propre : c'est ainsi que `NotFoundHttpException` devient une page 404, ou qu'une API retourne un JSON d'erreur normalisé.
+
+```php
+#[AsEventListener(event: KernelEvents::EXCEPTION)]
+final class ApiExceptionListener
+{
+    public function __invoke(ExceptionEvent $event): void
+    {
+        if (!str_starts_with($event->getRequest()->getPathInfo(), '/api')) {
+            return;
+        }
+
+        $exception = $event->getThrowable();
+        $status = $exception instanceof HttpExceptionInterface
+            ? $exception->getStatusCode()
+            : Response::HTTP_INTERNAL_SERVER_ERROR;
+
+        $event->setResponse(new JsonResponse([
+            'error' => $exception->getMessage(),
+        ], $status));
+    }
+}
+```
+
+### kernel.terminate
+
+---
+
+Dispatché **après l'envoi de la réponse au client**. Les tâches lourdes placées ici (envoi d'emails, logs, statistiques) n'impactent pas le temps de réponse perçu. C'est le mécanisme utilisé par Messenger en transport `sync` différé et par le Mailer.
+
+> Avec PHP-FPM, `fastcgi_finish_request()` est appelé avant `kernel.terminate`, ce qui libère réellement le client. Sans FPM, le client attend la fin du traitement.
+
+## Sous-requêtes
+
+---
+
+Le kernel peut traiter des requêtes imbriquées : `HttpKernel::handle()` accepte un second argument `HttpKernelInterface::SUB_REQUEST`. Twig l'exploite avec `render(controller(...))` pour rendre des fragments de page avec leur propre cycle de vie, et le cache ESI s'appuie dessus pour cacher des fragments indépendamment.
+
+Les écouteurs doivent vérifier le type de requête pour ne pas s'exécuter deux fois :
+
+```php
+if (!$event->isMainRequest()) {
+    return;
+}
+```
+
+## Résumé
+
+---
+
+| Événement | Rôle principal |
+| --- | --- |
+| **kernel.request** | Routing, sécurité, possibilité de court-circuiter |
+| **kernel.controller** | Résolution et remplacement du contrôleur |
+| **kernel.controller_arguments** | Construction des arguments (DTO, entités, services) |
+| **kernel.view** | Conversion d'une valeur non-Response en Response |
+| **kernel.response** | Modification finale des headers et du contenu |
+| **kernel.exception** | Conversion des exceptions en réponses propres |
+| **kernel.terminate** | Tâches lourdes après envoi de la réponse |
+
+Le kernel ne fait que dispatcher des événements : toute la puissance de Symfony vient des écouteurs qui s'y branchent. Maîtriser ce cycle, c'est savoir exactement où insérer un comportement transverse sans dupliquer de code dans les contrôleurs.

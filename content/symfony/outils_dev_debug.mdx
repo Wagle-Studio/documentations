@@ -1,0 +1,113 @@
+## Introduction
+
+---
+
+La productivité d'un développeur Symfony tient autant au framework qu'à l'outillage qui l'entoure. Génération de code, inspection des requêtes, installation automatisée, serveur de développement : ces outils ne sont pas des gadgets, ils structurent le quotidien. Cette leçon fait le tour de ceux qu'on utilise tous les jours, et qu'il faut connaître pour ne pas perdre de temps sur des problèmes déjà résolus.
+
+## Symfony CLI
+
+---
+
+Le binaire `symfony` est l'outil en ligne de commande officiel, distinct de `bin/console` (qui, lui, pilote l'application). Il fournit :
+
+- Un **serveur de développement** local avec HTTPS automatique et détection de la version de PHP :
+
+```bash
+symfony serve -d        # démarre en arrière-plan
+symfony server:log      # suit les logs
+```
+
+- L'intégration de **Docker** : les services déclarés dans `compose.yaml` (base de données, Redis) sont automatiquement exposés à l'application via des variables d'environnement.
+- Un **checker de sécurité** qui audite les dépendances contre la base de CVE connues :
+
+```bash
+symfony check:security
+```
+
+- Le déploiement vers Symfony Cloud (Platform.sh) pour qui l'utilise.
+
+Le serveur intégré est nettement plus pratique que `php -S` : il gère les certificats, la concurrence et l'intégration des services sans configuration.
+
+## Symfony Flex
+
+---
+
+Vu dans la leçon sur les bundles, Flex mérite sa place ici comme outil du quotidien. C'est le plugin Composer qui applique les **recipes** : à chaque `composer require`, il crée la configuration par défaut, enregistre le bundle et met à jour `.env`. Il introduit aussi les **alias**, qui raccourcissent l'installation :
+
+```bash
+composer require orm        # installe et configure Doctrine
+composer require logger     # installe et configure Monolog
+composer require --dev maker
+```
+
+Sans Flex, chacune de ces commandes demanderait ensuite plusieurs fichiers de configuration à écrire à la main.
+
+## Le Maker Bundle
+
+---
+
+`symfony/maker-bundle` génère le code répétitif à partir de commandes interactives. Il ne remplace pas la compréhension du framework, mais épargne la frappe de squelettes et garantit qu'ils suivent les conventions à jour.
+
+```bash
+php bin/console make:controller ProductController
+php bin/console make:entity Product
+php bin/console make:user
+php bin/console make:migration
+php bin/console make:voter ProductVoter
+php bin/console make:test
+```
+
+`make:entity` est particulièrement utile : en mode interactif, il ajoute des propriétés à une entité existante, gère les relations Doctrine et met à jour le getter/setter. C'est un dérouleur de boilerplate, à n'utiliser qu'en environnement de développement (`['dev' => true]` dans `bundles.php`).
+
+## Le Web Profiler et la Debug Toolbar
+
+---
+
+C'est l'outil emblématique de Symfony en développement. Le `WebProfilerBundle` ajoute, en bas de chaque page HTML, une **barre de debug** (Web Debug Toolbar) résumant tout ce qui s'est passé pendant la requête.
+
+D'un coup d'oeil, on y lit :
+
+| Indicateur | Information |
+| --- | --- |
+| Temps et mémoire | Durée totale de la requête et pic mémoire |
+| Requêtes SQL | Nombre et durée des requêtes Doctrine, détection du N+1 |
+| Sécurité | Utilisateur authentifié, firewall actif, rôles, token |
+| Événements | Listeners déclenchés, dans l'ordre et avec leur durée |
+| Twig | Templates rendus, blocs, temps de rendu |
+| Messenger | Messages dispatchés et leur transport |
+
+Cliquer sur la barre ouvre le **profiler** complet, qui conserve l'historique des requêtes. C'est l'outil de référence pour diagnostiquer une requête lente, comprendre pourquoi un accès est refusé, ou traquer un problème N+1. Il s'active uniquement en environnement `dev`, jamais en production.
+
+```bash
+composer require --dev profiler
+```
+
+## La console et le composant Debug
+
+---
+
+`bin/console` est le point d'entrée de toutes les commandes. Quelques-unes sont incontournables pour l'inspection :
+
+```bash
+php bin/console debug:router            # toutes les routes et leurs contrôleurs
+php bin/console debug:container         # tous les services du conteneur
+php bin/console debug:autowiring Mailer # quels types sont autowirables
+php bin/console debug:config framework  # config résolue d'un bundle
+php bin/console debug:event-dispatcher  # listeners par événement
+```
+
+Ces commandes `debug:*` répondent à des questions qu'on se pose sans cesse : « quel service est injecté pour cette interface ? », « à quoi correspond cette route ? », « quels listeners écoutent cet événement ? ». Elles évitent de fouiller le code à la main.
+
+## Résumé
+
+---
+
+| Outil | Usage |
+| --- | --- |
+| **Symfony CLI** | Serveur de dev HTTPS, intégration Docker, audit de sécurité |
+| **Flex** | Recipes et alias, installation/configuration automatisée |
+| **Maker Bundle** | Génération du code répétitif (entités, contrôleurs, voters) |
+| **Web Profiler / Toolbar** | Inspection complète d'une requête, en dev uniquement |
+| **Commandes `debug:*`** | Interroger routeur, conteneur, autowiring, événements |
+
+Ces outils partagent un trait : ils rendent visible ce que le framework fait pour vous. Bien les maîtriser, c'est passer de l'usage incantatoire de Symfony à une compréhension claire de son comportement, et diagnostiquer en minutes ce qui prendrait des heures sans eux.

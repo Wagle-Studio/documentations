@@ -1,0 +1,137 @@
+## Introduction
+
+---
+
+Un mot de passe ne doit jamais être stocké en clair, ni même chiffré de façon réversible. La seule réponse acceptable est le **hachage** : une transformation à sens unique qui permet de vérifier un mot de passe sans jamais pouvoir le retrouver. Symfony fournit toute la mécanique, mais bien l'utiliser suppose de comprendre ce qui se joue derrière le simple `'auto'` du fichier de configuration.
+
+## Pourquoi hacher, et pas chiffrer
+
+---
+
+Le chiffrement est réversible : avec la clé, on retrouve la donnée. C'est exactement ce qu'on ne veut pas pour un mot de passe, car une fuite de la clé exposerait tous les comptes. Le hachage est à sens unique : à partir du hash, il est calculatoirement impossible de retrouver le mot de passe d'origine.
+
+Pour vérifier un mot de passe à la connexion, on ne « déchiffre » donc rien : on rehache le mot de passe saisi et on compare au hash stocké.
+
+Un bon algorithme de hachage de mot de passe a deux propriétés que n'ont pas les hash généralistes comme SHA-256 :
+
+- Il intègre un **sel** (salt) aléatoire et unique par mot de passe, ce qui rend les attaques par table précalculée (rainbow tables) inopérantes.
+- Il est **volontairement lent et coûteux** (en CPU et en mémoire), pour qu'une attaque par force brute soit hors de portée même avec du matériel dédié.
+
+## bcrypt et argon2
+
+---
+
+Symfony s'appuie sur les algorithmes éprouvés de PHP :
+
+- **bcrypt** : robuste, disponible partout, paramétrable via un `cost` (nombre d'itérations). C'est le choix sûr par défaut.
+- **argon2id** : plus récent, lauréat de la Password Hashing Competition, résistant aux attaques par GPU grâce à un coût mémoire. Recommandé s'il est disponible sur le serveur.
+
+Plutôt que de choisir à la main, on laisse Symfony décider :
+
+```yaml
+# config/packages/security.yaml
+security:
+  password_hashers:
+    Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+```
+
+`'auto'` sélectionne le meilleur algorithme disponible sur la plateforme (argon2id s'il existe, bcrypt sinon). Surtout, il rend ce choix **évolutif** : le jour où un algorithme plus fort devient disponible, Symfony l'utilisera pour les nouveaux hash sans casser les anciens.
+
+## Hacher et vérifier en pratique
+
+---
+
+Le service `UserPasswordHasherInterface` fait le travail. On ne manipule jamais l'algorithme directement.
+
+```php
+final class RegistrationController extends AbstractController
+{
+    public function __construct(
+        private UserPasswordHasherInterface $hasher,
+        private EntityManagerInterface $em,
+    ) {}
+
+    #[Route('/register', methods: ['POST'])]
+    public function register(Request $request): Response
+    {
+        $user = new User();
+        $user->setEmail($request->request->get('email'));
+
+        // Le sel et le choix d'algorithme sont gérés automatiquement
+        $hash = $this->hasher->hashPassword($user, $request->request->get('plainPassword'));
+        $user->setPassword($hash);
+
+        $this->em->persist($user);
+        $this->em->flush();
+
+        return $this->redirectToRoute('app_login');
+    }
+}
+```
+
+La vérification, lors du login par formulaire, est entièrement prise en charge par le badge `PasswordCredentials` du Passport : aucune comparaison manuelle à écrire.
+
+> Ne comparez jamais un hash avec `==` ou `===`. Utilisez toujours le service de hachage, qui s'appuie sur `password_verify()` et une comparaison à temps constant. Une comparaison naïve fuit de l'information par le temps d'exécution (attaque par canal temporel).
+
+## La migration transparente des hash
+
+---
+
+C'est le bénéfice le plus sous-estimé de `'auto'`. Imaginez une base remplie de hash bcrypt à `cost: 12`. Vous voulez passer à argon2id, ou simplement augmenter le coût. Réécrire tous les hash est impossible puisqu'on ne connaît pas les mots de passe en clair.
+
+La solution : le **password upgrader**. Quand un utilisateur se connecte avec succès, Symfony détecte que son hash utilise un algorithme ou un coût obsolète, et le **rehache à la volée** avec le mot de passe que l'utilisateur vient justement de fournir.
+
+```php
+final class User implements UserInterface, PasswordAuthenticatedUserInterface
+{
+    // ...
+}
+
+// Le repository implémente PasswordUpgraderInterface
+final class UserRepository extends ServiceEntityRepository implements PasswordUpgraderInterface
+{
+    public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void
+    {
+        if (!$user instanceof User) {
+            throw new UnsupportedUserException();
+        }
+
+        $user->setPassword($newHashedPassword);
+        $this->getEntityManager()->flush();
+    }
+}
+```
+
+Résultat : le parc de hash se met à jour progressivement, au rythme des connexions, sans jamais demander aux utilisateurs de changer leur mot de passe.
+
+## Ralentir les attaques par force brute : login throttling
+
+---
+
+Un hachage lent protège contre les attaques hors ligne (l'attaquant a volé la base). Mais contre les attaques en ligne (essayer des mots de passe via le formulaire de login), il faut limiter le nombre de tentatives. Symfony le fournit sans code :
+
+```yaml
+security:
+  firewalls:
+    main:
+      login_throttling:
+        max_attempts: 5          # par minute et par couple IP/identifiant
+        interval: '1 minute'
+```
+
+Au-delà du seuil, Symfony bloque temporairement les tentatives. Cela s'appuie sur le composant RateLimiter et protège efficacement contre le bourrinage et le credential stuffing.
+
+## Résumé
+
+---
+
+| Notion | À retenir |
+| --- | --- |
+| **Hachage vs chiffrement** | Le hachage est à sens unique, irréversible par conception |
+| **Sel + lenteur** | Les deux propriétés qui distinguent un bon algorithme de mot de passe |
+| **`'auto'`** | Choisit le meilleur algorithme et permet la migration future |
+| **Password upgrader** | Rehache les anciens hash à la volée lors d'une connexion réussie |
+| **Comparaison à temps constant** | Toujours passer par le service, jamais par `===` |
+| **`login_throttling`** | Limite les tentatives en ligne contre la force brute |
+
+La gestion des mots de passe est un domaine où réinventer la roue est dangereux. Symfony fournit des primitives correctes par défaut : le travail du développeur est de les activer et de ne jamais les contourner.
