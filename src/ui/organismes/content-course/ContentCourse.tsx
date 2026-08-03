@@ -17,7 +17,7 @@ export const ContentCourse = ({ course, lessons }: ContentCourseProps) => {
           <h1>{course.label}</h1>
         </div>
         <p>
-          {lessons.length} {lessons.length > 0 ? "Documents" : "Document"}
+          {lessons.length} {lessons.length > 1 ? "Documents" : "Document"}
         </p>
       </div>
       <div className="content_couse__body">
