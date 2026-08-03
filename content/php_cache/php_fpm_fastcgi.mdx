@@ -1,0 +1,158 @@
+## Introduction
+
+---
+
+PHP-FPM (FastCGI Process Manager) est la méthode standard pour faire fonctionner PHP avec un serveur web comme Nginx. Il gère un pool de processus PHP persistants, prêts à traiter les requêtes sans avoir à démarrer un interpréteur à chaque fois.
+
+Couplé au cache FastCGI de Nginx, il permet de servir des réponses PHP complètes mises en cache sans toucher PHP du tout.
+
+## FastCGI
+
+---
+
+FastCGI est un protocole de communication entre un serveur web et un processus applicatif. Contrairement au CGI classique qui démarrait un nouveau processus à chaque requête, FastCGI maintient des processus persistants que le serveur web sollicite via une socket.
+
+```bash
+Client → Nginx → socket → PHP-FPM (worker PHP persistant) → Réponse
+```
+
+L'avantage est double : les processus PHP restent en mémoire (pas de démarrage à chaque requête), et le serveur web peut gérer plusieurs requêtes simultanées en parallèle sur plusieurs workers.
+
+## PHP-FPM
+
+---
+
+PHP-FPM est l'implémentation de référence de FastCGI pour PHP. Il organise les processus PHP en **pools**, chacun avec ses propres paramètres.
+
+### Configuration d'un pool
+
+---
+
+Les pools sont définis dans des fichiers `.conf` dans le répertoire `pool.d` (par exemple `/etc/php/8.x/fpm/pool.d/www.conf`).
+
+```ini
+[www]
+user = www-data
+group = www-data
+
+listen = /run/php/php8.x-fpm.sock
+
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 5
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+pm.max_requests = 500
+```
+
+### Modes de gestion des processus
+
+---
+
+| Mode | Description |
+| --- | --- |
+| `static` | Nombre fixe de workers, toujours actifs |
+| `dynamic` | Nombre variable entre un minimum et un maximum |
+| `ondemand` | Les workers démarrent à la demande et s'arrêtent après inactivité |
+
+Le mode `dynamic` est le plus répandu en production. Il absorbe les pics de trafic en créant des workers supplémentaires, tout en libérant de la mémoire en période creuse.
+
+### pm.max_requests
+
+---
+
+`pm.max_requests` définit le nombre de requêtes qu'un worker PHP peut traiter avant d'être redémarré. Cela évite l'accumulation de fuites mémoire sur les processus de longue durée.
+
+Une valeur de `500` à `2000` est courante selon la taille des applications.
+
+## Cache FastCGI avec Nginx
+
+---
+
+Nginx peut mettre en cache les réponses générées par PHP-FPM. Lorsqu'une réponse est en cache, Nginx la sert directement sans transmettre la requête à PHP-FPM.
+
+```bash
+Client → Nginx → Cache FastCGI (hit) → Réponse immédiate
+Client → Nginx → Cache FastCGI (miss) → PHP-FPM → Nginx stocke → Réponse
+```
+
+C'est la couche de cache la plus efficace pour les pages HTML ou JSON fortement sollicitées : PHP n'est jamais exécuté pour les hits.
+
+### Configuration Nginx
+
+---
+
+Dans le fichier de configuration Nginx, on déclare d'abord la zone de cache, puis on l'active sur les locations concernées :
+
+```nginx
+http {
+    fastcgi_cache_path /var/cache/nginx/php
+        levels=1:2
+        keys_zone=php_cache:10m
+        max_size=1g
+        inactive=60m
+        use_temp_path=off;
+
+    server {
+        location ~ \.php$ {
+            fastcgi_pass unix:/run/php/php8.x-fpm.sock;
+            fastcgi_cache php_cache;
+            fastcgi_cache_valid 200 60m;
+            fastcgi_cache_key "$scheme$request_method$host$request_uri";
+            fastcgi_cache_bypass $cookie_logged_in;
+            fastcgi_no_cache $cookie_logged_in;
+            add_header X-Cache-Status $upstream_cache_status;
+        }
+    }
+}
+```
+
+Les paramètres clés :
+
+| Paramètre | Description |
+| --- | --- |
+| `keys_zone` | Nom et taille de la zone mémoire partagée pour les clés |
+| `max_size` | Taille maximale du cache sur disque |
+| `fastcgi_cache_valid` | Durée de conservation d'une réponse par code HTTP |
+| `fastcgi_cache_key` | Clé unique pour identifier une réponse en cache |
+| `fastcgi_cache_bypass` | Condition pour ignorer le cache (lecture) |
+| `fastcgi_no_cache` | Condition pour ne pas stocker la réponse |
+
+### Exclure les utilisateurs connectés
+
+---
+
+Le cache FastCGI est adapté aux contenus publics. Les pages personnalisées ou les sessions utilisateur doivent le contourner. La variable `$cookie_logged_in` (ou un cookie de session équivalent) est souvent utilisée pour différencier les visiteurs anonymes des utilisateurs connectés.
+
+```nginx
+fastcgi_cache_bypass $cookie_PHPSESSID;
+fastcgi_no_cache $cookie_PHPSESSID;
+```
+
+Si le cookie de session est présent, Nginx transmet la requête directement à PHP-FPM sans passer par le cache et sans stocker la réponse.
+
+### En-tête X-Cache-Status
+
+---
+
+La directive `add_header X-Cache-Status $upstream_cache_status` ajoute un header dans la réponse, utile pour déboguer :
+
+| Valeur | Signification |
+| --- | --- |
+| `HIT` | Servi depuis le cache |
+| `MISS` | Requête transmise à PHP-FPM, réponse stockée |
+| `BYPASS` | Cache contourné selon la condition `fastcgi_cache_bypass` |
+| `EXPIRED` | Entrée expirée, requête retransmise à PHP-FPM |
+
+## Résumé
+
+---
+
+| Composant | Rôle |
+| --- | --- |
+| **FastCGI** | Protocole de communication serveur web ↔ processus PHP |
+| **PHP-FPM** | Gestionnaire de processus PHP persistants |
+| **Pool** | Groupe de workers PHP avec une configuration commune |
+| **Cache FastCGI** | Cache Nginx des réponses PHP complètes |
+
+PHP-FPM améliore les performances en maintenant des processus PHP en vie entre les requêtes. Le cache FastCGI va plus loin en supprimant entièrement l'exécution PHP pour les réponses mises en cache. Les deux mécanismes se complètent et sont la base de toute infrastructure PHP en production.

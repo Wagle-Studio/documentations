@@ -1,0 +1,180 @@
+## Introduction
+
+---
+
+Le cache HTTP est un mécanisme qui permet d'éviter de renvoyer des données inchangées entre le serveur et le client. Plutôt que de régénérer et transmettre une réponse identique à chaque requête, le serveur peut indiquer au client que sa version locale est toujours valide.
+
+Il existe deux grandes approches :
+
+- **Cache de validation** : le client possède une copie et demande au serveur si elle est encore à jour (ETag, Last-Modified).
+- **Cache d'expiration** : le serveur indique au client combien de temps la réponse peut être réutilisée sans même le contacter (Cache-Control).
+
+## ETag
+
+---
+
+Un `ETag` est un identifiant de version attribué à une ressource. Lors de la première réponse, le serveur l'inclut dans le header `ETag`. Le client le conserve en cache avec la réponse.
+
+```yaml
+HTTP/1.1 200 OK
+Content-Type: application/json
+ETag: "d4e8f2a1"
+
+{ "id": 5, "nom": "Produit A", "prix": 29.90 }
+```
+
+Lors d'une requête suivante, le client transmet l'ETag via le header `If-None-Match` :
+
+```yaml
+GET /produits/5 HTTP/1.1
+If-None-Match: "d4e8f2a1"
+```
+
+Le serveur régénère l'ETag courant de la ressource et le compare. S'ils sont identiques, la ressource n'a pas changé :
+
+```yaml
+HTTP/1.1 304 Not Modified
+ETag: "d4e8f2a1"
+```
+
+Le serveur répond `304 Not Modified` sans corps : le client utilise sa copie en cache. Le gain est double : moins de bande passante consommée, et moins de travail côté serveur (pas de sérialisation, pas de corps à transmettre).
+
+### Générer un ETag en PHP
+
+---
+
+```php
+<?php
+
+function generateEtag(array $data): string
+{
+    return '"' . md5(json_encode($data)) . '"';
+}
+
+$produit = ['id' => 5, 'nom' => 'Produit A', 'prix' => 29.90];
+$etag = generateEtag($produit);
+
+header('ETag: ' . $etag);
+
+if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === $etag) {
+    http_response_code(304);
+    exit;
+}
+
+header('Content-Type: application/json');
+echo json_encode($produit);
+```
+
+L'ETag peut aussi être construit à partir d'un numéro de version en base ou d'une date de dernière modification, à condition qu'il change à chaque modification de la ressource.
+
+## Last-Modified
+
+---
+
+`Last-Modified` est l'alternative basée sur la date. Le serveur inclut la date de dernière modification de la ressource dans sa réponse :
+
+```yaml
+HTTP/1.1 200 OK
+Last-Modified: Wed, 11 Jun 2026 10:00:00 GMT
+```
+
+Le client transmet cette date dans les requêtes suivantes via `If-Modified-Since` :
+
+```yaml
+GET /produits/5 HTTP/1.1
+If-Modified-Since: Wed, 11 Jun 2026 10:00:00 GMT
+```
+
+Si la ressource n'a pas été modifiée depuis cette date, le serveur répond `304 Not Modified`.
+
+Le fonctionnement est identique à l'ETag, mais la précision est limitée à la seconde. Si une ressource peut être modifiée plusieurs fois par seconde, les ETag sont préférables.
+
+## Cache-Control
+
+---
+
+`Cache-Control` est le mécanisme d'expiration : il indique au client combien de temps il peut réutiliser la réponse sans contacter le serveur.
+
+```yaml
+Cache-Control: public, max-age=3600
+```
+
+Les directives principales :
+
+| Directive | Description |
+| --- | --- |
+| `public` | La réponse peut être mise en cache par n'importe quel intermédiaire |
+| `private` | Uniquement le client final (pas de proxy, pas de CDN) |
+| `no-cache` | Met en cache mais revalide à chaque accès |
+| `no-store` | Interdit toute mise en cache |
+| `max-age` | Durée de validité en secondes |
+| `s-maxage` | Durée spécifique aux caches partagés (proxies, CDN) |
+| `must-revalidate` | Interdit de servir une réponse expirée |
+
+```yaml
+Cache-Control: private, no-cache
+Cache-Control: public, max-age=86400, s-maxage=604800
+Cache-Control: no-store
+```
+
+> `no-cache` ne signifie pas "ne pas mettre en cache" mais "mettre en cache et revalider à chaque accès". Pour interdire totalement la mise en cache, utiliser `no-store`.
+
+### En PHP
+
+---
+
+```php
+<?php
+
+// Ressource publique, valide 1 heure
+header('Cache-Control: public, max-age=3600');
+
+// Données personnalisées, jamais en cache partagé
+header('Cache-Control: private, no-store');
+
+// Ressource statique, longue durée
+header('Cache-Control: public, max-age=2592000, immutable');
+```
+
+## Vary
+
+---
+
+`Vary` indique aux caches que la réponse peut différer selon certains headers de la requête. Sans lui, un cache partagé pourrait servir la mauvaise version à un client.
+
+Exemple : si votre API retourne les données dans la langue du client, vous devez signaler que le cache dépend de `Accept-Language` :
+
+```yaml
+HTTP/1.1 200 OK
+Cache-Control: public, max-age=3600
+Vary: Accept-Language
+```
+
+Un cache intermédiaire stockera une version par langue et servira la bonne selon le header de la requête entrante.
+
+## Combiner validation et expiration
+
+---
+
+ETag et Cache-Control sont complémentaires et s'utilisent ensemble :
+
+```yaml
+HTTP/1.1 200 OK
+Cache-Control: public, max-age=300
+ETag: "d4e8f2a1"
+```
+
+Le client réutilise la réponse pendant 300 secondes sans contacter le serveur. Passé ce délai, il envoie l'ETag avec `If-None-Match`. Si la ressource n'a pas changé, le serveur répond `304` sans corps. C'est l'approche la plus efficace.
+
+## Résumé
+
+---
+
+| Mécanisme | Type | En-tête client | En-tête serveur | Code si valide |
+| --- | --- | --- | --- | --- |
+| **ETag** | Validation | `If-None-Match` | `ETag` | `304` |
+| **Last-Modified** | Validation | `If-Modified-Since` | `Last-Modified` | `304` |
+| **Cache-Control** | Expiration | - | `Cache-Control` | - |
+| **Vary** | Segmentation | - | `Vary` | - |
+
+Le cache HTTP est sans doute la couche de cache la plus rentable à mettre en place : elle agit avant même que PHP soit sollicité, et peut être combinée avec un reverse proxy pour éliminer entièrement le traitement côté application.

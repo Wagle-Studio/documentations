@@ -1,0 +1,165 @@
+## Introduction
+
+---
+
+Mettre des données en cache est simple. Les invalider correctement est la partie difficile. Phil Karlton a résumé le problème :
+
+> Il n'y a que deux choses difficiles en informatique : l'invalidation de cache et nommer les choses.
+
+Une entrée en cache non invalidée retourne des données périmées. Une invalidation trop agressive supprime des entrées utiles et annule les gains du cache. L'objectif est de trouver l'équilibre entre fraîcheur des données et efficacité du cache.
+
+## Expiration par TTL
+
+---
+
+L'approche la plus simple est l'expiration passive : chaque entrée a un TTL (Time To Live). Une fois le délai écoulé, la donnée est considérée périmée et sera régénérée au prochain accès.
+
+```php
+<?php
+
+// Valide 1 heure
+$redis->setex('produit:42', 3600, json_encode($produit));
+```
+
+L'expiration par TTL est simple à mettre en œuvre et ne nécessite aucun mécanisme de synchronisation. En contrepartie, les données peuvent être obsolètes pendant toute la durée du TTL.
+
+Cette approche convient aux données dont la fraîcheur n'est pas critique : catalogues, contenus éditoriaux, résultats de recherche.
+
+## Invalidation active
+
+---
+
+L'invalidation active consiste à supprimer ou mettre à jour l'entrée en cache au moment précis où la source de vérité est modifiée. Dès qu'une écriture a lieu en base, le cache est nettoyé.
+
+```php
+<?php
+
+function updateProduit(int $id, array $data): void
+{
+    $bdd->update('produits', $data, ['id' => $id]);
+
+    $redis->del('produit:' . $id);
+}
+```
+
+La prochaine lecture constate un cache miss et recharge la donnée fraîche depuis la base. La fenêtre d'incohérence est nulle.
+
+L'invalidation active est plus complexe à maintenir : chaque écriture doit impliquer le cache. Si une écriture a lieu sans que le cache soit nettoyé (migration, script batch, écriture directe en base), l'incohérence persiste jusqu'à l'expiration du TTL.
+
+> En pratique, l'invalidation active et l'expiration par TTL coexistent. Le TTL sert de filet de sécurité en cas d'invalidation manquée.
+
+## Versionnement de clés
+
+---
+
+Le versionnement de clés est une technique d'invalidation indirecte. Plutôt que de supprimer une clé, on change le préfixe de version. Toutes les anciennes entrées sont abandonnées sans être explicitement supprimées.
+
+```php
+<?php
+
+function getCacheKey(string $entite, int $id): string
+{
+    $version = $redis->get('version:' . $entite) ?? 1;
+    return $entite . ':v' . $version . ':' . $id;
+}
+
+function invalidateEntite(string $entite): void
+{
+    $redis->incr('version:' . $entite);
+}
+```
+
+Appeler `invalidateEntite('produit')` incrémente la version. La prochaine clé construite sera `produit:v2:42` au lieu de `produit:v1:42`. Les anciennes entrées `v1` ne seront plus lues et expireront naturellement via leur TTL.
+
+Cette technique évite d'avoir à connaître toutes les clés à supprimer lors d'une invalidation en masse.
+
+## Cache tags
+
+---
+
+Les cache tags permettent de regrouper plusieurs entrées sous une ou plusieurs étiquettes, puis d'invalider toutes les entrées d'un tag en une seule opération.
+
+Redis ne supporte pas nativement les tags, mais le pattern peut être implémenté avec des sets :
+
+```php
+<?php
+
+function setWithTag(Redis $redis, string $cle, mixed $valeur, int $ttl, string $tag): void
+{
+    $redis->setex($cle, $ttl, json_encode($valeur));
+    $redis->sAdd('tag:' . $tag, $cle);
+}
+
+function invalidateTag(Redis $redis, string $tag): void
+{
+    $cles = $redis->sMembers('tag:' . $tag);
+    if (!empty($cles)) {
+        $redis->del(...$cles);
+    }
+    $redis->del('tag:' . $tag);
+}
+```
+
+Exemple d'usage : toutes les pages liées à un produit sont taguées `produit:42`. Lorsque le produit est modifié, on invalide le tag entier.
+
+```php
+<?php
+
+setWithTag($redis, 'produit:42', $data, 3600, 'produit:42');
+setWithTag($redis, 'page:produit:42', $html, 3600, 'produit:42');
+setWithTag($redis, 'api:produit:42:detail', $json, 3600, 'produit:42');
+
+// Invalider tout ce qui concerne produit:42
+invalidateTag($redis, 'produit:42');
+```
+
+> Attention : le set des tags n'est pas automatiquement nettoyé lorsqu'une clé individuelle expire. Pour les usages à grande échelle, des bibliothèques comme Symfony Cache gèrent ce mécanisme nativement.
+
+## Write-through
+
+---
+
+Le pattern write-through inverse la logique : plutôt que d'invalider le cache après une écriture, on l'écrit directement lors de chaque mise à jour de la base.
+
+```php
+<?php
+
+function updateProduit(int $id, array $data): void
+{
+    $bdd->update('produits', $data, ['id' => $id]);
+
+    $produit = $bdd->fetchProduit($id);
+    $redis->setex('produit:' . $id, 3600, json_encode($produit));
+}
+```
+
+Le cache est toujours à jour. Il n'y a pas de fenêtre d'incohérence et le premier accès après une mise à jour trouvera toujours un hit.
+
+L'inconvénient est que le cache se remplit d'entrées qui ne seront peut-être jamais lues. Le cache-aside ne stocke que les données effectivement demandées, le write-through stocke tout ce qui est écrit.
+
+## Choisir sa stratégie
+
+---
+
+| Stratégie | Fraîcheur | Complexité | Usage typique |
+| --- | --- | --- | --- |
+| **TTL seul** | Moyenne | Faible | Données peu critiques |
+| **Invalidation active** | Haute | Moyenne | Données modifiées fréquemment |
+| **Versionnement** | Haute | Moyenne | Invalidation en masse |
+| **Cache tags** | Haute | Élevée | Entrées liées à une entité |
+| **Write-through** | Très haute | Moyenne | Lectures très fréquentes |
+
+Aucune stratégie n'est universelle. Le choix dépend de la criticité des données, de la fréquence des modifications et de la tolérance à l'obsolescence.
+
+## Résumé
+
+---
+
+L'invalidation de cache repose sur un arbitrage entre complexité et garantie de fraîcheur :
+
+- **TTL** : simple, acceptable pour les données non critiques.
+- **Invalidation active** : recommandée pour toute donnée dont la fraîcheur compte.
+- **Versionnement** : efficace pour invalider un groupe de clés sans les connaître une par une.
+- **Tags** : le plus souple, au prix d'une implémentation plus complexe.
+
+La combinaison la plus courante est l'invalidation active couplée à un TTL court comme filet de sécurité. Elle garantit la fraîcheur dans le cas nominal tout en limitant les dégâts si une invalidation est manquée.

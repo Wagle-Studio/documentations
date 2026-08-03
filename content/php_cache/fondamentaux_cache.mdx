@@ -1,0 +1,84 @@
+## Introduction
+
+---
+
+Dans une application PHP, chaque requête peut déclencher des dizaines d'opérations coûteuses : requêtes SQL, appels à des API externes, calculs complexes, sérialisation de données. Multiplié par des milliers d'utilisateurs simultanés, ce coût devient rapidement un goulot d'étranglement.
+
+Le cache consiste à conserver temporairement le résultat d'une opération coûteuse pour le réutiliser lors des prochains accès, sans la répéter.
+
+## Qu'est-ce que le cache ?
+
+---
+
+Le principe est simple : la première fois qu'une ressource est demandée, on la calcule et on la stocke. Les fois suivantes, on retourne directement la valeur stockée.
+
+```bash
+Requête → Cache vide → Calcul coûteux → Stockage en cache → Réponse
+Requête → Cache plein → Lecture du cache → Réponse (immédiate)
+```
+
+On parle de **cache hit** lorsque la donnée demandée est trouvée en cache, et de **cache miss** dans le cas contraire.
+
+Le **taux de cache hit** (hit rate) est le rapport entre les hits et le total des requêtes. Un bon système de cache atteint un taux supérieur à 90 %.
+
+## Types de cache en PHP
+
+---
+
+Il existe plusieurs niveaux de cache qui s'appliquent à des moments différents du cycle de vie d'une requête.
+
+| Type | Rôle | Exemples |
+| --- | --- | --- |
+| **Bytecode** | Met en cache le code PHP compilé | OPcache |
+| **HTTP** | Évite de renvoyer des données inchangées | ETag, Cache-Control |
+| **Applicatif** | Stocke les résultats de requêtes et de calculs | Redis, Memcached |
+| **Reverse proxy** | Sert les réponses HTTP complètes sans toucher PHP | Varnish, nginx FastCGI |
+
+Ces niveaux sont complémentaires. Un cache HTTP évite de solliciter PHP, un cache applicatif évite de solliciter la base de données, et OPcache accélère l'exécution du code PHP lui-même.
+
+## TTL - Time To Live
+
+---
+
+Le TTL est la durée de vie d'une entrée en cache. Une fois expirée, la donnée est considérée périmée et sera régénérée lors du prochain accès.
+
+Choisir un TTL adapté est un équilibre entre fraîcheur et performance :
+
+- **TTL trop court** : le cache est souvent invalidé, les gains sont limités.
+- **TTL trop long** : le cache peut renvoyer des données obsolètes.
+
+Pour les données rarement modifiées (catalogue produits, configuration, traductions), un TTL long est approprié. Pour les données à forte volatilité (stock en temps réel, sessions), le TTL doit être court ou le cache désactivé.
+
+## Effets de bord à anticiper
+
+---
+
+### Thundering herd
+
+---
+
+Lorsqu'une entrée de cache expire, plusieurs requêtes simultanées peuvent constater le cache miss en même temps et déclencher simultanément le calcul coûteux. On parle de **thundering herd** (ruée de troupeau).
+
+Une solution courante est le **cache locking** : le premier processus qui constate le miss pose un verrou, effectue le calcul et remplit le cache. Les autres attendent ou reçoivent une valeur légèrement expirée (stale).
+
+### Cohérence des données
+
+---
+
+Le cache introduit une forme de duplication : la donnée existe en base et en cache. Si la base est mise à jour sans invalider le cache, les deux divergent.
+
+> L'invalidation correcte du cache est l'une des tâches les plus difficiles en ingénierie logicielle. Mieux vaut une stratégie simple et explicite qu'un mécanisme complexe et fragile.
+
+## Résumé
+
+---
+
+| Concept | Définition |
+| --- | --- |
+| **Cache hit** | La donnée demandée est trouvée en cache |
+| **Cache miss** | La donnée n'est pas en cache, il faut la recalculer |
+| **TTL** | Durée de vie d'une entrée avant expiration |
+| **Hit rate** | Ratio hits / total des requêtes |
+| **Thundering herd** | Ruée simultanée lors d'un cache miss massif |
+
+Le cache n'est pas une solution universelle. Il est efficace sur des données coûteuses à produire et tolérantes à une légère obsolescence. Pour les données critiques et à forte volatilité, il faut concevoir la stratégie d'invalidation avec soin.

@@ -1,0 +1,239 @@
+## Introduction
+
+---
+
+Redis est un serveur de stockage clé-valeur en mémoire. Il est extrêmement rapide (les opérations se mesurent en microsecondes) et supporte nativement l'expiration des clés, les structures de données enrichies (listes, ensembles, hashmaps) et la réplication.
+
+En PHP, Redis est utilisé comme cache applicatif : stocker les résultats de requêtes SQL coûteuses, les réponses d'API externes, les objets sérialisés, pour les servir directement sans passer par la base de données.
+
+## Architecture
+
+---
+
+Redis se place entre l'application PHP et la base de données :
+
+```bash
+Client → PHP → Redis (hit) → Réponse immédiate
+Client → PHP → Redis (miss) → Base de données → Redis → Réponse
+```
+
+Lors d'un cache miss, PHP interroge la base de données, stocke le résultat dans Redis avec un TTL, puis retourne la donnée. Les requêtes suivantes trouvent la donnée en cache.
+
+## Installation et connexion
+
+---
+
+### Extension PHP
+
+---
+
+L'extension `phpredis` est la plus répandue. Elle expose une interface native et performante.
+
+```bash
+# Debian / Ubuntu
+sudo apt install php-redis
+
+# Vérifier l'installation
+php -m | grep redis
+```
+
+### Connexion
+
+---
+
+```php
+<?php
+
+$redis = new Redis();
+$redis->connect('127.0.0.1', 6379);
+
+// Avec authentification
+$redis->auth('mon_mot_de_passe');
+
+// Sélectionner une base (0 à 15)
+$redis->select(0);
+```
+
+Pour les connexions persistantes (recommandé avec PHP-FPM), utiliser `pconnect` :
+
+```php
+<?php
+
+$redis->pconnect('127.0.0.1', 6379);
+```
+
+La connexion persistante est maintenue entre les requêtes au niveau du worker PHP-FPM, ce qui évite l'overhead de connexion/déconnexion à chaque requête.
+
+## Opérations de base
+
+---
+
+### Écriture et lecture
+
+---
+
+```php
+<?php
+
+// Stocker une valeur
+$redis->set('utilisateur:42', json_encode(['id' => 42, 'nom' => 'Alice']));
+
+// Stocker avec TTL (en secondes)
+$redis->setex('utilisateur:42', 3600, json_encode(['id' => 42, 'nom' => 'Alice']));
+
+// Lire
+$data = $redis->get('utilisateur:42');
+$utilisateur = json_decode($data, true);
+
+// Supprimer
+$redis->del('utilisateur:42');
+
+// Vérifier l'existence
+$redis->exists('utilisateur:42'); // 1 ou 0
+```
+
+### TTL
+
+---
+
+```php
+<?php
+
+// Lire le TTL restant en secondes
+$redis->ttl('utilisateur:42'); // ex: 3541
+
+// Ajouter un TTL à une clé existante
+$redis->expire('utilisateur:42', 3600);
+
+// Supprimer le TTL (rendre la clé persistante)
+$redis->persist('utilisateur:42');
+```
+
+## Pattern cache-aside
+
+---
+
+Le pattern **cache-aside** (ou lazy loading) est le plus courant. L'application gère elle-même les lectures et les écritures en cache.
+
+```php
+<?php
+
+function getProduit(Redis $redis, int $id): ?array
+{
+    $cle = 'produit:' . $id;
+
+    $cached = $redis->get($cle);
+    if ($cached !== false) {
+        return json_decode($cached, true);
+    }
+
+    $produit = $bdd->fetchProduit($id);
+    if ($produit === null) {
+        return null;
+    }
+
+    $redis->setex($cle, 3600, json_encode($produit));
+
+    return $produit;
+}
+```
+
+Le flux est le suivant :
+
+1. On cherche la donnée en cache.
+2. Si elle est présente (hit), on la retourne directement.
+3. Si elle est absente (miss), on interroge la base de données.
+4. On stocke le résultat en cache avec un TTL.
+5. On retourne la donnée.
+
+## Structures de données
+
+---
+
+Redis n'est pas limité aux chaînes de caractères. Il offre des types natifs utiles pour certains cas de cache.
+
+### Hash
+
+---
+
+Les hashmaps permettent de stocker un objet structuré champ par champ, sans sérialiser l'intégralité :
+
+```php
+<?php
+
+$redis->hSet('produit:42', 'nom', 'Produit A');
+$redis->hSet('produit:42', 'prix', '29.90');
+$redis->expire('produit:42', 3600);
+
+$nom = $redis->hGet('produit:42', 'nom');
+$produit = $redis->hGetAll('produit:42');
+```
+
+Cela permet de mettre à jour un seul champ sans réécrire l'objet entier.
+
+### Incrément atomique
+
+---
+
+Redis garantit l'atomicité des opérations. Utile pour les compteurs (nombre de vues, rate limiting) :
+
+```php
+<?php
+
+$redis->incr('vues:article:7');
+$redis->incrBy('vues:article:7', 5);
+
+$vues = $redis->get('vues:article:7');
+```
+
+## Invalider le cache
+
+---
+
+Lors d'une mise à jour, il faut supprimer ou régénérer l'entrée en cache correspondante :
+
+```php
+<?php
+
+function updateProduit(Redis $redis, int $id, array $data): void
+{
+    $bdd->updateProduit($id, $data);
+
+    $redis->del('produit:' . $id);
+}
+```
+
+Après la mise à jour en base, la clé Redis est supprimée. La prochaine requête sur ce produit constatera un cache miss et rechargera la donnée fraîche depuis la base.
+
+## Nommage des clés
+
+---
+
+Adopter une convention de nommage claire permet de gérer et d'invalider le cache plus facilement.
+
+```bash
+entite:identifiant
+entite:identifiant:champ
+prefixe:entite:identifiant
+
+produit:42
+utilisateur:17:profil
+catalogue:categorie:chaussures
+```
+
+Éviter les clés trop génériques qui regroupent des données hétérogènes difficiles à invalider individuellement.
+
+## Résumé
+
+---
+
+| Opération | Méthode PHP |
+| --- | --- |
+| Écrire avec TTL | `setex($cle, $ttl, $valeur)` |
+| Lire | `get($cle)` |
+| Supprimer | `del($cle)` |
+| Vérifier l'existence | `exists($cle)` |
+| TTL restant | `ttl($cle)` |
+| Connexion persistante | `pconnect($host, $port)` |
+
+Redis est la brique de cache applicatif la plus efficace pour les applications PHP à forte charge. Son impact est maximal sur les données coûteuses à produire (requêtes complexes, agrégats, appels d'API) et tolérantes à quelques secondes ou minutes d'obsolescence.

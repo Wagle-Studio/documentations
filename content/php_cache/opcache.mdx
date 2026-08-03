@@ -1,0 +1,127 @@
+## Introduction
+
+---
+
+Avant d'exécuter un fichier PHP, l'interpréteur doit le lire, l'analyser syntaxiquement et le compiler en bytecode. Ces opérations se répètent à chaque requête, sur chaque fichier inclus, même si le code source n'a pas changé.
+
+OPcache supprime ce coût en conservant le bytecode compilé en mémoire partagée. Dès la deuxième requête, PHP charge directement le bytecode sans retoucher le fichier source.
+
+## Cycle d'exécution sans OPcache
+
+---
+
+Sans OPcache, chaque requête parcourt l'intégralité de la chaîne de compilation :
+
+```bash
+Requête → Lecture du fichier .php → Analyse lexicale → Analyse syntaxique
+       → Compilation en bytecode → Exécution → Réponse
+```
+
+Dans une application Symfony ou Laravel, une seule requête peut inclure plusieurs centaines de fichiers. Répété à chaque requête, ce travail représente une part significative du temps d'exécution.
+
+## Cycle d'exécution avec OPcache
+
+---
+
+Avec OPcache, la compilation n'a lieu qu'une seule fois, à la première requête sur un fichier donné :
+
+```bash
+Requête 1 → Compilation → Stockage en mémoire partagée → Exécution → Réponse
+Requête N → Lecture du bytecode en mémoire → Exécution → Réponse
+```
+
+Les requêtes suivantes sautent directement à l'exécution du bytecode.
+
+## Activation et configuration
+
+---
+
+OPcache est inclus dans PHP depuis la version 5.5. Il est activé par défaut sur la plupart des distributions modernes. On peut le vérifier avec `phpinfo()` ou en ligne de commande :
+
+```bash
+php -m | grep OPcache
+```
+
+La configuration se fait dans `php.ini` ou dans un fichier dédié (par exemple `/etc/php/8.x/fpm/conf.d/10-opcache.ini`).
+
+```ini
+opcache.enable=1
+opcache.memory_consumption=256
+opcache.interned_strings_buffer=16
+opcache.max_accelerated_files=20000
+opcache.revalidate_freq=0
+opcache.validate_timestamps=0
+opcache.save_comments=1
+```
+
+### Paramètres clés
+
+---
+
+| Paramètre | Description |
+| --- | --- |
+| `opcache.memory_consumption` | Taille de la mémoire partagée allouée, en mégaoctets |
+| `opcache.max_accelerated_files` | Nombre maximum de fichiers en cache |
+| `opcache.revalidate_freq` | Fréquence en secondes de vérification des modifications de fichiers |
+| `opcache.validate_timestamps` | Active ou désactive la vérification des timestamps de fichiers |
+| `opcache.interned_strings_buffer` | Mémoire dédiée à l'intern des chaînes de caractères |
+
+> En production, il est recommandé de désactiver `validate_timestamps` (`opcache.validate_timestamps=0`) pour supprimer toute vérification de fichier à chaque requête. Dans ce cas, vider le cache OPcache manuellement lors des déploiements est obligatoire.
+
+### Vider le cache lors d'un déploiement
+
+---
+
+Avec `validate_timestamps=0`, OPcache ne détecte pas les changements de fichiers. Il faut vider le cache après chaque déploiement.
+
+```php
+<?php
+opcache_reset();
+```
+
+Cette fonction vide l'intégralité du cache OPcache. Certains hébergeurs ou orchestrateurs fournissent des mécanismes spécifiques (redémarrage du pool PHP-FPM, signal `SIGUSR2`, etc.).
+
+## Surveillance
+
+---
+
+OPcache expose des statistiques via `opcache_get_status()` :
+
+```php
+<?php
+
+$status = opcache_get_status();
+
+echo 'Fichiers en cache : ' . $status['opcache_statistics']['num_cached_scripts'];
+echo 'Hit rate : ' . round($status['opcache_statistics']['opcache_hit_rate'], 2) . '%';
+echo 'Mémoire utilisée : ' . round($status['memory_usage']['used_memory'] / 1024 / 1024, 2) . ' Mo';
+```
+
+Un hit rate inférieur à 90 % en production indique que le cache est trop petit ou que `max_accelerated_files` est insuffisant.
+
+## JIT - Just In Time
+
+---
+
+Depuis PHP 8.0, OPcache peut activer le compilateur JIT. Plutôt que d'exécuter le bytecode via l'interpréteur, le JIT compile certaines parties du bytecode directement en code machine natif au moment de l'exécution.
+
+```ini
+opcache.jit=tracing
+opcache.jit_buffer_size=128M
+```
+
+Le JIT apporte des gains significatifs sur les tâches intensives en CPU (calculs mathématiques, traitement d'image, algorithmes), mais son impact sur les applications web classiques (I/O bound, base de données) est plus modeste.
+
+## Résumé
+
+---
+
+| Paramètre | Valeur recommandée (production) |
+| --- | --- |
+| `opcache.enable` | `1` |
+| `opcache.memory_consumption` | `128` à `512` selon la taille de l'app |
+| `opcache.validate_timestamps` | `0` (vider manuellement au déploiement) |
+| `opcache.max_accelerated_files` | `10000` à `50000` |
+| `opcache.jit` | `tracing` si CPU-bound |
+
+OPcache est la première optimisation à mettre en place sur tout projet PHP en production. Son activation seule peut réduire le temps d'exécution de 30 à 50 % sur les applications de taille moyenne.
