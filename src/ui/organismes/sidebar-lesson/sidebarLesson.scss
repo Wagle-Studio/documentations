@@ -1,31 +1,165 @@
 .sidebar_second {
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  border: 1px solid var(--border);
-  border-radius: var(--border-radius-small);
-  background-color: var(--card);
+  max-height: 100%;
+  padding: var(--space-3) var(--space-0) var(--space-3) 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
 
-  &__menu {
+  &__eyebrow {
+    margin-bottom: var(--space-2);
+    font-family: var(--font-secondary);
+    font-size: 0.66rem;
+    font-weight: var(--font-weight-medium);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--primary);
+  }
+
+  &__course {
     display: flex;
-    flex-direction: column;
-    width: 100%;
-    padding: 0;
-    margin: 0;
-    list-style: none;
+    align-items: center;
+    gap: var(--space-1);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
 
-    &__chapters {
+    &__infos {
       display: flex;
       flex-direction: column;
-      width: 100%;
-      padding: 0;
-      margin: 0;
-      list-style: none;
-      background-color: var(--secondary);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
+      gap: 2px;
+    }
 
-      > li > a {
-        padding-left: var(--space-3);
+    &__label {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: var(--font-weight-large);
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      color: var(--foreground);
+      transition: color 150ms var(--ease-out);
+    }
+
+    &__meta {
+      font-family: var(--font-secondary);
+      font-size: 0.66rem;
+      letter-spacing: 0.08em;
+      color: var(--muted-foreground);
+    }
+
+    &--selected &__label {
+      color: var(--primary);
+    }
+
+    @media screen and (min-width: 850px) {
+      &:hover &__label {
+        color: var(--primary);
       }
     }
+  }
+
+  &__lessons {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-2) 0 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  &__lesson {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-1);
+    padding: 5px var(--space-1);
+    border-radius: var(--border-radius-small);
+    font-size: var(--font-size-small);
+    line-height: 1.45;
+    color: var(--muted-foreground);
+    text-decoration: none;
+    transition: color 150ms var(--ease-out),
+      background-color 150ms var(--ease-out);
+
+    &__index {
+      flex-shrink: 0;
+      font-family: var(--font-secondary);
+      font-size: 0.68rem;
+      color: var(--muted-foreground);
+      opacity: 0.55;
+      transition: color 150ms var(--ease-out), opacity 150ms var(--ease-out);
+    }
+
+    @media screen and (min-width: 850px) {
+      &:hover {
+        background-color: var(--muted);
+        color: var(--foreground);
+      }
+    }
+
+    &--active {
+      background-color: var(--primary-soft);
+      color: var(--primary);
+      font-weight: var(--font-weight-medium);
+
+      .sidebar_second__lesson__index {
+        color: var(--primary);
+        opacity: 1;
+      }
+
+      @media screen and (min-width: 850px) {
+        &:hover {
+          background-color: var(--primary-soft);
+          color: var(--primary);
+        }
+      }
+    }
+  }
+
+  &__chapters {
+    position: relative;
+    margin: var(--space-0) 0 var(--space-1) calc(var(--space-1) + 0.75rem);
+    padding: 2px 0;
+    list-style: none;
+    border-left: 1px solid var(--border);
+    animation: sidebar_second_chapters-in 260ms var(--ease-out) both;
+  }
+
+  &__chapter {
+    display: block;
+    margin-left: -1px;
+    padding: 4px var(--space-1) 4px calc(var(--space-2) - 2px);
+    border-left: 2px solid transparent;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: var(--muted-foreground);
+    text-decoration: none;
+    transition: color 150ms var(--ease-out), border-color 150ms var(--ease-out),
+      background-color 150ms var(--ease-out);
+
+    @media screen and (min-width: 850px) {
+      &:hover {
+        color: var(--foreground);
+      }
+    }
+
+    &--current {
+      border-left-color: var(--primary);
+      color: var(--primary);
+      background: linear-gradient(90deg, var(--primary-soft), transparent 75%);
+    }
+  }
+}
+
+@keyframes sidebar_second_chapters-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

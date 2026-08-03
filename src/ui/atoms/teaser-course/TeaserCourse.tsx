@@ -22,8 +22,8 @@ export const TeaserCourse = ({ course }: TeaserCourseProps) => {
           <Image src={course.emoji} alt={course.label} width={32} height={32} />
           <h3>{course.label}</h3>
         </div>
-        <p>
-          {lessons.length} {lessons.length > 0 ? "documents" : "document"}
+        <p className="teaser_course__count">
+          {lessons.length} {lessons.length > 1 ? "documents" : "document"}
         </p>
       </>
     </Link>

@@ -13,12 +13,17 @@ export const TeaserLesson = ({ course, lesson }: TeaserLessonProps) => {
       href={`/documentations/${course.slug}/${lesson.slug}`}
       className="teaser_lesson"
     >
-      <div className="teaser_lesson__header">
-        <h3>{lesson.label}</h3>
+      <div className="teaser_lesson__main">
+        <div className="teaser_lesson__header">
+          <h3>{lesson.label}</h3>
+        </div>
+        <div className="teaser_lesson__body">
+          <p>{lesson.description}</p>
+        </div>
       </div>
-      <div className="teaser_lesson__body">
-        <p>{lesson.description}</p>
-      </div>
+      <span className="teaser_lesson__arrow" aria-hidden="true">
+        →
+      </span>
     </Link>
   );
 };

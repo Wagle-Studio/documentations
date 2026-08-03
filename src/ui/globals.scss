@@ -1,19 +1,32 @@
 :root {
-  --primary: #0d9488;
-  --primary-soft: rgba(13, 148, 136, 0.15);
+  --primary: #0c8377;
+  --primary-strong: #0a6b61;
+  --primary-soft: rgba(12, 131, 119, 0.12);
   --primary-foreground: #ffffff;
+  --highlight: #c2701c;
+  --highlight-soft: rgba(194, 112, 28, 0.12);
   --card: #ffffff;
-  --card-foreground: #1a1f35;
-  --background: #f8f9fb;
-  --foreground: #1a1f35;
-  --muted-foreground: #6b7280;
-  --border: #e2e4e9;
-  --muted: #f0f1f4;
-  --secondary: #f0f1f4;
-  --secondary-foreground: #2a3040;
-  --accent: #0d9488;
-  --ring: #0d9488;
-  --card-shadow: 0px 4px 20px 0px rgba(0, 0, 0, 0.08);
+  --card-foreground: #20242e;
+  --background: #f5f3ee;
+  --surface-2: #efece4;
+  --foreground: #20242e;
+  --muted-foreground: #6c6a66;
+  --border: #e4e0d6;
+  --border-strong: #d6d1c4;
+  --muted: #eeeae1;
+  --secondary: #eeeae1;
+  --secondary-foreground: #2a2d36;
+  --accent: #0c8377;
+  --ring: #0c8377;
+  --card-shadow: 0 1px 2px rgba(38, 34, 25, 0.04),
+    0 12px 28px -12px rgba(38, 34, 25, 0.16);
+  --shadow-sm: 0 1px 2px rgba(38, 34, 25, 0.05);
+  --shadow-md: 0 6px 18px -8px rgba(38, 34, 25, 0.18);
+  --table-stripe: rgba(38, 34, 25, 0.025);
+  --table-head: rgba(38, 34, 25, 0.045);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --content-measure: 74ch;
 
   --space-0: 4px;
   --space-1: 8px;
@@ -78,22 +91,32 @@
   --code-surface: #0a0e1a;
   --code-foreground: #ecf1ff;
 
-  --background: #0f1426;
-  --foreground: #ecf1ff;
+  --background: #0c0f1c;
+  --surface-2: #131a30;
+  --foreground: #e9edf8;
   --card: #121a31;
-  --card-foreground: #ecf1ff;
+  --card-foreground: #e9edf8;
   --primary: #2dd4bf;
-  --primary-soft: rgba(45, 212, 191, 0.24);
+  --primary-strong: #5eead4;
+  --primary-soft: rgba(45, 212, 191, 0.18);
   --primary-foreground: #06211f;
+  --highlight: #f0b766;
+  --highlight-soft: rgba(240, 183, 102, 0.14);
   --secondary: #1a243f;
   --secondary-foreground: #d7e1ff;
   --muted: #1a243f;
-  --muted-foreground: #a0afcf;
+  --muted-foreground: #97a3c2;
   --accent: #2dd4bf;
   --accent-foreground: #06211f;
-  --border: #2f3b60;
+  --border: #283456;
+  --border-strong: #36456e;
   --ring: #2dd4bf;
-  --card-shadow: 0px 4px 20px 0px rgba(0, 0, 0, 0.35);
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4),
+    0 16px 36px -16px rgba(0, 0, 0, 0.6);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px -10px rgba(0, 0, 0, 0.55);
+  --table-stripe: rgba(255, 255, 255, 0.025);
+  --table-head: rgba(255, 255, 255, 0.05);
   --info: #60a5fa;
   --succes: #4ade80;
   --warning: #fbbf24;
@@ -116,21 +139,40 @@
 .homepage {
   margin: var(--space-3) 0;
 
+  > h1 {
+    position: relative;
+    padding-top: var(--space-3);
+    font-size: clamp(2.5rem, 8vw, 3.75rem);
+
+    &::before {
+      content: "Notes techniques";
+      display: block;
+      margin-bottom: var(--space-1);
+      font-family: var(--font-secondary);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--primary);
+    }
+  }
+
   &__welcome {
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
+    gap: var(--space-2);
+    max-width: 60ch;
+    margin-top: var(--space-2);
+    padding-left: var(--space-2);
+    border-left: 2px solid var(--primary);
 
     p:first-child {
       font-family: var(--font-display);
       font-size: var(--font-size-medium);
-      font-weight: 300;
+      font-weight: 400;
       font-style: italic;
       color: var(--foreground);
       line-height: var(--font-line-height-large);
-      padding-bottom: var(--space-2);
-      margin-bottom: var(--space-1);
-      border-bottom: 1px solid var(--border);
     }
 
     p:not(:first-child) {
@@ -154,24 +196,26 @@ body {
   transition: background-color 0.25s ease, color 0.25s ease;
   max-width: 1280px;
   margin: 0 auto;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 h1 {
   font-family: var(--font-display);
   font-size: var(--font-size-mobile-heading-1);
-  line-height: var(--font-line-height-large);
+  line-height: 1.1;
   color: var(--foreground);
   font-weight: 600;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.025em;
 }
 
 h2 {
-  font-family: var(--font-primary);
+  font-family: var(--font-display);
   font-size: var(--font-size-mobile-heading-2);
-  line-height: var(--font-line-height-large);
+  line-height: 1.2;
   color: var(--foreground);
-  font-weight: var(--font-weight-xlarge);
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
 h3 {

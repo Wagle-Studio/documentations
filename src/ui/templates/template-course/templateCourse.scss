@@ -6,7 +6,8 @@
   row-gap: var(--space-5);
 
   @media screen and (min-width: 850px) {
-    grid-template-columns: 1fr 202px;
+    grid-template-columns: 1fr 236px;
+    grid-template-rows: 66px 1fr;
   }
 
   &__content {

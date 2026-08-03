@@ -1,21 +1,47 @@
 .teaser_course {
+  position: relative;
   display: flex;
   flex-direction: row;
   gap: var(--space-2);
-  padding: var(--space-2);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
   align-items: center;
   justify-content: space-between;
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: var(--border-radius-small);
+  border-radius: var(--border-radius-medium);
   background-color: var(--card);
+  box-shadow: var(--shadow-sm);
   text-decoration: none;
-  transition: 150ms ease-out;
+  overflow: hidden;
+  transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out),
+    border-color 200ms var(--ease-out);
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background-color: var(--primary);
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform 200ms var(--ease-out);
+  }
 
   @media screen and (min-width: 850px) {
     &:hover {
-      transform: translateY(-2px);
+      transform: translateY(-3px);
       box-shadow: var(--card-shadow);
+      border-color: var(--border-strong);
+    }
+
+    &:hover::before {
+      transform: scaleY(1);
+    }
+
+    &:hover .teaser_course__count {
+      color: var(--primary);
       border-color: var(--primary);
     }
   }
@@ -26,8 +52,26 @@
     gap: var(--space-2);
     align-items: center;
 
-    > h3 {
-      line-height: 0;
+    > img {
+      flex-shrink: 0;
     }
+
+    > h3 {
+      line-height: 1.1;
+    }
+  }
+
+  &__count {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-family: var(--font-secondary);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--muted-foreground);
+    white-space: nowrap;
+    transition: color 200ms var(--ease-out), border-color 200ms var(--ease-out);
   }
 }
