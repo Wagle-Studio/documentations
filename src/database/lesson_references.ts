@@ -79,6 +79,9 @@ const lesson_references: LessonReference[] = [
   { lesson_id: 62, reference_id: 67 },
   { lesson_id: 63, reference_id: 68 },
   { lesson_id: 63, reference_id: 69 },
+  { lesson_id: 64, reference_id: 70 },
+  { lesson_id: 64, reference_id: 71 },
+  { lesson_id: 64, reference_id: 72 },
 ];
 
 export default lesson_references;

@@ -71,6 +71,13 @@ const courses: Course[] = [
     emoji: "/emoji/feather.png",
     category: "Outils & infra",
   },
+  {
+    id: 11,
+    label: "Data Engineer",
+    slug: "data_engineer",
+    emoji: "/emoji/data.png",
+    category: "Data",
+  },
 ];
 
 export default courses;

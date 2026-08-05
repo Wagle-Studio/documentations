@@ -1,0 +1,123 @@
+## Introduction
+
+---
+
+Le data engineer conçoit, construit et maintient les systèmes qui déplacent et transforment la donnée : de sa source (base applicative, API, fichier, événement) jusqu'aux personnes ou systèmes qui l'exploitent (data analyst, data scientist, tableau de bord, modèle de machine learning).
+
+Le cœur du métier tient en une phrase : rendre la donnée disponible, fiable et exploitable, à l'échelle. Ce n'est pas un métier d'analyse (comprendre ce que dit la donnée) mais un métier d'ingénierie (construire les tuyaux par lesquels elle circule).
+
+Cette leçon pose les bases du domaine. Elle est volontairement large : l'objectif est de te donner une carte du territoire avant l'alternance, pas de rentrer dans le détail de chaque outil. Le cours s'enrichira leçon par leçon au fur et à mesure de ta montée en compétences.
+
+> 💡 Bon à savoir : ton passif de développeur backend n'est pas un point de départ à zéro. Beaucoup de fondamentaux (bases de données, API, systèmes distribués, tests, versioning, conteneurisation) se retrouvent tels quels côté data engineering. Ce qui change surtout, c'est l'échelle des volumes et la nature des traitements (souvent asynchrones, orientés lots ou flux continus).
+
+## Data engineer, data analyst, data scientist : qui fait quoi
+
+---
+
+Ces trois métiers sont souvent confondus car ils travaillent sur la même matière première : la donnée. Ils n'interviennent cependant pas au même endroit de la chaîne.
+
+| Métier | Rôle | Livrable typique |
+| --- | --- | --- |
+| **Data engineer** | Construit et fiabilise les pipelines qui collectent, stockent et transforment la donnée | Un entrepôt de données à jour, fiable et documenté |
+| **Data analyst** | Interroge la donnée déjà disponible pour répondre à des questions métier | Un tableau de bord, un rapport, une analyse |
+| **Data scientist** | Modélise la donnée pour prédire ou détecter des patterns | Un modèle statistique ou de machine learning |
+| **ML engineer** | Industrialise et déploie les modèles en production | Un modèle exposé via une API, monitoré et réentraîné |
+
+Dans une petite structure, une seule personne peut cumuler plusieurs de ces casquettes. Dans une structure plus grande, le data engineer est le fournisseur : sans pipeline fiable en amont, les analystes et data scientists travaillent sur une donnée incomplète ou fausse.
+
+## Le cycle de vie de la donnée
+
+---
+
+Un pipeline de données répond toujours au même schéma, quels que soient les outils utilisés derrière : la donnée est **extraite** d'une source, **transportée**, **stockée**, **transformée**, puis **consommée**.
+
+### Ingestion
+
+---
+
+L'ingestion consiste à extraire la donnée depuis ses sources : bases de données applicatives, API tierces, fichiers plats (CSV, JSON), files de messages (Kafka), ou événements applicatifs (webhooks, logs).
+
+Deux grands modes d'ingestion existent :
+
+- **Batch** : la donnée est extraite par lots, à intervalle régulier (toutes les heures, chaque nuit). C'est le mode historique et encore le plus répandu.
+- **Streaming** : la donnée est traitée événement par événement, en quasi temps réel, dès qu'elle est produite.
+
+### Stockage
+
+---
+
+Une fois ingérée, la donnée est déposée dans un système de stockage adapté à son usage : une base relationnelle, un entrepôt analytique, ou un espace de stockage brut peu structuré. Le choix du bon stockage est une décision structurante, détaillée dans la section suivante.
+
+### Transformation
+
+---
+
+La donnée brute est rarement exploitable telle quelle. La transformation consiste à la nettoyer, la dédupliquer, la normaliser, l'agréger ou la croiser avec d'autres sources pour produire une donnée directement utilisable.
+
+### Orchestration
+
+---
+
+Un pipeline enchaîne plusieurs étapes, avec des dépendances entre elles (transformer après avoir ingéré, par exemple). L'orchestrateur planifie ces étapes, gère les échecs et les reprises, et garantit que chaque étape s'exécute dans le bon ordre, au bon moment.
+
+## ETL et ELT
+
+---
+
+Ces deux acronymes décrivent le même cycle (Extract, Transform, Load) mais dans un ordre différent, ce qui change profondément l'architecture du pipeline.
+
+- **ETL** (Extract → Transform → Load) : la transformation a lieu avant le chargement, généralement sur un serveur de traitement dédié. La donnée arrive déjà propre dans le système cible.
+- **ELT** (Extract → Load → Transform) : la donnée brute est chargée telle quelle, puis transformée directement dans l'entrepôt cible, en s'appuyant sur sa puissance de calcul.
+
+L'ELT s'est largement imposé avec l'essor des entrepôts cloud (BigQuery, Snowflake, Redshift), capables d'encaisser de gros volumes de calcul à moindre coût. Il permet aussi de conserver la donnée brute originale, utile si la logique de transformation doit être revue plus tard.
+
+## Data lake, data warehouse, lakehouse
+
+---
+
+Trois architectures de stockage cohabitent dans l'écosystème, avec des compromis différents entre flexibilité et structuration.
+
+| Architecture | Type de donnée | Usage principal |
+| --- | --- | --- |
+| **Data warehouse** | Structurée, avec un schéma défini à l'écriture | Reporting et analytique fiable et performant |
+| **Data lake** | Brute, tout format (structurée, semi-structurée, non structurée) | Stockage massif à bas coût, schéma appliqué à la lecture |
+| **Lakehouse** | Hybride : stockage brut du data lake + garanties transactionnelles du data warehouse | Approche moderne qui cherche à combiner les deux |
+
+> 💡 Bon à savoir : cette distinction rejoue, à l'échelle du stockage, un arbitrage que tu connais déjà côté backend entre une base relationnelle stricte (schéma imposé) et un stockage document plus permissif (schéma flexible).
+
+## Panorama de l'écosystème d'outils
+
+---
+
+Ce tableau donne des repères, pas un inventaire exhaustif. Chaque brique aura sa propre leçon au fil du cours.
+
+| Catégorie | Rôle | Exemples |
+| --- | --- | --- |
+| Ingestion / streaming | Collecter la donnée en continu | Kafka, Debezium |
+| Orchestration | Planifier et surveiller les pipelines | Airflow, Dagster |
+| Traitement distribué | Transformer de gros volumes | Spark |
+| Transformation en entrepôt | Modéliser la donnée en SQL versionné | dbt |
+| Entrepôt cloud | Stocker et interroger à grande échelle | BigQuery, Snowflake, Redshift |
+| Stockage brut | Déposer la donnée sans transformation | S3, HDFS |
+
+## Ce que ton passif de développeur backend t'apporte déjà
+
+---
+
+Le data engineering n'est pas un nouveau métier construit sur des fondations différentes : c'est en grande partie de l'ingénierie logicielle appliquée à la donnée. Plusieurs de tes acquis se transposent directement :
+
+- **SQL et modélisation de données** : la conception de schémas, les jointures, l'indexation restent centrales, avec en plus des enjeux de volumétrie.
+- **Conception d'API** : de nombreuses sources et destinations de pipelines sont des API REST ou GraphQL que tu sais déjà consommer et interroger.
+- **Systèmes distribués et asynchrone** : files de messages, traitement en arrière-plan, gestion des échecs et des reprises sont des concepts que le backend croise déjà (queues, jobs, workers).
+- **Docker et infrastructure** : la majorité des outils data (Airflow, Spark, Kafka) se déploient et se testent en local via Docker.
+- **Tests et versioning** : tester un pipeline et versionner ses transformations (notamment avec dbt) suit la même discipline qu'un projet applicatif classique.
+
+Ce qui sera réellement nouveau : le raisonnement en volumétrie et en coût de traitement, la notion de qualité et de fraîcheur de la donnée, et des outils spécifiques à apprivoiser (orchestrateurs, moteurs de traitement distribué).
+
+## Pour la suite
+
+---
+
+Ce cours se construira progressivement, au rythme de ton alternance. Les prochaines leçons approfondiront, entre autres, la modélisation dimensionnelle, le SQL avancé pour l'analytique, l'orchestration avec Airflow, le traitement distribué avec Spark, et les plateformes cloud (BigQuery, Snowflake, ou l'écosystème utilisé par ton entreprise).
+
+N'hésite pas à revenir sur cette introduction pour requestionner les repères posés ici à mesure que l'expérience de terrain les rendra plus concrets.

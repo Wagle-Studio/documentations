@@ -740,6 +740,18 @@ const lessons: Lesson[] = [
     created: "15 juin 2026",
     updated: "15 juin 2026",
   },
+  {
+    id: 64,
+    index: 1,
+    paths: ["data_engineer", "introduction_metier_data_engineer.mdx"],
+    label: "Introduction au métier",
+    slug: "introduction_metier_data_engineer",
+    course_id: 11,
+    description:
+      "Panorama du métier de data engineer : rôle, cycle de vie de la donnée, écosystème d'outils et repères pour un développeur backend qui découvre le domaine.",
+    created: "5 août 2026",
+    updated: "5 août 2026",
+  },
 ];
 
 export default lessons;

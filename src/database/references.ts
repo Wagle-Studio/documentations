@@ -346,6 +346,21 @@ const references: Reference[] = [
     label: "Symfony - Verrouiller des ressources",
     url: "https://symfony.com/doc/current/lock.html",
   },
+  {
+    id: 70,
+    label: "roadmap.sh - Data Engineer Roadmap",
+    url: "https://roadmap.sh/data-engineer",
+  },
+  {
+    id: 71,
+    label: "IBM - Qu'est-ce que l'ingénierie des données ?",
+    url: "https://www.ibm.com/think/topics/data-engineering",
+  },
+  {
+    id: 72,
+    label: "Wikipedia - Extract, transform, load (ETL)",
+    url: "https://en.wikipedia.org/wiki/Extract,_transform,_load",
+  },
 ];
 
 export default references;
