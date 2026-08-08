@@ -1,0 +1,92 @@
+## Introduction
+
+---
+
+Modéliser une base applicative et modéliser un entrepôt de données répondent à deux besoins opposés. La première doit garantir qu'une écriture est cohérente et rapide pour un utilisateur à la fois. La seconde doit permettre de lire et d'agréger des millions de lignes pour répondre à une question métier ("quel est le chiffre d'affaires par région et par mois sur les deux dernières années ?").
+
+La modélisation dimensionnelle est la réponse à ce second besoin. C'est le vocabulaire et les schémas que tu retrouveras dans quasiment tout entrepôt analytique, et une question quasi systématique en entretien data engineer.
+
+## Faits et dimensions
+
+---
+
+Un modèle dimensionnel repose sur deux types de tables.
+
+- **Table de faits** : contient les événements mesurables de l'activité (une vente, un clic, une livraison). Elle est composée de mesures numériques (montant, quantité) et de clés étrangères vers les dimensions.
+- **Table de dimension** : contient le contexte descriptif qui donne du sens aux faits (le produit vendu, le client, la date, le magasin). Elle est composée d'attributs textuels ou catégoriels, peu volatils.
+
+> 💡 Bon à savoir : une table de faits grandit indéfiniment (une ligne par événement), tandis qu'une table de dimension reste relativement petite et change lentement. Cette différence de volumétrie oriente tout le design du schéma.
+
+## Le grain de la table de fait
+
+---
+
+Le **grain** définit ce que représente une ligne de la table de faits : une commande, une ligne de commande, un clic, une session. C'est la décision la plus structurante d'un modèle dimensionnel : elle doit être choisie avant les mesures et les dimensions, et rester la plus fine possible.
+
+Un grain trop large (une ligne par commande) empêche de descendre dans le détail (impossible de savoir quel produit précis a été vendu). Un grain trop fin sans besoin réel alourdit inutilement le volume.
+
+## Schéma en étoile et schéma en flocon
+
+---
+
+Ces deux schémas organisent les mêmes tables faits/dimensions, avec un compromis différent entre simplicité et normalisation.
+
+| Schéma | Structure | Avantage | Inconvénient |
+| --- | --- | --- | --- |
+| **Étoile (star schema)** | Une table de faits au centre, entourée de dimensions dénormalisées (une seule table par dimension) | Requêtes simples, peu de jointures, performant | Redondance de données dans les dimensions |
+| **Flocon (snowflake schema)** | Les dimensions sont elles-mêmes normalisées en sous-tables | Moins de redondance, intégrité plus stricte | Plus de jointures, requêtes plus complexes |
+
+Le schéma en étoile est très largement privilégié dans les entrepôts analytiques modernes : le stockage est bon marché, tandis que la simplicité des requêtes et la performance de lecture priment.
+
+## Les mesures : additives, semi-additives, non-additives
+
+---
+
+Toutes les mesures d'une table de faits ne s'agrègent pas de la même façon lorsqu'on les somme sur plusieurs dimensions.
+
+- **Additive** : peut être sommée sur n'importe quelle dimension (un montant de vente peut être sommé par produit, par date, par région).
+- **Semi-additive** : peut être sommée sur certaines dimensions mais pas toutes (un niveau de stock peut être sommé par produit, mais pas par date : sommer un stock sur 30 jours n'a pas de sens, on en prend la moyenne ou la dernière valeur).
+- **Non-additive** : ne peut jamais être sommée directement (un taux, un ratio, un pourcentage : il faut recalculer à partir des composantes brutes).
+
+## Slowly Changing Dimensions (SCD)
+
+---
+
+Une dimension change dans le temps (un client déménage, un produit change de catégorie). La question est de savoir si l'historique doit être conservé, et comment.
+
+| Type | Comportement | Cas d'usage |
+| --- | --- | --- |
+| **SCD 0** | La valeur n'est jamais mise à jour | Attributs immuables (date de création) |
+| **SCD 1** | La valeur est écrasée, aucun historique conservé | Correction d'une erreur de saisie |
+| **SCD 2** | Une nouvelle ligne est créée à chaque changement, avec des dates de validité | Suivre l'évolution réelle d'un attribut dans le temps (adresse d'un client au moment de la vente) |
+| **SCD 3** | Une colonne supplémentaire garde l'ancienne valeur, en plus de la nouvelle | Comparer seulement l'avant/après le dernier changement |
+
+Le SCD 2 est le plus utilisé dans les modèles analytiques matures : il permet de rejouer une analyse historique en conservant le contexte exact au moment de chaque fait, ce qu'un simple `UPDATE` en place ne permettrait jamais.
+
+## Kimball vs Inmon : deux philosophies
+
+---
+
+Ces deux noms reviennent régulièrement dans la littérature et en entretien, car ils représentent deux approches historiquement opposées de construction d'un entrepôt.
+
+| Approche | Méthode | Philosophie |
+| --- | --- | --- |
+| **Kimball (bottom-up)** | On construit des data marts dimensionnels par domaine métier (ventes, marketing), reliés par des dimensions partagées (conformed dimensions) | Rapide à livrer, orienté besoin métier immédiat |
+| **Inmon (top-down)** | On construit d'abord un entrepôt central normalisé (3NF), dont on dérive ensuite des data marts dimensionnels | Plus long à mettre en place, vision d'entreprise cohérente dès le départ |
+
+Dans la pratique actuelle, la plupart des équipes adoptent une approche hybride : un entrepôt cloud (BigQuery, Snowflake) sert de socle central, alimenté en ELT, sur lequel des modèles dimensionnels à la Kimball sont construits par domaine (souvent avec dbt).
+
+## Résumé
+
+---
+
+| Concept | Définition |
+| --- | --- |
+| **Table de faits** | Événements mesurables, croît indéfiniment |
+| **Table de dimension** | Contexte descriptif, change lentement |
+| **Grain** | Ce que représente une ligne de la table de faits |
+| **Schéma en étoile** | Dimensions dénormalisées, requêtes simples |
+| **Schéma en flocon** | Dimensions normalisées, moins de redondance |
+| **SCD 2** | Historisation d'une dimension par ajout de nouvelles lignes |
+| **Kimball** | Construction bottom-up par data marts |
+| **Inmon** | Construction top-down par un entrepôt central normalisé |
