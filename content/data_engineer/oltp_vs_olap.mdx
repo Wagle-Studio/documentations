@@ -1,0 +1,62 @@
+## Introduction
+
+---
+
+En tant que développeur backend, ton quotidien avec une base de données relationnelle relève très largement du monde **OLTP**. Le monde de l'entrepôt analytique, lui, relève du **OLAP**. Ce sont deux familles de systèmes conçues pour des charges de travail radicalement différentes, et confondre les deux est une erreur de conception fréquente chez les développeurs qui découvrent la data.
+
+## Deux charges de travail différentes
+
+---
+
+**OLTP** (Online Transactional Processing) désigne les systèmes optimisés pour traiter un grand nombre de transactions courtes et concurrentes : créer une commande, mettre à jour un profil, réserver un siège. Chaque transaction touche peu de lignes, mais le système doit encaisser un débit élevé d'écritures avec une forte exigence de cohérence immédiate.
+
+**OLAP** (Online Analytical Processing) désigne les systèmes optimisés pour des requêtes complexes portant sur de gros volumes de données, généralement en lecture : sommer un chiffre d'affaires sur un an, croiser des ventes par région et par catégorie. Chaque requête touche potentiellement des millions de lignes, mais le système n'a pas besoin d'encaisser des écritures concurrentes en continu.
+
+| Caractéristique | OLTP | OLAP |
+| --- | --- | --- |
+| Opérations dominantes | Écritures fréquentes, courtes | Lectures massives, complexes |
+| Volume par requête | Quelques lignes | Des millions de lignes |
+| Modélisation | Normalisée (3NF) | Dénormalisée (dimensionnelle) |
+| Utilisateurs typiques | Application, utilisateurs finaux | Analystes, tableaux de bord, modèles |
+| Exemple de système | PostgreSQL, MySQL | BigQuery, Snowflake, Redshift |
+
+## Pourquoi la normalisation change de camp
+
+---
+
+Une base OLTP est normalisée pour éviter la duplication de données et garantir la cohérence lors des écritures : une information n'existe qu'à un seul endroit, ce qui évite les incohérences lors d'une mise à jour. C'est ce que tu appliques déjà en modélisant tes entités métier.
+
+Une base OLAP fait l'inverse : elle dénormalise volontairement (voir la modélisation dimensionnelle), parce que la priorité n'est plus l'intégrité à l'écriture (les écritures sont rares et contrôlées, souvent par lots) mais la vitesse de lecture. Moins de jointures signifie des requêtes analytiques plus rapides sur de gros volumes.
+
+## Row store vs column store
+
+---
+
+Ce choix de modélisation se prolonge dans le moteur de stockage lui-même.
+
+- **Row store** (ligne) : les moteurs OLTP stockent les données ligne par ligne, ce qui est efficace pour lire ou écrire un enregistrement complet rapidement (récupérer toutes les infos d'une commande précise).
+- **Column store** (colonne) : les moteurs OLAP stockent les données colonne par colonne, ce qui est efficace pour agréger une seule colonne sur des millions de lignes (sommer une colonne "montant" sans avoir à lire les autres colonnes).
+
+> 💡 Bon à savoir : c'est la même logique que la distinction entre formats de fichiers orientés ligne et orientés colonne (CSV/JSON vs Parquet), mais appliquée ici au moteur de stockage d'une base de données plutôt qu'à un fichier.
+
+## Pourquoi on n'exécute pas d'analytique sur la base de production
+
+---
+
+Faire tourner des requêtes analytiques lourdes directement sur la base OLTP de production pose deux problèmes concrets :
+
+- **Contention de ressources** : une requête analytique qui scanne des millions de lignes consomme du CPU, de la mémoire et de l'I/O disque, au détriment des transactions applicatives qui doivent rester rapides pour les utilisateurs.
+- **Modèle inadapté** : une base normalisée impose de nombreuses jointures pour reconstituer une vue métier, ce qu'un modèle dimensionnel évite par construction.
+
+C'est précisément le rôle du pipeline de données (ingestion, puis chargement dans un entrepôt) : isoler la charge analytique de la charge transactionnelle, sur un système taillé pour chacune.
+
+## Résumé
+
+---
+
+| Concept | OLTP | OLAP |
+| --- | --- | --- |
+| Objectif | Fiabilité et rapidité des transactions | Vitesse d'agrégation sur gros volumes |
+| Modélisation | Normalisée | Dénormalisée / dimensionnelle |
+| Stockage | Row store | Column store |
+| Exemple | Base applicative | Entrepôt analytique |
