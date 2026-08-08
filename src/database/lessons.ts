@@ -752,6 +752,117 @@ const lessons: Lesson[] = [
     created: "5 août 2026",
     updated: "5 août 2026",
   },
+  {
+    id: 65,
+    index: 2,
+    paths: ["data_engineer", "modelisation_dimensionnelle.mdx"],
+    label: "Modélisation dimensionnelle",
+    slug: "modelisation_dimensionnelle",
+    course_id: 11,
+    description:
+      "Faits, dimensions, schéma en étoile, SCD et opposition Kimball/Inmon : les fondamentaux de la modélisation analytique.",
+    created: "8 août 2026",
+    updated: "8 août 2026",
+  },
+  {
+    id: 66,
+    index: 3,
+    paths: ["data_engineer", "formats_fichiers_serialisation.mdx"],
+    label: "Formats de fichiers et sérialisation",
+    slug: "formats_fichiers_serialisation",
+    course_id: 11,
+    description:
+      "Row vs columnar, formats texte vs binaires, schéma embarqué et compression : bien choisir le format d'un fichier de données.",
+    created: "8 août 2026",
+    updated: "8 août 2026",
+  },
+  {
+    id: 67,
+    index: 4,
+    paths: ["data_engineer", "oltp_vs_olap.mdx"],
+    label: "OLTP vs OLAP",
+    slug: "oltp_vs_olap",
+    course_id: 11,
+    description:
+      "Pourquoi une base applicative et un entrepôt analytique répondent à des besoins opposés, et ce que cela implique sur leur modélisation et leur stockage.",
+    created: "8 août 2026",
+    updated: "8 août 2026",
+  },
+  // Lessons ci-dessous pas encore push en prod, à décommenter au fur et à mesure des push
+  /*
+  {
+    id: 68,
+    index: 5,
+    paths: ["data_engineer", "batch_vs_streaming.mdx"],
+    label: "Batch vs streaming en profondeur",
+    slug: "batch_vs_streaming",
+    course_id: 11,
+    description:
+      "Compromis latence/débit, fenêtrage et architectures Lambda et Kappa pour choisir le bon mode de traitement.",
+    created: "8 août 2026",
+    updated: "8 août 2026",
+  },
+  {
+    id: 69,
+    index: 6,
+    paths: ["data_engineer", "traitement_distribue_concepts.mdx"],
+    label: "Traitement distribué : les concepts",
+    slug: "traitement_distribue_concepts",
+    course_id: 11,
+    description:
+      "MapReduce, partitionnement, data locality et tolérance aux pannes : comprendre ce que fait un moteur comme Spark avant d'en écrire une ligne.",
+    created: "8 août 2026",
+    updated: "8 août 2026",
+  },
+  {
+    id: 70,
+    index: 7,
+    paths: ["data_engineer", "cdc_replication.mdx"],
+    label: "CDC et réplication",
+    slug: "cdc_replication",
+    course_id: 11,
+    description:
+      "Change Data Capture, journal de transactions et sémantique de livraison : capter les changements d'une source sans la surcharger.",
+    created: "8 août 2026",
+    updated: "8 août 2026",
+  },
+  {
+    id: 71,
+    index: 8,
+    paths: ["data_engineer", "qualite_observabilite_donnee.mdx"],
+    label: "Qualité et observabilité de la donnée",
+    slug: "qualite_observabilite_donnee",
+    course_id: 11,
+    description:
+      "Dimensions de la qualité, data contracts, tests de données et observabilité pour détecter les anomalies avant l'utilisateur métier.",
+    created: "8 août 2026",
+    updated: "8 août 2026",
+  },
+  {
+    id: 72,
+    index: 9,
+    paths: ["data_engineer", "gouvernance_catalogage_donnee.mdx"],
+    label: "Gouvernance et catalogage",
+    slug: "gouvernance_catalogage_donnee",
+    course_id: 11,
+    description:
+      "Data catalog, data lineage et rôles de gouvernance (owner, steward, CDO) : rendre la donnée d'une organisation découvrable et fiable.",
+    created: "8 août 2026",
+    updated: "8 août 2026",
+  },
+  {
+    id: 73,
+    index: 10,
+    paths: ["data_engineer", "data_mesh_vs_centralise.mdx"],
+    label: "Data mesh vs architecture centralisée",
+    slug: "data_mesh_vs_centralise",
+    course_id: 11,
+    description:
+      "Les quatre piliers du data mesh face au modèle centralisé classique, et quand chaque approche a réellement du sens.",
+    created: "8 août 2026",
+    updated: "8 août 2026",
+  },
+  */
 ];
 
 export default lessons;
