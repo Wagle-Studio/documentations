@@ -1,0 +1,77 @@
+## Introduction
+
+---
+
+Avant même de parler d'outils, un pipeline de données transporte et stocke des fichiers. Le format choisi pour ces fichiers a un impact direct sur la vitesse de lecture, le volume de stockage et le coût des requêtes dans un entrepôt cloud facturé au volume scanné. C'est un sujet théorique simple à expliquer en entretien, mais qui révèle une vraie compréhension des enjeux du métier.
+
+## Formats orientés ligne vs orientés colonne
+
+---
+
+C'est la distinction la plus structurante entre formats de fichiers.
+
+- **Orienté ligne (row-oriented)** : les valeurs d'un même enregistrement sont stockées de façon contiguë. Efficace pour lire ou écrire un enregistrement complet (CSV, JSON, Avro).
+- **Orienté colonne (columnar)** : les valeurs d'une même colonne, pour tous les enregistrements, sont stockées de façon contiguë (Parquet, ORC).
+
+> 💡 Bon à savoir : c'est exactement la même distinction que row store vs column store côté bases de données, approfondie dans la leçon sur OLTP et OLAP, mais appliquée ici à des fichiers plutôt qu'à un moteur de base de données.
+
+Le format colonne change tout pour l'analytique : une requête qui n'a besoin que de 3 colonnes sur 50 ne lit physiquement que ces 3 colonnes sur disque, au lieu de charger chaque ligne en entier puis d'ignorer le reste. Il permet aussi une bien meilleure compression, puisque des valeurs similaires (une même colonne) sont regroupées ensemble.
+
+## Formats texte vs formats binaires
+
+---
+
+| Format | Type | Lisible par un humain | Schéma |
+| --- | --- | --- | --- |
+| **CSV** | Texte, ligne | Oui | Aucun (juste des colonnes positionnelles) |
+| **JSON** | Texte, ligne (semi-structuré) | Oui | Implicite, peut varier d'un enregistrement à l'autre |
+| **Avro** | Binaire, ligne | Non | Embarqué dans le fichier, versionné |
+| **Parquet** | Binaire, colonne | Non | Embarqué dans le fichier, versionné |
+| **ORC** | Binaire, colonne | Non | Embarqué dans le fichier, versionné |
+
+Les formats texte sont pratiques pour l'échange, le debug et l'interopérabilité (n'importe quel outil sait lire un CSV), mais coûteux en volume et lents à parser à grande échelle. Les formats binaires sont plus compacts et rapides à lire, au prix de la lisibilité directe.
+
+## Schéma embarqué et évolution du schéma
+
+---
+
+Un fichier CSV ou JSON ne porte aucune information fiable sur les types de ses colonnes : c'est le lecteur qui doit deviner ou imposer un schéma au moment de la lecture (**schema-on-read**).
+
+Avro et Parquet embarquent leur schéma directement dans le fichier (**schema-on-write**), ce qui permet de valider la structure dès l'écriture et de faire évoluer ce schéma de façon contrôlée dans le temps (ajout d'un champ optionnel, par exemple) sans casser les lecteurs existants. Cette capacité est ce qu'on appelle la **compatibilité de schéma** (backward/forward compatibility), un sujet central dès qu'un pipeline vit plusieurs mois en production.
+
+## Compression
+
+---
+
+Les formats binaires colonne se combinent avec des algorithmes de compression, appliqués par bloc de colonne plutôt que sur le fichier entier.
+
+| Codec | Vitesse | Taux de compression | Usage typique |
+| --- | --- | --- | --- |
+| **Snappy** | Très rapide | Modéré | Défaut pour Parquet en pipeline actif |
+| **Gzip** | Lent | Élevé | Archivage, données rarement relues |
+| **Zstandard (zstd)** | Rapide | Élevé | Bon compromis, adopté de plus en plus largement |
+
+Le choix du codec est un arbitrage entre vitesse de lecture/écriture et espace de stockage économisé, à mettre en regard du coût de calcul et du coût de stockage cloud.
+
+## Panorama par cas d'usage
+
+---
+
+| Besoin | Format recommandé | Pourquoi |
+| --- | --- | --- |
+| Échange entre systèmes hétérogènes, API | JSON | Universel, lisible, flexible |
+| Export simple, tableur | CSV | Universel, très simple |
+| Ingestion streaming avec schéma évolutif | Avro | Ligne, schéma embarqué, compact |
+| Stockage analytique dans un data lake / entrepôt | Parquet | Colonne, compression forte, lecture sélective des colonnes |
+
+## Résumé
+
+---
+
+| Concept | Définition |
+| --- | --- |
+| **Row-oriented** | Stockage contigu par enregistrement, adapté à l'écriture et à la lecture complète |
+| **Columnar** | Stockage contigu par colonne, adapté à la lecture sélective et à l'agrégation |
+| **Schema-on-read** | Le schéma est appliqué par le lecteur (CSV, JSON) |
+| **Schema-on-write** | Le schéma est embarqué et validé à l'écriture (Avro, Parquet) |
+| **Parquet** | Format de référence des entrepôts et data lakes modernes |
