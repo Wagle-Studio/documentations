@@ -1,0 +1,73 @@
+## Introduction
+
+---
+
+Spark, cité dans le panorama d'outils de l'introduction, est l'implémentation la plus répandue du traitement distribué en data engineering. Avant d'écrire une seule ligne de code avec ce type d'outil, il est plus utile de comprendre les concepts qu'il implémente : ce sont ces concepts, pas la syntaxe d'une API, qui reviennent en entretien.
+
+## Scale vertical vs scale horizontal
+
+---
+
+Face à un volume de données qui dépasse la capacité d'une seule machine, deux stratégies existent.
+
+- **Scale vertical** : augmenter la puissance d'une seule machine (plus de RAM, plus de CPU). Limité par le matériel disponible sur le marché, et par un coût qui croît plus vite que la capacité gagnée.
+- **Scale horizontal** : répartir le travail sur plusieurs machines (un cluster) qui coopèrent. Théoriquement sans limite de capacité, au prix d'une complexité logicielle : il faut découper le travail, le distribuer, et recombiner les résultats.
+
+Le traitement distribué est la réponse logicielle au scale horizontal : un ensemble de techniques pour découper un traitement en tâches indépendantes exécutables en parallèle sur plusieurs machines.
+
+## MapReduce : le modèle fondateur
+
+---
+
+MapReduce est le modèle conceptuel qui a popularisé le traitement distribué (Google, puis Hadoop). Il décompose n'importe quel traitement en trois étapes.
+
+1. **Map** : chaque machine du cluster applique la même transformation à sa portion de données, en parallèle et de façon indépendante (ex : extraire une clé et une valeur de chaque ligne).
+2. **Shuffle** : les résultats intermédiaires sont redistribués entre les machines de façon à regrouper toutes les valeurs partageant la même clé sur une même machine. C'est l'étape la plus coûteuse, car elle implique des transferts réseau massifs entre machines.
+3. **Reduce** : chaque machine agrège les valeurs regroupées pour sa clé (ex : sommer toutes les valeurs d'une même clé).
+
+Les moteurs modernes comme Spark ne sont plus limités à ce schéma strict (ils permettent des enchaînements bien plus riches d'opérations en mémoire), mais le vocabulaire (map, shuffle, reduce) reste la base pour comprendre ce qui se passe réellement lors d'une agrégation distribuée.
+
+## Partitionnement des données
+
+---
+
+Pour être traitée en parallèle, une donnée doit d'abord être découpée en **partitions**, chacune assignée à une machine (ou un processus) du cluster. Le choix de la clé de partitionnement est déterminant pour les performances.
+
+Un mauvais partitionnement crée un **skew** (déséquilibre) : si une clé concentre l'essentiel du volume (un client représentant 40 % des commandes, par exemple), la machine qui traite cette partition devient un goulot d'étranglement pendant que les autres machines du cluster restent inactives, en attente.
+
+## Le principe de data locality
+
+---
+
+Déplacer de gros volumes de données sur le réseau est coûteux. Le principe de **data locality** consiste à exécuter le traitement au plus près de l'endroit où la donnée est physiquement stockée, plutôt que de déplacer la donnée vers le traitement. C'est un des principes fondateurs de Hadoop, et une des raisons pour lesquelles l'étape de shuffle (qui, elle, déplace nécessairement des données entre machines) est particulièrement surveillée en termes de performance.
+
+## Tolérance aux pannes
+
+---
+
+Sur un cluster de centaines de machines, la panne d'une machine individuelle n'est pas une exception, c'est une certitude statistique à gérer nativement.
+
+Les moteurs de traitement distribué s'appuient sur deux mécanismes complémentaires :
+
+- **Lignage (lineage)** : chaque résultat intermédiaire garde la trace des transformations qui ont permis de le produire. En cas de perte d'une partition (machine tombée en panne), le moteur peut la recalculer à partir des données sources, sans tout redémarrer.
+- **Checkpointing** : pour éviter de recalculer un lignage devenu trop long (donc trop coûteux à rejouer), certains résultats intermédiaires sont explicitement sauvegardés sur un stockage durable à intervalle régulier.
+
+## Le rôle driver / executors
+
+---
+
+Un job distribué est généralement piloté par un processus **driver**, qui découpe le travail en tâches et les distribue à des processus **executors** (souvent un ou plusieurs par machine du cluster), qui exécutent réellement le traitement sur leur portion de données et remontent les résultats. Le driver coordonne, planifie et surveille ; les executors font le travail brut, en parallèle, sans se connaître directement les uns les autres.
+
+## Résumé
+
+---
+
+| Concept | Définition |
+| --- | --- |
+| **Scale horizontal** | Répartir le traitement sur plusieurs machines |
+| **Map** | Transformation appliquée en parallèle à chaque partition |
+| **Shuffle** | Redistribution des données entre machines, étape coûteuse |
+| **Reduce** | Agrégation des valeurs regroupées par clé |
+| **Skew** | Déséquilibre de charge dû à un mauvais partitionnement |
+| **Data locality** | Exécuter le calcul au plus près du stockage de la donnée |
+| **Lineage** | Trace des transformations permettant de recalculer une partition perdue |
