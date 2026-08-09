@@ -1,0 +1,66 @@
+## Introduction
+
+---
+
+Un pipeline de données doit régulièrement répondre à une question en apparence simple : qu'est-ce qui a changé dans la base source depuis la dernière synchronisation ? La façon dont on y répond a un impact direct sur la charge imposée au système source et sur la fraîcheur de la donnée en aval.
+
+## Les approches naïves et leurs limites
+
+---
+
+Deux stratégies simples viennent naturellement à l'esprit, mais passent mal à l'échelle.
+
+- **Extraction complète (full extract)** : recopier l'intégralité de la table source à chaque exécution. Simple à mettre en œuvre, mais le coût croît avec le volume de la table, indépendamment du nombre réel de changements : extraire 50 millions de lignes pour capter 200 changements est un gaspillage évident.
+- **Extraction différentielle par timestamp** : ne récupérer que les lignes dont une colonne `updated_at` est postérieure à la dernière synchronisation. Plus efficace, mais ne capture pas les suppressions (une ligne supprimée n'apparaît dans aucune requête), et dépend d'une colonne correctement maintenue par l'application source.
+
+## Le Change Data Capture (CDC)
+
+---
+
+Le **CDC** répond à ces limites en captant les changements directement à la source, au niveau du moteur de la base de données, plutôt qu'en interrogeant les tables applicatives.
+
+La plupart des bases relationnelles modernes tiennent un **journal de transactions** (write-ahead log en PostgreSQL, binlog en MySQL) : un flux séquentiel de toutes les écritures effectuées, utilisé nativement par la base pour garantir la durabilité et permettre sa propre réplication. Le CDC consiste à lire ce journal en continu pour transformer chaque écriture (insert, update, delete) en un événement exploitable par un pipeline en aval.
+
+> 💡 Bon à savoir : c'est le même mécanisme que la réplication native d'une base de données (un réplica qui rejoue le journal de transactions du primaire pour rester synchronisé). Le CDC ne fait que rendre ce flux disponible à des systèmes externes à la base elle-même.
+
+## Pourquoi le CDC change la donne
+
+---
+
+| Critère | Extraction naïve | CDC basé sur le journal |
+| --- | --- | --- |
+| Charge sur la source | Requêtes coûteuses répétées | Lecture passive d'un flux déjà produit par la base |
+| Détection des suppressions | Non (sauf soft delete applicatif) | Oui, nativement |
+| Latence | Minutes à heures (batch) | Quasi temps réel |
+| Dépendance à l'application source | Colonnes `updated_at` fiables requises | Aucune, transparent pour l'application |
+
+Le CDC permet de brancher un pipeline de réplication sans imposer aucune modification à l'application source ni surcharger la base avec des requêtes analytiques répétées.
+
+## Outils et positionnement
+
+---
+
+Debezium, déjà mentionné dans le panorama d'outils de l'introduction, est la référence open-source du CDC : il se branche sur le journal de transactions de la base source et publie chaque changement comme un événement dans une file de messages (Kafka), consommable ensuite par n'importe quel pipeline en aval.
+
+## Sémantique de livraison et idempotence
+
+---
+
+Un système distribué qui propage des événements doit choisir une garantie de livraison, avec un compromis entre fiabilité et complexité.
+
+- **At-most-once** : chaque événement est livré au plus une fois. Risque de perte en cas de panne.
+- **At-least-once** : chaque événement est livré au moins une fois, quitte à le livrer en double en cas de retry après panne. C'est la garantie la plus répandue dans les pipelines CDC.
+- **Exactly-once** : chaque événement est traité exactement une fois, ni perdu ni dupliqué. Techniquement le plus séduisant, mais coûteux à garantir de bout en bout.
+
+Avec une garantie at-least-once, un événement peut être reçu en double côté consommateur. La donnée en aval doit donc être conçue pour rester correcte même en cas de traitement répété du même événement, une propriété appelée **idempotence** (appliquer deux fois la même mise à jour produit le même résultat qu'une seule fois).
+
+## Résumé
+
+---
+
+| Concept | Définition |
+| --- | --- |
+| **CDC** | Capture des changements directement depuis le journal de transactions de la source |
+| **Write-ahead log / binlog** | Journal séquentiel des écritures, utilisé pour la durabilité et la réplication |
+| **At-least-once** | Un événement peut être livré en double, jamais perdu |
+| **Idempotence** | Traiter un même événement plusieurs fois produit le même résultat qu'une seule fois |
