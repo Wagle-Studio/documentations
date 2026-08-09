@@ -1,0 +1,68 @@
+## Introduction
+
+---
+
+L'introduction du cours a posé la distinction de base entre ingestion batch et streaming. Cette leçon va plus loin : comment ces deux modes s'organisent en architecture complète, et comment choisir entre eux en fonction du besoin métier réel plutôt que par effet de mode.
+
+## Le compromis latence / débit
+
+---
+
+Le choix entre batch et streaming est avant tout un arbitrage entre **latence** (le temps entre la production d'une donnée et sa disponibilité pour l'usage) et **débit** (le volume de données traité par unité de temps), avec un coût d'infrastructure qui croît fortement à mesure que la latence exigée diminue.
+
+- Le **batch** traite de gros volumes par lots, à intervalle régulier. Il maximise le débit et minimise le coût, au prix d'une latence de quelques minutes à plusieurs heures.
+- Le **streaming** traite chaque événement au fil de l'eau, en quasi temps réel. Il minimise la latence (secondes, parfois millisecondes), au prix d'une infrastructure plus complexe à opérer et à monitorer en continu.
+
+> 💡 Bon à savoir : la question à poser avant de choisir n'est pas "quelle technologie est la plus moderne" mais "quelle latence le besoin métier exige-t-il réellement". Un rapport financier mensuel n'a aucun intérêt à être calculé en streaming ; un système de détection de fraude en a un besoin vital.
+
+## Le fenêtrage en streaming
+
+---
+
+Contrairement au batch, où les données d'un lot sont naturellement bornées (toutes les commandes d'hier, par exemple), un flux d'événements est continu et infini. Pour appliquer des agrégations (compter, sommer), il faut découper ce flux en fenêtres temporelles.
+
+| Fenêtre | Fonctionnement |
+| --- | --- |
+| **Tumbling (fixe)** | Fenêtres consécutives et non chevauchantes de durée fixe (toutes les 5 minutes) |
+| **Sliding (glissante)** | Fenêtres chevauchantes, recalculées à intervalle régulier sur une durée fixe (moyenne mobile sur 5 minutes, recalculée chaque minute) |
+| **Session** | Fenêtre délimitée par une période d'inactivité plutôt qu'une durée fixe (regrouper les clics d'un utilisateur tant qu'il reste actif) |
+
+Un autre problème propre au streaming est celui des événements en retard (**late data**) : un événement peut arriver après la fermeture de sa fenêtre théorique, à cause d'un réseau lent ou d'une source déconnectée temporairement. Les moteurs de streaming gèrent ce cas avec un délai de grâce (watermark) avant de considérer une fenêtre définitivement close.
+
+## Architecture Lambda
+
+---
+
+L'architecture Lambda répond à un problème concret : le streaming pur, historiquement, manquait d'outils matures pour recalculer facilement de gros volumes historiques ou corriger des erreurs a posteriori. Elle propose donc de dupliquer le pipeline en deux couches parallèles.
+
+- **Couche batch** : recalcule périodiquement une vue complète et exacte sur l'historique complet des données.
+- **Couche speed (streaming)** : traite les événements récents en temps réel pour combler l'écart entre le dernier batch et maintenant.
+- **Couche de service** : fusionne les résultats des deux couches pour répondre aux requêtes.
+
+Son principal reproche est la duplication de la logique métier : la même transformation doit être écrite et maintenue deux fois, avec le risque de divergence entre les deux implémentations.
+
+## Architecture Kappa
+
+---
+
+L'architecture Kappa simplifie ce modèle en ne gardant qu'une seule couche : tout passe par le streaming, y compris le retraitement historique, réalisé en **rejouant** le flux depuis une file de messages qui conserve un historique suffisant (Kafka, par exemple, peut conserver des événements plusieurs jours ou semaines).
+
+| Architecture | Nombre de couches de traitement | Avantage | Inconvénient |
+| --- | --- | --- | --- |
+| **Lambda** | 2 (batch + speed) | Le batch reste simple et éprouvé pour les gros recalculs | Logique dupliquée, risque d'incohérence |
+| **Kappa** | 1 (streaming uniquement) | Une seule logique à maintenir | Exige un moteur de streaming capable de rejouer efficacement de gros volumes |
+
+Kappa s'est largement imposée à mesure que les moteurs de streaming (Kafka Streams, Flink) ont gagné en maturité pour absorber aussi les cas de retraitement massif.
+
+## Résumé
+
+---
+
+| Concept | Définition |
+| --- | --- |
+| **Batch** | Traitement par lots, latence élevée, débit maximisé |
+| **Streaming** | Traitement événement par événement, latence minimale |
+| **Fenêtrage** | Découpage d'un flux continu en intervalles pour agréger |
+| **Watermark** | Délai de grâce accordé aux événements en retard |
+| **Lambda** | Deux couches (batch + speed), logique dupliquée |
+| **Kappa** | Une seule couche streaming, avec rejouabilité de l'historique |
