@@ -1,0 +1,58 @@
+## Introduction
+
+---
+
+Cette dernière leçon aborde un débat organisationnel très présent dans les offres d'emploi actuelles ("approche data mesh", "plateforme self-service") : comment structurer les équipes et les responsabilités autour de la donnée à mesure qu'une organisation grandit. Ce n'est pas un choix d'outil, mais un choix d'architecture organisationnelle, avec des conséquences directes sur le métier de data engineer.
+
+## Le modèle centralisé classique
+
+---
+
+Dans le modèle le plus répandu, une équipe data unique centralise l'ensemble du travail : elle construit et maintient les pipelines de toutes les équipes métier, gère un entrepôt central, et répond aux demandes de données de l'organisation entière.
+
+Ce modèle fonctionne bien tant que le nombre de domaines métier et de sources de données reste limité. Il devient un goulot d'étranglement à mesure que l'organisation grandit : chaque nouvelle demande passe par la même équipe, qui doit connaître en profondeur des domaines métier très différents (marketing, finance, logistique) sans en avoir l'expertise native, et devient rapidement le facteur limitant de toute initiative data.
+
+## Le data mesh : quatre piliers
+
+---
+
+Le **data mesh** est une réponse organisationnelle à ce goulot d'étranglement, popularisée par Zhamak Dehghani. Il ne remplace pas les briques techniques vues dans les leçons précédentes (entrepôt, pipelines, orchestration), mais redistribue leur responsabilité selon quatre principes.
+
+| Pilier | Principe |
+| --- | --- |
+| **Domain ownership** | Chaque domaine métier est propriétaire de ses propres données, avec sa propre équipe et son expertise du sujet, plutôt qu'une équipe data centrale unique |
+| **Data as a product** | Une donnée exposée par un domaine est traitée comme un produit à part entière : documentée, fiable, avec un contrat explicite envers ses consommateurs |
+| **Self-serve data platform** | Une plateforme technique commune (stockage, outillage, standards) permet à chaque équipe domaine d'opérer ses propres pipelines sans réinventer l'infrastructure |
+| **Federated governance** | Des standards communs (qualité, sécurité, interopérabilité) sont définis collectivement et appliqués de façon homogène à travers tous les domaines, malgré la décentralisation |
+
+Le data mesh combine ainsi une décentralisation de la responsabilité fonctionnelle (chaque domaine connaît mieux ses propres données) avec un socle technique et des règles communes qui évitent que la décentralisation ne tourne au chaos.
+
+## Avantages et inconvénients
+
+---
+
+| | Modèle centralisé | Data mesh |
+| --- | --- | --- |
+| **Avantage principal** | Cohérence forte, un seul endroit pour comprendre l'ensemble | Passe à l'échelle sur de nombreux domaines sans goulot d'étranglement |
+| **Inconvénient principal** | Devient un goulot d'étranglement à grande échelle | Coût d'infrastructure et de coordination important, exige une plateforme self-service mature |
+| **Adapté à** | Petites et moyennes structures, peu de domaines | Grandes organisations avec de nombreux domaines métier autonomes |
+
+## Une lecture pragmatique du terme dans les offres d'emploi
+
+---
+
+Le data mesh est un sujet souvent cité de façon aspirationnelle dans les offres d'emploi, sans que l'organisation l'ait réellement implémenté dans ses quatre piliers. En entretien, il est plus utile de comprendre le problème que le data mesh cherche à résoudre (la centralisation qui devient un goulot d'étranglement) que de réciter sa définition : cela permet de questionner concrètement où en est réellement l'organisation qui recrute. A-t-elle une plateforme self-service ? Une gouvernance fédérée ? Ou simplement des équipes domaine qui gèrent leurs propres pipelines sans les autres piliers ?
+
+> 💡 Bon à savoir : à petite échelle, mettre en place un data mesh complet est généralement contre-productif, car la coordination et l'infrastructure qu'il exige coûtent plus cher que le goulot d'étranglement qu'il résout. C'est un modèle qui se justifie par l'échelle, pas par la modernité perçue de l'approche.
+
+## Résumé
+
+---
+
+| Concept | Définition |
+| --- | --- |
+| **Modèle centralisé** | Une équipe data unique gère l'ensemble des pipelines de l'organisation |
+| **Domain ownership** | Chaque domaine métier possède et opère ses propres données |
+| **Data as a product** | Une donnée exposée est documentée et fiable comme un produit |
+| **Self-serve data platform** | Socle technique commun permettant l'autonomie des équipes domaine |
+| **Federated governance** | Standards communs appliqués de façon homogène malgré la décentralisation |
