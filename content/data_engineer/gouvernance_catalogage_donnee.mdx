@@ -1,0 +1,59 @@
+## Introduction
+
+---
+
+Quand une organisation ne compte que quelques tables, tout le monde sait où trouver quoi. À l'échelle de centaines de tables, alimentées par des dizaines de pipelines et consultées par des équipes qui ne se parlent pas au quotidien, cette connaissance implicite ne suffit plus. La gouvernance de la donnée est l'ensemble des pratiques qui rendent cette connaissance explicite, partagée et fiable.
+
+## Le data catalog
+
+---
+
+Un **data catalog** est un inventaire centralisé des données disponibles dans une organisation : quelles tables existent, ce qu'elles contiennent, qui les a produites, à quelle fréquence elles sont mises à jour, et qui les utilise. C'est l'équivalent, pour la donnée, d'une documentation d'API centralisée : sans lui, retrouver "la bonne table de chiffre d'affaires" parmi des dizaines de variantes devient une chasse au trésor reposant sur la mémoire collective.
+
+Un bon catalogue va au-delà de la simple liste de tables : il porte des **métadonnées** enrichies (description métier des colonnes, propriétaire, niveau de confiance, exemples de valeurs) qui rendent une donnée réellement compréhensible sans avoir à interroger son producteur.
+
+## Le data lineage
+
+---
+
+Le **lineage** (traçabilité) retrace le chemin complet d'une donnée : de quelle source elle provient, par quelles transformations elle est passée, et vers quelles tables ou quels tableaux de bord elle alimente en aval.
+
+Cette traçabilité répond à deux besoins concrets et récurrents :
+
+- **Diagnostic d'incident** : un chiffre erroné apparaît dans un rapport ; le lineage permet de remonter jusqu'à la transformation ou la source qui a introduit l'erreur, sans deviner.
+- **Analyse d'impact** : avant de modifier une table ou d'arrêter un pipeline, le lineage permet de savoir précisément quels usages en aval seraient affectés.
+
+## Qui possède la donnée : les rôles de gouvernance
+
+---
+
+Plusieurs rôles se répartissent la responsabilité de la donnée dans une organisation structurée, avec des périmètres distincts.
+
+| Rôle | Responsabilité |
+| --- | --- |
+| **Data owner** | Responsable métier d'un domaine de données (ex : le responsable ventes est owner des données de vente), décide de ce qui est autorisé sur cette donnée |
+| **Data steward** | Garant opérationnel de la qualité et de la documentation d'un domaine de données au quotidien, souvent en lien direct avec les équipes data engineering |
+| **Data engineer** | Construit et fiabilise les pipelines techniques qui rendent la donnée disponible, sous la responsabilité fonctionnelle du data owner |
+| **Chief Data Officer (CDO)** | Porte la stratégie data de l'organisation dans son ensemble, arbitre entre domaines, pousse la gouvernance au niveau exécutif |
+
+Cette séparation évite un écueil classique : que l'équipe technique devienne, par défaut, seule responsable de décisions qui relèvent en réalité du métier (quelles données peuvent être croisées, qui peut y accéder, quelle est la définition correcte d'un indicateur).
+
+## Pourquoi la gouvernance devient nécessaire avec l'échelle
+
+---
+
+Une petite structure peut fonctionner sans gouvernance formelle : peu de tables, peu de pipelines, une seule équipe qui connaît tout par cœur. La gouvernance devient nécessaire lorsque plusieurs signaux apparaissent simultanément : des définitions divergentes d'un même indicateur selon les équipes (deux "chiffre d'affaires" différents dans deux tableaux de bord), une incapacité à savoir qui utilise une table avant de la modifier, ou un temps croissant passé à chercher une donnée plutôt qu'à l'exploiter.
+
+> 💡 Bon à savoir : ce basculement rejoue, à l'échelle de l'organisation, le même arbitrage que le passage d'un monolithe à des services découplés côté backend. La coordination implicite qui fonctionnait à petite échelle doit être remplacée par des contrats et une documentation explicites à mesure que le nombre d'acteurs grandit.
+
+## Résumé
+
+---
+
+| Concept | Définition |
+| --- | --- |
+| **Data catalog** | Inventaire centralisé et documenté des données disponibles |
+| **Data lineage** | Traçabilité d'une donnée depuis sa source jusqu'à ses usages en aval |
+| **Data owner** | Responsable métier d'un domaine de données |
+| **Data steward** | Garant opérationnel de la qualité et de la documentation d'un domaine |
+| **Chief Data Officer** | Porte la stratégie data au niveau de l'organisation |
