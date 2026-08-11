@@ -1,0 +1,62 @@
+## Introduction
+
+---
+
+Un pipeline peut s'exécuter sans erreur technique tout en produisant une donnée fausse : un champ mal mappé, une source qui cesse silencieusement d'envoyer certains événements, une jointure qui duplique des lignes. Ce sont des pannes silencieuses, souvent plus dommageables qu'un pipeline qui plante bruyamment : le principe garbage in, garbage out veut qu'une décision métier prise sur une donnée fausse propage l'erreur bien au-delà du pipeline lui-même.
+
+## Les dimensions de la qualité de la donnée
+
+---
+
+La qualité d'une donnée se mesure sur plusieurs axes indépendants, qui reviennent systématiquement dans la littérature du domaine.
+
+| Dimension | Question posée |
+| --- | --- |
+| **Complétude** | Manque-t-il des valeurs ou des enregistrements attendus ? |
+| **Exactitude** | Les valeurs reflètent-elles fidèlement la réalité ? |
+| **Cohérence** | Une même information est-elle identique dans tous les systèmes qui la portent ? |
+| **Fraîcheur** | La donnée est-elle à jour par rapport au moment où elle est consultée ? |
+| **Unicité** | Un même enregistrement existe-t-il en double ? |
+| **Validité** | La donnée respecte-t-elle le format et les contraintes attendues (type, plage de valeurs) ? |
+
+Aucune de ces dimensions ne se substitue aux autres : une donnée peut être parfaitement valide (bon format) tout en étant inexacte (une valeur plausible mais fausse), ou complète mais périmée.
+
+## Les data contracts
+
+---
+
+Un **data contract** est un accord explicite entre le producteur d'une donnée (souvent une équipe applicative, propriétaire de la base source) et ses consommateurs (l'équipe data) sur la structure, la sémantique et les garanties de cette donnée : quels champs existent, quel est leur type, quelles valeurs sont possibles, à quelle fréquence la donnée est mise à jour.
+
+Sans contrat explicite, un pipeline dépend implicitement de la structure actuelle d'une base applicative, que l'équipe qui la possède peut faire évoluer sans avoir conscience de l'impact en aval. Un changement de type de colonne ou un renommage silencieux côté source peut ainsi casser un pipeline entier, ou pire, continuer de s'exécuter en produisant une donnée fausse. Le data contract déplace cette responsabilité en amont : c'est au producteur de signaler un changement avant de le déployer, pas au consommateur de le découvrir après coup.
+
+## Tester la donnée comme on teste du code
+
+---
+
+À l'image des tests unitaires côté applicatif, un pipeline mature embarque des **tests de données** : des assertions automatiques exécutées à chaque run, qui vérifient des règles de qualité plutôt que de la logique de code.
+
+Exemples de règles courantes : une colonne ne doit jamais contenir de valeur nulle, une clé doit être unique, une valeur numérique doit rester dans une plage plausible, le nombre de lignes d'une table ne doit pas chuter brutalement d'un run à l'autre. Ces tests peuvent bloquer un pipeline avant qu'une donnée corrompue n'atteigne les tableaux de bord ou les modèles qui en dépendent.
+
+## L'observabilité de la donnée
+
+---
+
+L'observabilité de la donnée applique au monde de la data les mêmes principes que l'observabilité applicative (monitoring, logs, alerting), avec des signaux propres à ce domaine.
+
+- **Fraîcheur** : depuis combien de temps une table n'a-t-elle pas été mise à jour, par rapport à sa fréquence attendue ?
+- **Volume** : le nombre de lignes ingérées correspond-il à ce qui est habituellement observé, ou y a-t-il une chute ou un pic anormal ?
+- **Schéma** : la structure d'une table a-t-elle changé de façon inattendue (colonne ajoutée, supprimée, type modifié) ?
+- **Lignage** : en cas d'anomalie détectée en aval, quelles sont les sources et transformations en amont susceptibles d'en être la cause ?
+
+Ces signaux permettent de détecter un problème de qualité avant qu'un utilisateur métier ne le remarque dans un rapport, plutôt qu'après.
+
+## Résumé
+
+---
+
+| Concept | Définition |
+| --- | --- |
+| **Complétude, exactitude, cohérence, fraîcheur, unicité, validité** | Les six dimensions classiques de la qualité de la donnée |
+| **Data contract** | Accord explicite entre producteur et consommateur sur la structure d'une donnée |
+| **Test de données** | Assertion automatique de qualité exécutée à chaque run du pipeline |
+| **Observabilité de la donnée** | Monitoring continu de la fraîcheur, du volume et du schéma pour détecter les anomalies tôt |
