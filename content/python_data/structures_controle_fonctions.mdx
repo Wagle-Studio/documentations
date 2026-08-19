@@ -1,0 +1,273 @@
+## Introduction
+
+---
+
+Cette leçon couvre les structures de contrôle du langage (conditions, boucles) et les fonctions, avec un focus sur deux constructions propres à Python et particulièrement utiles en data : les comprehensions et les générateurs.
+
+## Conditions
+
+---
+
+La syntaxe `if`/`elif`/`else` reprend la logique du `if`/`elseif`/`else` de PHP, avec des mots-clés légèrement différents et sans parenthèses obligatoires autour de la condition.
+
+```python
+note = 14
+
+if note >= 16:
+    mention = "Très bien"
+elif note >= 14:
+    mention = "Bien"
+elif note >= 12:
+    mention = "Assez bien"
+else:
+    mention = "Passable"
+
+print(mention)  # Bien
+```
+
+Python n'a pas d'opérateur ternaire avec la syntaxe `?:` de PHP, mais une expression conditionnelle équivalente, lue de gauche à droite :
+
+```python
+# PHP : $statut = $age >= 18 ? "majeur" : "mineur";
+statut = "majeur" if age >= 18 else "mineur"
+```
+
+## match/case
+
+---
+
+Python n'a pas de `switch` natif avant la version 3.10. Le `match`/`case`, introduit à cette version, joue un rôle proche mais avec un mécanisme de correspondance de motifs (pattern matching) plus riche qu'un simple `switch`.
+
+```python
+def code_statut_libelle(code: int) -> str:
+    match code:
+        case 200:
+            return "OK"
+        case 404:
+            return "Non trouvé"
+        case 500 | 502 | 503:
+            return "Erreur serveur"
+        case _:
+            return "Statut inconnu"
+```
+
+Le `match`/`case` sait aussi décomposer des structures, ce qu'un `switch` PHP classique ne fait pas :
+
+```python
+def traiter_evenement(evenement: dict):
+    match evenement:
+        case {"type": "creation", "id": id}:
+            print(f"Création de l'élément {id}")
+        case {"type": "suppression", "id": id}:
+            print(f"Suppression de l'élément {id}")
+        case _:
+            print("Événement non géré")
+```
+
+> 💡 Bon à savoir : si le projet doit rester compatible avec des versions de Python antérieures à 3.10, ou si le besoin reste une simple correspondance valeur/action, un enchaînement de `if`/`elif` ou un dictionnaire de fonctions reste une alternative courante et parfaitement idiomatique.
+
+## Boucles for et while
+
+---
+
+La boucle `for` de Python itère toujours sur un itérable (liste, dict, range, générateur), il n'existe pas de forme avec compteur explicite comme `for ($i = 0; $i < 10; $i++)` en PHP.
+
+```python
+fruits = ["pomme", "banane", "cerise"]
+
+for fruit in fruits:
+    print(fruit)
+
+# équivalent d'un for indexé PHP, via range()
+for i in range(5):
+    print(i)  # 0, 1, 2, 3, 4
+
+# itération avec index et valeur simultanément
+for index, fruit in enumerate(fruits):
+    print(f"{index} : {fruit}")
+
+# itération sur un dict
+utilisateur = {"nom": "Alice", "age": 25}
+for cle, valeur in utilisateur.items():
+    print(f"{cle} = {valeur}")
+```
+
+La boucle `while` fonctionne comme en PHP :
+
+```python
+compteur = 0
+while compteur < 3:
+    print(compteur)
+    compteur += 1
+```
+
+> 💡 Bon à savoir : Python n'a pas d'opérateur d'incrémentation `++` ou `--`. Il faut écrire explicitement `compteur += 1`.
+
+## Comprehensions
+
+---
+
+Les comprehensions sont une construction sans équivalent direct en PHP : elles permettent de construire une liste, un dict ou un set en une seule expression, à partir d'un itérable, avec un filtre optionnel.
+
+```python
+nombres = [1, 2, 3, 4, 5, 6]
+
+# list comprehension : équivalent condensé d'un foreach + append
+carres = [n ** 2 for n in nombres]
+# [1, 4, 9, 16, 25, 36]
+
+pairs = [n for n in nombres if n % 2 == 0]
+# [2, 4, 6]
+
+# dict comprehension
+carres_par_nombre = {n: n ** 2 for n in nombres}
+# {1: 1, 2: 4, 3: 9, ...}
+
+# set comprehension
+parites = {"pair" if n % 2 == 0 else "impair" for n in nombres}
+# {"pair", "impair"}
+```
+
+L'équivalent PHP le plus proche serait une combinaison de `array_map` et `array_filter`, mais la comprehension reste plus lisible et plus idiomatique en Python :
+
+```php
+<?php
+// Équivalent PHP, nettement plus verbeux
+$carres = array_map(fn($n) => $n ** 2, $nombres);
+$pairs = array_filter($nombres, fn($n) => $n % 2 === 0);
+```
+
+> 💡 Bon à savoir : au-delà d'un niveau d'imbrication, une comprehension devient vite illisible. Dans ce cas, une boucle `for` classique reste préférable ; la lisibilité prime toujours sur la concision en Python (c'est un principe explicite du langage, formulé dans le "Zen of Python").
+
+## Fonctions
+
+---
+
+Une fonction se définit avec `def`, sans mot-clé de visibilité au niveau module (la notion de fonction publique/privée existe surtout au niveau des classes, vue dans la leçon suivante).
+
+```python
+def saluer(nom: str, ponctuation: str = "!") -> str:
+    return f"Bonjour {nom}{ponctuation}"
+
+print(saluer("Alice"))              # Bonjour Alice!
+print(saluer("Bob", ponctuation="."))  # Bonjour Bob.
+```
+
+### Arguments positionnels, nommés, par défaut
+
+---
+
+Python distingue explicitement les arguments passés par position de ceux passés par leur nom (équivalent des arguments nommés introduits en PHP 8), et les deux peuvent se combiner :
+
+```python
+def creer_utilisateur(nom, email, actif=True, role="user"):
+    return {"nom": nom, "email": email, "actif": actif, "role": role}
+
+# par position
+creer_utilisateur("Alice", "alice@mail.com")
+
+# par nom, ordre libre
+creer_utilisateur(email="bob@mail.com", nom="Bob", role="admin")
+```
+
+### `*args` et `**kwargs`
+
+---
+
+Ces deux constructions permettent à une fonction d'accepter un nombre variable d'arguments, positionnels ou nommés. C'est l'équivalent Python de l'opérateur splat (`...$args`) de PHP, en distinguant explicitement les deux cas.
+
+```python
+def additionner(*nombres):
+    # nombres est un tuple
+    return sum(nombres)
+
+additionner(1, 2, 3)  # 6
+
+def afficher_infos(**details):
+    # details est un dict
+    for cle, valeur in details.items():
+        print(f"{cle} : {valeur}")
+
+afficher_infos(nom="Alice", age=25)
+```
+
+Le double astérisque est aussi utilisé pour décomposer un dictionnaire en arguments nommés lors d'un appel :
+
+```python
+config = {"nom": "Alice", "email": "alice@mail.com"}
+creer_utilisateur(**config)
+```
+
+## Fonctions comme objets de première classe
+
+---
+
+En Python, une fonction est une valeur comme une autre : elle peut être assignée à une variable, passée en argument, retournée par une autre fonction. PHP le permet aussi via les closures et les `callable`, mais c'est une pratique plus naturelle et plus centrale en Python.
+
+```python
+def carre(n):
+    return n ** 2
+
+# assigner une fonction à une variable
+operation = carre
+print(operation(4))  # 16
+
+# passer une fonction en argument
+nombres = [1, 2, 3, 4]
+resultats = list(map(carre, nombres))  # [1, 4, 9, 16]
+
+# lambda : fonction anonyme sur une seule expression
+double = lambda n: n * 2
+print(double(5))  # 10
+
+resultats_tries = sorted(nombres, key=lambda n: -n)  # [4, 3, 2, 1]
+```
+
+> 💡 Bon à savoir : une lambda Python est volontairement limitée à une seule expression, sans instruction ni bloc. Pour toute logique un peu complexe, une fonction `def` classique reste préférable : c'est l'équivalent d'une closure PHP `fn($n) => $n * 2`, mais réservé aux cas très simples par convention.
+
+## Générateurs et yield
+
+---
+
+Un générateur est une fonction qui produit une séquence de valeurs paresseusement (une à la fois, à la demande), au lieu de construire et retourner une liste complète en mémoire. C'est une différence structurante avec un tableau PHP classique, qui charge systématiquement toutes ses valeurs en mémoire.
+
+```python
+def lire_grand_fichier(chemin):
+    with open(chemin) as f:
+        for ligne in f:
+            yield ligne.strip()
+
+# les lignes sont produites une par une, jamais toutes chargées en même temps
+for ligne in lire_grand_fichier("logs.csv"):
+    print(ligne)
+```
+
+Chaque appel à `yield` suspend la fonction et renvoie une valeur à l'appelant ; l'exécution reprend exactement où elle s'était arrêtée au prochain tour de boucle. Comparé à une fonction classique qui retournerait une `list` complète avec `return`, un générateur ne garde en mémoire que l'état courant de l'itération, pas l'ensemble des résultats.
+
+```python
+# version "classique" : charge tout en mémoire
+def lire_grand_fichier_liste(chemin):
+    with open(chemin) as f:
+        return [ligne.strip() for ligne in f]  # coûteux sur un fichier de plusieurs Go
+
+# version générateur : mémoire quasi constante, quelle que soit la taille du fichier
+def lire_grand_fichier_generateur(chemin):
+    with open(chemin) as f:
+        for ligne in f:
+            yield ligne.strip()
+```
+
+> 💡 Bon à savoir : c'est directement utile pour le traitement par lots (batch processing) évoqué dans le cours data engineer. Un pipeline qui traite un fichier de plusieurs gigaoctets, ou qui lit en continu depuis une source de données, ne peut simplement pas se permettre de tout charger en mémoire d'un coup : le générateur est le mécanisme Python natif pour traiter un flux de données ligne par ligne, ou lot par lot, avec une empreinte mémoire constante.
+
+Une expression génératrice existe aussi, sur le même principe qu'une list comprehension mais avec des parenthèses au lieu de crochets, et produit ses valeurs paresseusement :
+
+```python
+carres_generateur = (n ** 2 for n in range(1_000_000))  # rien n'est calculé ici
+total = sum(carres_generateur)  # les valeurs sont calculées une par une, à la demande
+```
+
+## Pour la suite
+
+---
+
+La prochaine leçon aborde la programmation orientée objet en Python : classes, méthodes magiques, propriétés, héritage et dataclasses, avec des parallèles directs vers les patterns objet déjà connus en PHP.
