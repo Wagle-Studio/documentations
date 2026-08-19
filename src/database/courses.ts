@@ -78,6 +78,13 @@ const courses: Course[] = [
     emoji: "/emoji/data.png",
     category: "Data",
   },
+  {
+    id: 12,
+    label: "Python pour la Data",
+    slug: "python_data",
+    emoji: "/emoji/python.png",
+    category: "Python",
+  },
 ];
 
 export default courses;

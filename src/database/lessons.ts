@@ -861,6 +861,153 @@ const lessons: Lesson[] = [
     created: "8 août 2026",
     updated: "8 août 2026",
   },
+  {
+    id: 74,
+    index: 1,
+    paths: ["python_data", "introduction_python.mdx"],
+    label: "Introduction au langage",
+    slug: "introduction_python",
+    course_id: 12,
+    description:
+      "Positionnement de Python dans l'écosystème data/IA et comparaison avec les réflexes acquis en PHP.",
+    created: "19 août 2026",
+    updated: "19 août 2026",
+  },
+  {
+    id: 75,
+    index: 2,
+    paths: ["python_data", "syntaxe_types_donnees.mdx"],
+    label: "Syntaxe et types de données",
+    slug: "syntaxe_types_donnees",
+    course_id: 12,
+    description:
+      "Indentation, mutabilité et typage optionnel : ce qui change par rapport à la syntaxe PHP.",
+    created: "19 août 2026",
+    updated: "19 août 2026",
+  },
+  {
+    id: 76,
+    index: 3,
+    paths: ["python_data", "structures_controle_fonctions.mdx"],
+    label: "Structures de contrôle et fonctions",
+    slug: "structures_controle_fonctions",
+    course_id: 12,
+    description:
+      "Comprehensions, arguments positionnels et nommés, fonctions comme objets de première classe.",
+    created: "19 août 2026",
+    updated: "19 août 2026",
+  },
+  // Lessons ci-dessous pas encore push en prod, à décommenter au fur et à mesure des push
+  /*
+  {
+    id: 77,
+    index: 4,
+    paths: ["python_data", "poo_python.mdx"],
+    label: "POO en Python",
+    slug: "poo_python",
+    course_id: 12,
+    description:
+      "Classes, dataclasses et méthodes magiques : équivalences et écarts avec la POO PHP.",
+    created: "19 août 2026",
+    updated: "19 août 2026",
+  },
+  {
+    id: 78,
+    index: 5,
+    paths: ["python_data", "environnement_outillage.mdx"],
+    label: "Environnement et outillage",
+    slug: "environnement_outillage",
+    course_id: 12,
+    description:
+      "Environnements virtuels, gestion des dépendances avec pip/poetry et structure d'un projet Python.",
+    created: "19 août 2026",
+    updated: "19 août 2026",
+  },
+  {
+    id: 79,
+    index: 6,
+    paths: ["python_data", "fichiers_formats_donnees.mdx"],
+    label: "Fichiers et formats de données",
+    slug: "fichiers_formats_donnees",
+    course_id: 12,
+    description:
+      "Lire et écrire du CSV, du JSON et du Parquet en Python, en lien avec les formats vus côté data engineering.",
+    created: "19 août 2026",
+    updated: "19 août 2026",
+  },
+  {
+    id: 80,
+    index: 7,
+    paths: ["python_data", "numpy_calcul_vectorise.mdx"],
+    label: "NumPy : calcul vectorisé",
+    slug: "numpy_calcul_vectorise",
+    course_id: 12,
+    description:
+      "ndarray, vectorisation et broadcasting : la brique de calcul sous-jacente à l'écosystème data Python.",
+    created: "19 août 2026",
+    updated: "19 août 2026",
+  },
+  {
+    id: 81,
+    index: 8,
+    paths: ["python_data", "pandas_manipulation_donnees.mdx"],
+    label: "Pandas : manipulation de données",
+    slug: "pandas_manipulation_donnees",
+    course_id: 12,
+    description:
+      "Series, DataFrame, indexation, groupby et merge : l'outil quotidien pour manipuler des données tabulaires.",
+    created: "19 août 2026",
+    updated: "19 août 2026",
+  },
+  {
+    id: 82,
+    index: 9,
+    paths: ["python_data", "visualisation_donnees.mdx"],
+    label: "Visualisation de données",
+    slug: "visualisation_donnees",
+    course_id: 12,
+    description:
+      "Bases de matplotlib et seaborn pour explorer un jeu de données et communiquer des résultats.",
+    created: "19 août 2026",
+    updated: "19 août 2026",
+  },
+  {
+    id: 83,
+    index: 10,
+    paths: ["python_data", "apis_bases_donnees_python.mdx"],
+    label: "APIs et bases de données",
+    slug: "apis_bases_donnees_python",
+    course_id: 12,
+    description:
+      "Consommer une API avec requests et interroger une base avec SQLAlchemy, en réutilisant tes réflexes API REST.",
+    created: "19 août 2026",
+    updated: "19 août 2026",
+  },
+  {
+    id: 84,
+    index: 11,
+    paths: ["python_data", "notebooks_workflow_data.mdx"],
+    label: "Notebooks et workflow data",
+    slug: "notebooks_workflow_data",
+    course_id: 12,
+    description:
+      "Jupyter et les bonnes pratiques pour séparer exploration jetable et code productif.",
+    created: "19 août 2026",
+    updated: "19 août 2026",
+  },
+  {
+    id: 85,
+    index: 12,
+    paths: ["python_data", "tests_python.mdx"],
+    label: "Tests en Python",
+    slug: "tests_python",
+    course_id: 12,
+    description:
+      "pytest, fixtures et paramétrage : le pendant Python de ton cours Tests en PHP.",
+    created: "19 août 2026",
+    updated: "19 août 2026",
+  },
+  */
 ];
 
 export default lessons;
