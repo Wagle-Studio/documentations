@@ -1,0 +1,195 @@
+## Introduction
+
+---
+
+Cette leçon couvre les fondations syntaxiques de Python : comment un bloc de code est délimité, quels sont les types de base, et un piège classique lié à la mutabilité qui surprend souvent les développeurs venant d'autres langages. C'est la base sur laquelle s'appuient toutes les leçons suivantes.
+
+## Indentation signifiante
+
+---
+
+En PHP, les blocs de code sont délimités par des accolades `{ }`. L'indentation est une convention de style, purement esthétique : le code fonctionne à l'identique qu'il soit indenté ou non.
+
+```php
+<?php
+
+if ($age >= 18) {
+    echo "Majeur";
+} else {
+    echo "Mineur";
+}
+```
+
+En Python, il n'y a pas d'accolades. L'indentation fait partie de la syntaxe : c'est elle qui délimite les blocs. Un bloc mal indenté est une erreur de syntaxe, pas juste un problème de style.
+
+```python
+age = 20
+
+if age >= 18:
+    print("Majeur")
+else:
+    print("Mineur")
+```
+
+La convention officielle (PEP 8) impose 4 espaces par niveau d'indentation, jamais de tabulations mélangées avec des espaces. Les éditeurs modernes gèrent cette conversion automatiquement.
+
+> 💡 Bon à savoir : ce choix n'est pas juste esthétique. Il force une seule façon d'indenter le code dans toute la communauté Python, ce qui rend n'importe quel code source lisible sans effort d'adaptation. C'est un compromis assumé : moins de liberté syntaxique, plus de cohérence collective.
+
+## Variables et types de base
+
+---
+
+Python est dynamiquement typé par défaut : une variable n'a pas de type déclaré, c'est la valeur qu'elle contient qui a un type. Le type peut changer au cours de l'exécution, ce qui est aussi vrai en PHP sans déclaration de type.
+
+```python
+age = 25          # int
+taille = 1.78      # float
+nom = "Alice"       # str
+actif = True        # bool
+adresse = None       # équivalent de null en PHP
+```
+
+| Type Python | Équivalent PHP | Remarque |
+| --- | --- | --- |
+| `int` | `int` | Précision arbitraire, pas de dépassement à gérer |
+| `float` | `float` | Flottant double précision (IEEE 754), comme en PHP |
+| `str` | `string` | Immuable, comme en PHP |
+| `bool` | `bool` | `True`/`False` avec majuscule, contrairement à `true`/`false` en PHP |
+| `None` | `null` | Même rôle, syntaxe différente |
+| `list` | `array` (indexé) | Ordonnée, mutable |
+| `dict` | `array` (associatif) | Ordonné depuis Python 3.7, mutable |
+| `tuple` | Pas d'équivalent direct | Ordonné, immuable |
+| `set` | Pas d'équivalent direct natif | Non ordonné, valeurs uniques |
+
+Contrairement à PHP où `array` sert à la fois de liste indexée et de tableau associatif, Python distingue explicitement plusieurs structures : `list`, `dict`, `tuple`, `set`. Ce choix évite l'ambiguïté sur l'intention (une séquence ordonnée n'est pas une table de correspondance clé/valeur) et permet d'utiliser la structure la plus adaptée et la plus performante à chaque cas.
+
+```python
+# list : équivalent d'un array indexé PHP
+fruits = ["pomme", "banane", "cerise"]
+fruits.append("kiwi")
+
+# dict : équivalent d'un array associatif PHP
+utilisateur = {"id": 42, "nom": "Alice", "actif": True}
+print(utilisateur["nom"])
+
+# tuple : séquence immuable, souvent utilisée pour un enregistrement fixe
+coordonnees = (48.8566, 2.3522)
+
+# set : ensemble de valeurs uniques, non ordonné
+tags = {"python", "data", "python"}  # "python" ne sera présent qu'une fois
+```
+
+## Mutabilité
+
+---
+
+C'est une notion sans réel équivalent explicite en PHP, où les tableaux se comportent par copie à l'affectation. En Python, certains types sont mutables (on peut modifier leur contenu en place) et d'autres sont immuables (toute "modification" produit en réalité une nouvelle valeur).
+
+```python
+# list : mutable
+liste = [1, 2, 3]
+liste.append(4)
+print(liste)  # [1, 2, 3, 4], le même objet a été modifié
+
+# tuple : immuable
+point = (1, 2)
+# point[0] = 5  # lève une TypeError, impossible de modifier un tuple
+
+# str : immuable, comme en PHP
+texte = "bonjour"
+# texte[0] = "B"  # lève une TypeError
+texte = "B" + texte[1:]  # crée une nouvelle chaîne
+```
+
+Cette distinction a une conséquence directe sur le passage de valeurs aux fonctions, qui se comporte différemment selon la mutabilité du type reçu.
+
+## Le piège des arguments par défaut mutables
+
+---
+
+C'est l'un des pièges les plus classiques pour un développeur qui découvre Python. Un argument par défaut est évalué une seule fois, au moment de la définition de la fonction, et non à chaque appel.
+
+```python
+# À NE PAS FAIRE
+def ajouter_tag(tag, tags=[]):
+    tags.append(tag)
+    return tags
+
+print(ajouter_tag("python"))  # ["python"]
+print(ajouter_tag("data"))    # ["python", "data"] <- surprise : la liste précédente a persisté
+```
+
+La liste `[]` par défaut est créée une seule fois à la définition de la fonction, puis réutilisée et mutée à chaque appel qui n'a pas fourni son propre argument. Le correctif standard consiste à utiliser `None` comme valeur par défaut et à créer la liste à l'intérieur de la fonction :
+
+```python
+# Version correcte
+def ajouter_tag(tag, tags=None):
+    if tags is None:
+        tags = []
+    tags.append(tag)
+    return tags
+```
+
+> 💡 Bon à savoir : ce piège n'a pas d'équivalent en PHP, où un argument par défaut de type `array` est réévalué (recréé vide) à chaque appel. C'est justement parce que ce comportement est différent de l'intuition "naturelle" qu'il vaut la peine d'être mémorisé explicitement.
+
+## Typage optionnel avec les annotations
+
+---
+
+Depuis Python 3.5, le module `typing` permet d'annoter les variables, les paramètres et les valeurs de retour avec des indications de type. Ces annotations ne sont **pas vérifiées à l'exécution** par l'interpréteur standard : elles servent de documentation et sont exploitées par des outils externes d'analyse statique comme `mypy`.
+
+```python
+def calculer_moyenne(valeurs: list[float]) -> float:
+    return sum(valeurs) / len(valeurs)
+
+age: int = 25
+nom: str = "Alice"
+scores: dict[str, int] = {"alice": 90, "bob": 85}
+```
+
+| Python (`typing`) | PHP 8 |
+| --- | --- |
+| Annotation optionnelle, non vérifiée à l'exécution | Déclaration de type, vérifiée à l'exécution (TypeError si violée) |
+| `list[float]`, `dict[str, int]` | `array` (sans typage interne des éléments) |
+| `str \| None` (type union, depuis Python 3.10) | `?string` ou `string\|null` |
+| Vérifiée par un outil externe (`mypy`) | Vérifiée nativement par l'interpréteur |
+
+C'est une différence fondamentale avec PHP 8 : une signature PHP typée `function calculerMoyenne(array $valeurs): float` est appliquée par le moteur, une violation lève une `TypeError`. En Python, rien n'empêche d'appeler `calculer_moyenne("pas une liste")` à l'exécution : l'annotation ne devient utile que si le projet fait tourner `mypy` dans sa chaîne de vérification, un point détaillé dans la leçon sur l'environnement et l'outillage.
+
+```python
+from typing import Optional
+
+def trouver_utilisateur(id: int) -> Optional[dict]:
+    # équivalent de dict | None, syntaxe pré-3.10
+    ...
+```
+
+## f-strings
+
+---
+
+Les f-strings (chaînes formatées) sont la façon idiomatique de construire des chaînes de caractères contenant des valeurs dynamiques, introduites en Python 3.6. Elles remplacent la concaténation manuelle et les anciennes méthodes `.format()` ou `%`.
+
+```python
+nom = "Alice"
+age = 25
+
+# f-string : préfixe f avant les guillemets
+message = f"{nom} a {age} ans"
+print(message)  # Alice a 25 ans
+
+# expressions arbitraires à l'intérieur des accolades
+prix = 19.9
+print(f"Prix TTC : {prix * 1.2:.2f} €")  # Prix TTC : 23.88 €
+
+# appel de méthode directement dans l'expression
+print(f"Nom en majuscules : {nom.upper()}")
+```
+
+L'équivalent PHP le plus proche est l'interpolation de variables dans une chaîne entre guillemets doubles (`"Bonjour $nom"`), mais les f-strings vont plus loin en acceptant n'importe quelle expression Python entre accolades, y compris des appels de méthode et des spécifications de format (comme `:.2f` pour arrondir à deux décimales).
+
+## Pour la suite
+
+---
+
+La prochaine leçon s'appuie sur ces types pour construire les structures de contrôle (conditions, boucles) et les fonctions, avec un détour par les comprehensions et les générateurs, deux constructions propres à Python sans équivalent direct en PHP.
