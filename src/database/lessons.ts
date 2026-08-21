@@ -897,8 +897,6 @@ const lessons: Lesson[] = [
     created: "19 août 2026",
     updated: "19 août 2026",
   },
-  // Lessons ci-dessous pas encore push en prod, à décommenter au fur et à mesure des push
-  /*
   {
     id: 77,
     index: 4,
@@ -935,6 +933,8 @@ const lessons: Lesson[] = [
     created: "19 août 2026",
     updated: "19 août 2026",
   },
+  // Lessons ci-dessous pas encore push en prod, à décommenter au fur et à mesure des push
+  /*
   {
     id: 80,
     index: 7,
