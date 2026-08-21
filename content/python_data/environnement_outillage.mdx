@@ -1,0 +1,242 @@
+## Introduction
+
+---
+
+Cette leçon couvre l'outillage autour du langage : comment isoler les dépendances d'un projet Python, comment les gérer, comment structurer un projet data classique, et quels outils vérifient la qualité du code. C'est un passage obligé avant d'écrire du code Python en conditions réelles, et un point où les réflexes PHP ne se transposent pas directement.
+
+## Pourquoi un environnement virtuel est indispensable
+
+---
+
+En PHP, chaque projet géré avec Composer est isolé par construction : les dépendances sont installées dans un dossier `vendor/` propre au projet, jamais partagé avec un autre projet sur la même machine. Deux projets peuvent utiliser des versions différentes de Symfony sans se marcher dessus, sans configuration supplémentaire.
+
+Python ne fonctionne pas ainsi par défaut. Une commande `pip install pandas` installe la librairie dans l'environnement Python global de la machine (ou de l'utilisateur), partagé par tous les projets. Deux projets qui ont besoin de deux versions différentes de la même librairie entrent directement en conflit.
+
+```bash
+# Sans environnement virtuel : installation globale, risque de conflit
+pip install pandas==1.5.0   # installé globalement
+# un autre projet qui a besoin de pandas==2.0.0 casse le premier
+```
+
+Un environnement virtuel résout ce problème en créant une installation Python isolée, propre à un projet, avec son propre jeu de dépendances. C'est l'équivalent fonctionnel du `vendor/` de Composer, à la différence près qu'il faut le créer explicitement.
+
+> 💡 Bon à savoir : c'est probablement le piège numéro un pour un développeur PHP qui découvre Python. Installer une librairie sans avoir activé d'environnement virtuel au préalable, "ça marche" en apparence (l'installation ne renvoie pas d'erreur), mais pollue l'environnement global et rend le projet non reproductible sur une autre machine.
+
+## venv
+
+---
+
+`venv` est le module intégré à la bibliothèque standard de Python pour créer un environnement virtuel, sans dépendance externe à installer.
+
+```bash
+# Créer un environnement virtuel dans le dossier .venv
+python3 -m venv .venv
+
+# L'activer (Linux/macOS)
+source .venv/bin/activate
+
+# À partir de là, le prompt affiche (.venv) et python/pip pointent
+# vers l'interpréteur isolé du projet, plus l'installation système
+python --version
+pip install pandas
+
+# Désactiver l'environnement
+deactivate
+```
+
+Une fois activé, toute commande `pip install` installe la librairie uniquement dans `.venv/`, sans toucher à l'installation Python globale de la machine. Le dossier `.venv/` ne doit jamais être versionné dans Git (il rejoint le `.gitignore`, au même titre que `vendor/` en PHP).
+
+```bash
+# .gitignore
+.venv/
+__pycache__/
+*.pyc
+```
+
+## Gestion des dépendances : pip et requirements.txt
+
+---
+
+`pip` est le gestionnaire de paquets standard de Python, l'équivalent direct de Composer. La méthode la plus simple pour figer et partager la liste des dépendances d'un projet est un fichier `requirements.txt`.
+
+```bash
+# requirements.txt
+pandas==2.1.0
+numpy==1.26.0
+requests>=2.31.0
+```
+
+```bash
+# Installer toutes les dépendances listées
+pip install -r requirements.txt
+
+# Générer le fichier à partir de l'environnement courant
+pip freeze > requirements.txt
+```
+
+Cette approche fonctionne, mais reste plus rudimentaire que Composer : `requirements.txt` ne distingue pas nativement les dépendances de production de celles de développement (il faut créer un second fichier, par exemple `requirements-dev.txt`), et ne fournit pas de fichier de verrouillage garantissant que toute l'arborescence de dépendances transitives reste identique d'une machine à l'autre.
+
+## Poetry
+
+---
+
+Poetry est un gestionnaire de dépendances plus complet, qui se rapproche davantage de l'expérience Composer : un fichier de déclaration des dépendances, un fichier de verrouillage automatique, et la gestion de l'environnement virtuel intégrée (Poetry crée et active l'environnement pour toi, sans appel manuel à `venv`).
+
+```toml
+# pyproject.toml
+[tool.poetry]
+name = "mon-projet-data"
+version = "0.1.0"
+description = "Pipeline d'analyse de données"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.1.0"
+numpy = "^1.26.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+ruff = "^0.1.0"
+```
+
+```bash
+# Installer les dépendances (crée automatiquement l'environnement virtuel)
+poetry install
+
+# Ajouter une dépendance de production
+poetry add pandas
+
+# Ajouter une dépendance de développement
+poetry add --group dev pytest
+
+# Exécuter une commande dans l'environnement du projet, sans activation manuelle
+poetry run python pipeline.py
+```
+
+| Aspect | Composer (PHP) | pip + requirements.txt | Poetry |
+| --- | --- | --- | --- |
+| Fichier de déclaration | `composer.json` | `requirements.txt` | `pyproject.toml` |
+| Fichier de verrouillage | `composer.lock` | Absent (sauf outillage additionnel) | `poetry.lock` |
+| Isolation par projet | Automatique (`vendor/`) | Manuelle (`venv` à créer) | Automatique, gérée par Poetry |
+| Séparation prod/dev | `require` / `require-dev` | Deux fichiers séparés, par convention | `dependencies` / `group.dev.dependencies` |
+
+> 💡 Bon à savoir : `requirements.txt` reste très répandu, notamment dans des scripts d'analyse ponctuels ou des notebooks partagés rapidement entre collègues. Poetry (ou son équivalent plus récent, `uv`) devient préférable dès qu'un projet doit être maintenu dans la durée, avec une équipe, comme c'est déjà le réflexe avec Composer côté PHP.
+
+## Plusieurs versions de Python : pyenv
+
+---
+
+Un projet peut cibler une version précise de Python (par exemple 3.11), différente de la version installée par défaut sur la machine. `pyenv` permet d'installer et de basculer entre plusieurs versions de l'interpréteur Python, un besoin sans réel équivalent en PHP où la version du runtime est généralement gérée au niveau du serveur ou du conteneur.
+
+```bash
+# Installer une version spécifique de Python
+pyenv install 3.11.6
+
+# La définir comme version par défaut pour le dossier courant
+pyenv local 3.11.6
+```
+
+## Structure classique d'un projet Python data
+
+---
+
+Il n'existe pas de structure unique imposée par le langage (contrairement à un projet Symfony, dont l'arborescence est largement standardisée), mais une convention s'est largement dégagée dans l'écosystème data.
+
+```txt
+mon-projet-data/
+├── pyproject.toml          # déclaration des dépendances (ou requirements.txt)
+├── poetry.lock
+├── README.md
+├── .gitignore
+├── src/
+│   └── mon_projet/
+│       ├── __init__.py
+│       ├── ingestion.py
+│       ├── transformation.py
+│       └── export.py
+├── tests/
+│   ├── test_ingestion.py
+│   └── test_transformation.py
+├── notebooks/
+│   └── exploration.ipynb
+└── data/
+    ├── raw/                 # données brutes, jamais modifiées
+    └── processed/           # données transformées, régénérables
+```
+
+Quelques conventions à noter :
+
+- Le dossier `src/` (parfois nommé directement d'après le package) regroupe le code réutilisable et testé, à distinguer des scripts exploratoires ponctuels.
+- Le dossier `notebooks/` isole le travail exploratoire (Jupyter), qui ne suit généralement pas la même discipline de tests que le code de `src/`.
+- Le dossier `data/` sépare la donnée brute de la donnée transformée, une convention qui rejoint la logique de pipeline vue dans le cours data engineer (ne jamais écraser la source brute).
+- Un fichier `__init__.py` (même vide) marque un dossier comme un package Python importable, l'équivalent le plus proche du mécanisme d'autoload de Composer, bien que la comparaison ait ses limites : l'autoload PSR-4 repose sur une convention de nommage globale, alors que `__init__.py` fonctionne dossier par dossier.
+
+## Outils de qualité : ruff, black, mypy
+
+---
+
+Comme en PHP avec PHPStan et PHP_CodeSniffer, l'écosystème Python propose des outils d'analyse statique et de formatage, exécutés avant même de lancer le code.
+
+| Outil Python | Rôle | Équivalent PHP |
+| --- | --- | --- |
+| **ruff** | Linter très rapide : détecte les erreurs, imports inutilisés, style non conforme | PHP_CodeSniffer (partiellement) |
+| **black** | Formateur de code automatique, sans configuration à débattre | PHPCBF, ou PHP-CS-Fixer |
+| **mypy** | Analyse statique des annotations de type (`typing`) | PHPStan |
+
+### ruff
+
+---
+
+```bash
+poetry add --group dev ruff
+
+# Analyser le code
+ruff check src/
+
+# Corriger automatiquement ce qui peut l'être
+ruff check --fix src/
+```
+
+`ruff` a largement remplacé une combinaison plus ancienne d'outils (flake8, isort) grâce à sa vitesse d'exécution, écrite en Rust plutôt qu'en Python pur.
+
+### black
+
+---
+
+```bash
+poetry add --group dev black
+
+# Vérifier le formatage sans modifier les fichiers
+black --check src/
+
+# Reformater les fichiers
+black src/
+```
+
+`black` a une particularité assumée : il ne propose quasiment aucune option de configuration. L'objectif est d'éliminer les débats d'équipe sur le style de formatage, exactement comme PSR-12 le fait côté PHP, mais en l'imposant par l'outil plutôt que par une convention à faire respecter manuellement.
+
+### mypy
+
+---
+
+```bash
+poetry add --group dev mypy
+
+# Analyser le code à partir des annotations de type
+mypy src/
+```
+
+```txt
+src/mon_projet/transformation.py:12: error: Argument 1 to "calculer_moyenne" has
+incompatible type "str"; expected "list[float]"  [arg-type]
+```
+
+`mypy` s'appuie sur les annotations `typing` vues dans la leçon sur la syntaxe et les types. Sans annotations, il n'a rien à vérifier : contrairement à PHPStan qui peut inférer des types même sur du code PHP peu typé, `mypy` est directement limité par la qualité et la présence des annotations dans le code analysé.
+
+> 💡 Bon à savoir : ces trois outils se combinent généralement dans une intégration continue (GitHub Actions, GitLab CI) ou un hook pre-commit, exactement comme GrumPHP orchestre PHPStan et PHPCS à chaque commit côté PHP. L'outil `pre-commit` (un package Python à part entière) joue ce rôle d'orchestrateur dans l'écosystème Python.
+
+## Pour la suite
+
+---
+
+La prochaine leçon revient au langage pour aborder la lecture et l'écriture de fichiers : CSV, JSON, Parquet, et la gestion des chemins avec `pathlib`, avant que le cours n'entre dans les librairies scientifiques proprement dites (NumPy, puis pandas).
