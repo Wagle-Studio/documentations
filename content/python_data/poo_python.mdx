@@ -1,0 +1,228 @@
+## Introduction
+
+---
+
+Python est un langage orienté objet au même titre que PHP, avec des classes, de l'héritage et de l'encapsulation. La syntaxe diffère, et certaines conventions changent en profondeur (pas d'interfaces strictes par défaut, méthodes magiques omniprésentes), mais les grands principes se transposent directement depuis Symfony.
+
+## Classes et `__init__`
+
+---
+
+Une classe se définit avec `class`. Le constructeur n'est pas une méthode `__construct` comme en PHP, mais une méthode `__init__`, appelée automatiquement après la création de l'instance.
+
+```python
+class Utilisateur:
+    def __init__(self, nom: str, email: str, actif: bool = True):
+        self.nom = nom
+        self.email = email
+        self.actif = actif
+
+    def desactiver(self):
+        self.actif = False
+
+utilisateur = Utilisateur("Alice", "alice@mail.com")
+utilisateur.desactiver()
+print(utilisateur.actif)  # False
+```
+
+Le premier paramètre de chaque méthode d'instance est toujours `self`, qui référence l'instance courante. C'est l'équivalent de `$this` en PHP, à la différence près qu'il doit être déclaré explicitement dans la signature de chaque méthode : Python ne l'injecte pas implicitement.
+
+| PHP | Python |
+| --- | --- |
+| `__construct()` | `__init__(self, ...)` |
+| `$this` | `self` (paramètre explicite) |
+| `public function methode()` | `def methode(self)` |
+| Visibilité `private`/`protected` (mots-clés) | Convention de préfixe (`_privee`, `__tres_privee`), non appliquée par l'interpréteur |
+
+> 💡 Bon à savoir : Python n'impose pas la visibilité `private`/`protected` au niveau du langage. Un attribut préfixé d'un underscore (`_solde`) signale par convention "usage interne, ne pas toucher depuis l'extérieur", mais rien n'empêche techniquement d'y accéder. Un double underscore (`__solde`) déclenche un name mangling qui rend l'accès direct plus difficile, sans le rendre impossible. C'est une différence philosophique assumée : Python fait confiance au développeur plutôt que de faire appliquer la règle par le moteur.
+
+## Méthodes magiques
+
+---
+
+Les méthodes magiques (entourées de doubles underscores, parfois surnommées "dunder methods") permettent à une classe de personnaliser son comportement vis-à-vis d'opérations natives du langage : affichage, comparaison, opérateurs arithmétiques, itération.
+
+```python
+class Produit:
+    def __init__(self, nom: str, prix: float):
+        self.nom = nom
+        self.prix = prix
+
+    def __str__(self) -> str:
+        # utilisé par print() et str(), pensé pour un affichage lisible
+        return f"{self.nom} ({self.prix} €)"
+
+    def __repr__(self) -> str:
+        # utilisé par le REPL et le débogueur, pensé pour être non ambigu
+        return f"Produit(nom={self.nom!r}, prix={self.prix!r})"
+
+    def __eq__(self, autre) -> bool:
+        if not isinstance(autre, Produit):
+            return NotImplemented
+        return self.nom == autre.nom and self.prix == autre.prix
+
+produit = Produit("Clavier", 49.9)
+print(produit)          # Clavier (49.9 €), via __str__
+print(repr(produit))    # Produit(nom='Clavier', prix=49.9), via __repr__
+print(produit == Produit("Clavier", 49.9))  # True, via __eq__
+```
+
+| Méthode magique | Rôle | Équivalent PHP |
+| --- | --- | --- |
+| `__str__` | Représentation lisible (`print()`, `str()`) | `__toString()` |
+| `__repr__` | Représentation technique, non ambiguë | Pas d'équivalent direct standard |
+| `__eq__` | Comparaison `==` | `==` par défaut compare déjà les propriétés d'un objet en PHP |
+| `__len__` | Comportement de `len(objet)` | `Countable::count()` |
+| `__iter__` | Rend l'objet itérable dans un `for` | `Iterator` |
+| `__call__` | Rend l'instance appelable comme une fonction | `__invoke()` |
+
+> 💡 Bon à savoir : `__eq__` mérite une attention particulière parce que le comportement par défaut de Python diffère de celui de PHP. Sans `__eq__` défini, `==` compare l'identité (deux instances distinctes sont toujours différentes, même avec les mêmes attributs), ce qui se rapproche du `===` strict de PHP sur les objets plutôt que de son `==`.
+
+## Propriétés avec `@property`
+
+---
+
+Python n'a pas de syntaxe dédiée aux getters/setters comme certains langages, et n'oblige d'ailleurs pas à en écrire : accéder directement à un attribut public (`utilisateur.nom`) est parfaitement idiomatique. Le décorateur `@property` permet cependant d'exposer une méthode comme si c'était un attribut, utile pour ajouter de la validation ou une valeur calculée sans changer l'interface publique de la classe.
+
+```python
+class CompteBancaire:
+    def __init__(self, solde_initial: float = 0):
+        self._solde = solde_initial
+
+    @property
+    def solde(self) -> float:
+        return self._solde
+
+    @solde.setter
+    def solde(self, valeur: float):
+        if valeur < 0:
+            raise ValueError("Le solde ne peut pas être négatif")
+        self._solde = valeur
+
+compte = CompteBancaire()
+compte.solde = 100     # appelle en réalité le setter
+print(compte.solde)    # 100, appelle en réalité le getter
+# compte.solde = -50   # lève une ValueError
+```
+
+C'est l'équivalent Python des getters/setters explicites (`getSolde()`/`setSolde()`) que tu écris en PHP, mais avec un avantage : l'appelant continue d'écrire `compte.solde` comme s'il s'agissait d'un attribut simple, sans jamais appeler de méthode entre parenthèses. Cela permet de commencer avec un attribut public classique et de basculer vers une `@property` plus tard, si un besoin de validation apparaît, sans casser le code appelant.
+
+## Héritage et `super()`
+
+---
+
+L'héritage fonctionne sur le même principe qu'en PHP : une classe fille hérite des attributs et méthodes de sa classe parente, et peut les redéfinir.
+
+```python
+class Animal:
+    def __init__(self, nom: str):
+        self.nom = nom
+
+    def parler(self) -> str:
+        return "..."
+
+class Chien(Animal):
+    def __init__(self, nom: str, race: str):
+        super().__init__(nom)  # appelle __init__ de la classe parente
+        self.race = race
+
+    def parler(self) -> str:
+        return "Wouf !"
+
+chien = Chien("Rex", "Labrador")
+print(chien.nom)      # Rex, hérité de Animal
+print(chien.parler())  # Wouf !, redéfini dans Chien
+```
+
+`super()` joue le même rôle que `parent::` en PHP, mais s'utilise comme un appel de fonction plutôt que comme un préfixe statique. Python supporte aussi l'héritage multiple (une classe peut hériter de plusieurs classes parentes), une fonctionnalité que PHP ne propose pas nativement (PHP compense partiellement avec les traits).
+
+## Dataclasses
+
+---
+
+Le décorateur `@dataclass`, introduit en Python 3.7, génère automatiquement `__init__`, `__repr__` et `__eq__` à partir des attributs déclarés. C'est l'équivalent le plus direct des DTO ou entités simples que tu écris en PHP, où la déclaration des propriétés typées suffit généralement à définir la structure.
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class Produit:
+    nom: str
+    prix: float
+    en_stock: bool = True
+
+produit = Produit("Clavier", 49.9)
+print(produit)  # Produit(nom='Clavier', prix=49.9, en_stock=True), __repr__ généré automatiquement
+print(produit == Produit("Clavier", 49.9))  # True, __eq__ généré automatiquement
+```
+
+Sans `@dataclass`, il aurait fallu écrire manuellement `__init__`, `__repr__` et `__eq__`, exactement comme dans la section précédente sur les méthodes magiques. C'est l'équivalent Python d'un DTO PHP avec constructeur promu :
+
+```php
+<?php
+// Équivalent PHP 8, avec constructor property promotion
+final class Produit
+{
+    public function __construct(
+        public string $nom,
+        public float $prix,
+        public bool $enStock = true,
+    ) {}
+}
+```
+
+> 💡 Bon à savoir : une dataclass reste une classe mutable par défaut, ses attributs peuvent être réassignés après création. Pour obtenir l'équivalent d'un objet immuable (comme une classe PHP avec des propriétés `readonly`), il faut ajouter `@dataclass(frozen=True)`.
+
+## Duck typing et absence d'interfaces strictes
+
+---
+
+PHP impose les interfaces au niveau du langage : une classe qui `implements` une interface doit fournir toutes ses méthodes, sous peine d'erreur fatale. Python fonctionne différemment, avec ce qu'on appelle le duck typing : "si ça marche comme un canard et que ça cancane comme un canard, c'est un canard". Autrement dit, ce qui compte n'est pas la déclaration explicite d'un contrat, mais le fait que l'objet possède effectivement les méthodes attendues au moment où elles sont appelées.
+
+```python
+class LecteurCsv:
+    def lire(self):
+        return ["ligne1", "ligne2"]
+
+class LecteurApi:
+    def lire(self):
+        return ["reponse1", "reponse2"]
+
+def traiter(source):
+    # aucune interface commune n'est déclarée, seul compte le fait que source.lire() existe
+    for ligne in source.lire():
+        print(ligne)
+
+traiter(LecteurCsv())
+traiter(LecteurApi())
+```
+
+Rien n'empêche ici d'appeler `traiter()` avec un objet qui n'a pas de méthode `lire()` ; l'erreur ne surviendra qu'à l'exécution, au moment de l'appel, sous forme d'une `AttributeError`. C'est un compromis assumé entre flexibilité et sécurité statique.
+
+Deux mécanismes se rapprochent des interfaces PHP quand un contrat explicite est réellement nécessaire :
+
+- **ABC (Abstract Base Class)**, via le module `abc`, permet de définir une classe abstraite avec des méthodes obligatoires, vérifiées à l'instanciation.
+- **Protocol**, via le module `typing`, permet de définir un contrat structurel vérifié par les outils d'analyse statique (`mypy`), sans lien d'héritage explicite requis.
+
+```python
+from abc import ABC, abstractmethod
+
+class Lecteur(ABC):
+    @abstractmethod
+    def lire(self) -> list:
+        ...
+
+class LecteurCsv(Lecteur):
+    def lire(self) -> list:
+        return ["ligne1", "ligne2"]
+
+# LecteurCsv doit implémenter lire(), sinon Python refuse l'instanciation
+```
+
+> 💡 Bon à savoir : en pratique, dans un projet data classique, le duck typing reste largement suffisant et même préféré : la flexibilité est plus utile que la rigueur d'une interface stricte sur des scripts d'analyse ou des pipelines internes. ABC ou Protocol prennent leur sens surtout dans une librairie partagée par plusieurs équipes, où le contrat doit être garanti et documenté.
+
+## Pour la suite
+
+---
+
+La prochaine leçon quitte le langage pur pour aborder l'outillage d'un projet Python data : environnements virtuels, gestion des dépendances, structure de projet, et outils de qualité de code, avec des parallèles directs vers Composer et PHPStan déjà connus.
