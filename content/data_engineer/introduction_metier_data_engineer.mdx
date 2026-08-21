@@ -6,9 +6,7 @@ Le data engineer conçoit, construit et maintient les systèmes qui déplacent e
 
 Le cœur du métier tient en une phrase : rendre la donnée disponible, fiable et exploitable, à l'échelle. Ce n'est pas un métier d'analyse (comprendre ce que dit la donnée) mais un métier d'ingénierie (construire les tuyaux par lesquels elle circule).
 
-Cette leçon pose les bases du domaine. Elle est volontairement large : l'objectif est de te donner une carte du territoire avant l'alternance, pas de rentrer dans le détail de chaque outil. Le cours s'enrichira leçon par leçon au fur et à mesure de ta montée en compétences.
-
-> 💡 Bon à savoir : ton passif de développeur backend n'est pas un point de départ à zéro. Beaucoup de fondamentaux (bases de données, API, systèmes distribués, tests, versioning, conteneurisation) se retrouvent tels quels côté data engineering. Ce qui change surtout, c'est l'échelle des volumes et la nature des traitements (souvent asynchrones, orientés lots ou flux continus).
+> 💡 Bon à savoir : de nombreux fondamentaux du développement backend (bases de données, API, systèmes distribués, tests, versioning, conteneurisation) se retrouvent tels quels côté data engineering. Ce qui change surtout, c'est l'échelle des volumes et la nature des traitements (souvent asynchrones, orientés lots ou flux continus).
 
 ## Data engineer, data analyst, data scientist : qui fait quoi
 
@@ -83,13 +81,13 @@ Trois architectures de stockage cohabitent dans l'écosystème, avec des comprom
 | **Data lake** | Brute, tout format (structurée, semi-structurée, non structurée) | Stockage massif à bas coût, schéma appliqué à la lecture |
 | **Lakehouse** | Hybride : stockage brut du data lake + garanties transactionnelles du data warehouse | Approche moderne qui cherche à combiner les deux |
 
-> 💡 Bon à savoir : cette distinction rejoue, à l'échelle du stockage, un arbitrage que tu connais déjà côté backend entre une base relationnelle stricte (schéma imposé) et un stockage document plus permissif (schéma flexible).
+> 💡 Bon à savoir : cette distinction rejoue, à l'échelle du stockage, un arbitrage déjà connu en base relationnelle classique entre un schéma strict imposé à l'écriture et un stockage document plus permissif, à schéma flexible.
 
 ## Panorama de l'écosystème d'outils
 
 ---
 
-Ce tableau donne des repères, pas un inventaire exhaustif. Chaque brique aura sa propre leçon au fil du cours.
+Ce tableau donne des repères, pas un inventaire exhaustif.
 
 | Catégorie | Rôle | Exemples |
 | --- | --- | --- |
@@ -100,24 +98,16 @@ Ce tableau donne des repères, pas un inventaire exhaustif. Chaque brique aura s
 | Entrepôt cloud | Stocker et interroger à grande échelle | BigQuery, Snowflake, Redshift |
 | Stockage brut | Déposer la donnée sans transformation | S3, HDFS |
 
-## Ce que ton passif de développeur backend t'apporte déjà
+## Ce que l'ingénierie logicielle backend apporte au data engineering
 
 ---
 
-Le data engineering n'est pas un nouveau métier construit sur des fondations différentes : c'est en grande partie de l'ingénierie logicielle appliquée à la donnée. Plusieurs de tes acquis se transposent directement :
+Le data engineering n'est pas un métier construit sur des fondations différentes de l'ingénierie logicielle classique : c'est en grande partie de l'ingénierie logicielle appliquée à la donnée. Plusieurs acquis du développement backend se transposent directement :
 
 - **SQL et modélisation de données** : la conception de schémas, les jointures, l'indexation restent centrales, avec en plus des enjeux de volumétrie.
-- **Conception d'API** : de nombreuses sources et destinations de pipelines sont des API REST ou GraphQL que tu sais déjà consommer et interroger.
-- **Systèmes distribués et asynchrone** : files de messages, traitement en arrière-plan, gestion des échecs et des reprises sont des concepts que le backend croise déjà (queues, jobs, workers).
+- **Conception d'API** : de nombreuses sources et destinations de pipelines sont des API REST ou GraphQL, consommées avec les mêmes outils et conventions que côté applicatif.
+- **Systèmes distribués et asynchrone** : files de messages, traitement en arrière-plan, gestion des échecs et des reprises sont des concepts déjà présents côté backend (queues, jobs, workers).
 - **Docker et infrastructure** : la majorité des outils data (Airflow, Spark, Kafka) se déploient et se testent en local via Docker.
 - **Tests et versioning** : tester un pipeline et versionner ses transformations (notamment avec dbt) suit la même discipline qu'un projet applicatif classique.
 
-Ce qui sera réellement nouveau : le raisonnement en volumétrie et en coût de traitement, la notion de qualité et de fraîcheur de la donnée, et des outils spécifiques à apprivoiser (orchestrateurs, moteurs de traitement distribué).
-
-## Pour la suite
-
----
-
-Ce cours se construira progressivement, au rythme de ton alternance. Les prochaines leçons approfondiront, entre autres, la modélisation dimensionnelle, le SQL avancé pour l'analytique, l'orchestration avec Airflow, le traitement distribué avec Spark, et les plateformes cloud (BigQuery, Snowflake, ou l'écosystème utilisé par ton entreprise).
-
-N'hésite pas à revenir sur cette introduction pour requestionner les repères posés ici à mesure que l'expérience de terrain les rendra plus concrets.
+Ce qui reste réellement nouveau : le raisonnement en volumétrie et en coût de traitement, la notion de qualité et de fraîcheur de la donnée, et des outils spécifiques (orchestrateurs, moteurs de traitement distribué).

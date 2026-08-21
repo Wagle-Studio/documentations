@@ -2,7 +2,7 @@
 
 ---
 
-Cette leçon couvre les structures de contrôle du langage (conditions, boucles) et les fonctions, avec un focus sur deux constructions propres à Python et particulièrement utiles en data : les comprehensions et les générateurs.
+Les structures de contrôle du langage (conditions, boucles) et les fonctions suivent une logique proche de PHP, avec deux constructions propres à Python et particulièrement utiles en data : les comprehensions et les générateurs.
 
 ## Conditions
 
@@ -257,7 +257,7 @@ def lire_grand_fichier_generateur(chemin):
             yield ligne.strip()
 ```
 
-> 💡 Bon à savoir : c'est directement utile pour le traitement par lots (batch processing) évoqué dans le cours data engineer. Un pipeline qui traite un fichier de plusieurs gigaoctets, ou qui lit en continu depuis une source de données, ne peut simplement pas se permettre de tout charger en mémoire d'un coup : le générateur est le mécanisme Python natif pour traiter un flux de données ligne par ligne, ou lot par lot, avec une empreinte mémoire constante.
+> 💡 Bon à savoir : c'est directement utile pour le traitement par lots (batch processing), voir la leçon [Batch vs streaming en profondeur](/documentations/data_engineer/batch_vs_streaming). Un pipeline qui traite un fichier de plusieurs gigaoctets, ou qui lit en continu depuis une source de données, ne peut simplement pas se permettre de tout charger en mémoire d'un coup : le générateur est le mécanisme Python natif pour traiter un flux de données ligne par ligne, ou lot par lot, avec une empreinte mémoire constante.
 
 Une expression génératrice existe aussi, sur le même principe qu'une list comprehension mais avec des parenthèses au lieu de crochets, et produit ses valeurs paresseusement :
 
@@ -265,9 +265,3 @@ Une expression génératrice existe aussi, sur le même principe qu'une list com
 carres_generateur = (n ** 2 for n in range(1_000_000))  # rien n'est calculé ici
 total = sum(carres_generateur)  # les valeurs sont calculées une par une, à la demande
 ```
-
-## Pour la suite
-
----
-
-La prochaine leçon aborde la programmation orientée objet en Python : classes, méthodes magiques, propriétés, héritage et dataclasses, avec des parallèles directs vers les patterns objet déjà connus en PHP.

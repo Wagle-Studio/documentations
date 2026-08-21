@@ -2,7 +2,7 @@
 
 ---
 
-Un script Python data passe une grande partie de son temps à lire et écrire des fichiers : CSV exportés d'un système tiers, JSON reçus d'une API, Parquet stocké dans un data lake. Cette leçon couvre les mécanismes de base de la bibliothèque standard, la gestion des chemins avec `pathlib`, et un premier contact avec Parquet, en s'appuyant sur les notions de formats de fichiers déjà vues dans le cours data engineer.
+Un script Python data passe une grande partie de son temps à lire et écrire des fichiers : CSV exportés d'un système tiers, JSON reçus d'une API, Parquet stocké dans un data lake. Les mécanismes de base reposent sur la bibliothèque standard et sur la gestion des chemins avec `pathlib`, en s'appuyant sur les notions de formats de fichiers du cours data engineer.
 
 ## Context managers : `with open(...)`
 
@@ -30,7 +30,7 @@ finally:
     fichier.close()
 ```
 
-> 💡 Bon à savoir : le principe rejoint la gestion de ressources que tu connais en PHP, où un fichier ouvert avec `fopen()` doit être explicitement refermé avec `fclose()`, généralement dans un bloc `finally`, ou confié à un objet dont le destructeur s'en charge. Le `with` de Python rend ce nettoyage automatique et impossible à oublier, pour tout objet qui implémente le protocole de context manager (les méthodes `__enter__` et `__exit__`).
+> 💡 Bon à savoir : le principe rejoint la gestion de ressources en PHP, où un fichier ouvert avec `fopen()` doit être explicitement refermé avec `fclose()`, généralement dans un bloc `finally`, ou confié à un objet dont le destructeur s'en charge. Le `with` de Python rend ce nettoyage automatique et impossible à oublier, pour tout objet qui implémente le protocole de context manager (les méthodes `__enter__` et `__exit__`).
 
 Plusieurs fichiers peuvent être ouverts dans un seul bloc `with` :
 
@@ -116,7 +116,7 @@ Le principe est le même qu'avec `json_encode`/`json_decode` en PHP : `dump`/`du
 
 ---
 
-Pour un usage data au-delà d'un simple script, pandas (détaillé dans une leçon dédiée plus loin dans le cours) simplifie nettement la lecture de fichiers tabulaires, avec une seule ligne pour charger un CSV complet dans une structure exploitable directement pour l'analyse.
+Pour un usage data au-delà d'un simple script, pandas (voir la leçon [Pandas : manipulation de données](/documentations/python_data/pandas_manipulation_donnees)) simplifie nettement la lecture de fichiers tabulaires, avec une seule ligne pour charger un CSV complet dans une structure exploitable directement pour l'analyse.
 
 ```python
 import pandas as pd
@@ -132,7 +132,7 @@ df.to_csv("export.csv", index=False)
 df.to_json("export.json", orient="records")
 ```
 
-Cette approche fait plus que le module `csv` de la stdlib : `pandas` infère automatiquement les types de colonnes, gère nativement les valeurs manquantes, et retourne une structure (`DataFrame`) directement prête pour du filtrage, de l'agrégation ou du calcul statistique. La manipulation de cette structure fait l'objet d'une leçon à part entière plus loin dans le cours ; retiens pour l'instant que la stdlib (`csv`, `json`) reste pertinente pour des scripts simples ou des besoins de contrôle fin, pendant que pandas devient l'outil de choix dès qu'une véritable analyse de données commence.
+Cette approche fait plus que le module `csv` de la stdlib : `pandas` infère automatiquement les types de colonnes, gère nativement les valeurs manquantes, et retourne une structure (`DataFrame`) directement prête pour du filtrage, de l'agrégation ou du calcul statistique. La stdlib (`csv`, `json`) reste pertinente pour des scripts simples ou des besoins de contrôle fin, pendant que pandas devient l'outil de choix dès qu'une véritable analyse de données commence.
 
 ## Gestion des chemins avec pathlib
 
@@ -170,7 +170,7 @@ L'opérateur `/` surchargé pour concaténer des segments de chemin (`dossier_do
 
 ---
 
-Le format Parquet a été présenté en détail dans la leçon "Formats de fichiers et sérialisation" du cours data engineer : format binaire orienté colonne, avec schéma embarqué, pensé pour la lecture sélective de colonnes et une forte compression. Cette section se limite à son usage concret en Python.
+Le format Parquet est présenté en détail dans la leçon [Formats de fichiers et sérialisation](/documentations/data_engineer/formats_fichiers_serialisation) du cours data engineer : format binaire orienté colonne, avec schéma embarqué, pensé pour la lecture sélective de colonnes et une forte compression. Ce qui suit se limite à son usage concret en Python.
 
 La lecture et l'écriture de Parquet passent presque toujours par pandas, qui s'appuie en interne sur la librairie `pyarrow` (à installer comme dépendance) pour l'implémentation réelle du format.
 
@@ -206,9 +206,3 @@ print(os.path.getsize("export.parquet"))    # compressé, format binaire
 ```
 
 > 💡 Bon à savoir : en dehors des échanges ponctuels ou de l'export vers un tableur, il n'y a généralement pas de raison de choisir CSV plutôt que Parquet pour stocker de la donnée tabulaire de façon durable dans un pipeline Python : le gain de place et de vitesse de lecture est immédiat, pour un coût de mise en œuvre quasi nul grâce à pandas.
-
-## Pour la suite
-
----
-
-Le cours entre maintenant dans les librairies scientifiques proprement dites, en commençant par NumPy et le calcul vectorisé, la fondation sur laquelle pandas lui-même s'appuie.

@@ -2,7 +2,7 @@
 
 ---
 
-Cette leçon couvre l'outillage autour du langage : comment isoler les dépendances d'un projet Python, comment les gérer, comment structurer un projet data classique, et quels outils vérifient la qualité du code. C'est un passage obligé avant d'écrire du code Python en conditions réelles, et un point où les réflexes PHP ne se transposent pas directement.
+L'outillage autour du langage couvre l'isolation et la gestion des dépendances d'un projet Python, la structure d'un projet data classique, et les outils de vérification de la qualité du code. C'est un passage obligé avant d'écrire du code Python en conditions réelles, et un point où les réflexes PHP ne se transposent pas directement.
 
 ## Pourquoi un environnement virtuel est indispensable
 
@@ -234,9 +234,3 @@ incompatible type "str"; expected "list[float]"  [arg-type]
 `mypy` s'appuie sur les annotations `typing` vues dans la leçon sur la syntaxe et les types. Sans annotations, il n'a rien à vérifier : contrairement à PHPStan qui peut inférer des types même sur du code PHP peu typé, `mypy` est directement limité par la qualité et la présence des annotations dans le code analysé.
 
 > 💡 Bon à savoir : ces trois outils se combinent généralement dans une intégration continue (GitHub Actions, GitLab CI) ou un hook pre-commit, exactement comme GrumPHP orchestre PHPStan et PHPCS à chaque commit côté PHP. L'outil `pre-commit` (un package Python à part entière) joue ce rôle d'orchestrateur dans l'écosystème Python.
-
-## Pour la suite
-
----
-
-La prochaine leçon revient au langage pour aborder la lecture et l'écriture de fichiers : CSV, JSON, Parquet, et la gestion des chemins avec `pathlib`, avant que le cours n'entre dans les librairies scientifiques proprement dites (NumPy, puis pandas).

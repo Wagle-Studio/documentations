@@ -13,7 +13,7 @@ C'est la distinction la plus structurante entre formats de fichiers.
 - **Orienté ligne (row-oriented)** : les valeurs d'un même enregistrement sont stockées de façon contiguë. Efficace pour lire ou écrire un enregistrement complet (CSV, JSON, Avro).
 - **Orienté colonne (columnar)** : les valeurs d'une même colonne, pour tous les enregistrements, sont stockées de façon contiguë (Parquet, ORC).
 
-> 💡 Bon à savoir : c'est exactement la même distinction que row store vs column store côté bases de données, approfondie dans la leçon sur OLTP et OLAP, mais appliquée ici à des fichiers plutôt qu'à un moteur de base de données.
+> 💡 Bon à savoir : c'est exactement la même distinction que row store vs column store côté bases de données (voir [OLTP vs OLAP](/documentations/data_engineer/oltp_vs_olap)), mais appliquée ici à des fichiers plutôt qu'à un moteur de base de données.
 
 Le format colonne change tout pour l'analytique : une requête qui n'a besoin que de 3 colonnes sur 50 ne lit physiquement que ces 3 colonnes sur disque, au lieu de charger chaque ligne en entier puis d'ignorer le reste. Il permet aussi une bien meilleure compression, puisque des valeurs similaires (une même colonne) sont regroupées ensemble.
 

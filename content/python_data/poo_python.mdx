@@ -2,7 +2,7 @@
 
 ---
 
-Python est un langage orienté objet au même titre que PHP, avec des classes, de l'héritage et de l'encapsulation. La syntaxe diffère, et certaines conventions changent en profondeur (pas d'interfaces strictes par défaut, méthodes magiques omniprésentes), mais les grands principes se transposent directement depuis Symfony.
+Python est un langage orienté objet au même titre que PHP, avec des classes, de l'héritage et de l'encapsulation. La syntaxe diffère, et certaines conventions changent en profondeur (pas d'interfaces strictes par défaut, méthodes magiques omniprésentes), mais les grands principes se transposent directement depuis un projet PHP/Symfony classique.
 
 ## Classes et `__init__`
 
@@ -105,7 +105,7 @@ print(compte.solde)    # 100, appelle en réalité le getter
 # compte.solde = -50   # lève une ValueError
 ```
 
-C'est l'équivalent Python des getters/setters explicites (`getSolde()`/`setSolde()`) que tu écris en PHP, mais avec un avantage : l'appelant continue d'écrire `compte.solde` comme s'il s'agissait d'un attribut simple, sans jamais appeler de méthode entre parenthèses. Cela permet de commencer avec un attribut public classique et de basculer vers une `@property` plus tard, si un besoin de validation apparaît, sans casser le code appelant.
+C'est l'équivalent Python des getters/setters explicites (`getSolde()`/`setSolde()`) couramment écrits en PHP, mais avec un avantage : l'appelant continue d'écrire `compte.solde` comme s'il s'agissait d'un attribut simple, sans jamais appeler de méthode entre parenthèses. Cela permet de commencer avec un attribut public classique et de basculer vers une `@property` plus tard, si un besoin de validation apparaît, sans casser le code appelant.
 
 ## Héritage et `super()`
 
@@ -140,7 +140,7 @@ print(chien.parler())  # Wouf !, redéfini dans Chien
 
 ---
 
-Le décorateur `@dataclass`, introduit en Python 3.7, génère automatiquement `__init__`, `__repr__` et `__eq__` à partir des attributs déclarés. C'est l'équivalent le plus direct des DTO ou entités simples que tu écris en PHP, où la déclaration des propriétés typées suffit généralement à définir la structure.
+Le décorateur `@dataclass`, introduit en Python 3.7, génère automatiquement `__init__`, `__repr__` et `__eq__` à partir des attributs déclarés. C'est l'équivalent le plus direct des DTO ou entités simples couramment écrits en PHP, où la déclaration des propriétés typées suffit généralement à définir la structure.
 
 ```python
 from dataclasses import dataclass
@@ -220,9 +220,3 @@ class LecteurCsv(Lecteur):
 ```
 
 > 💡 Bon à savoir : en pratique, dans un projet data classique, le duck typing reste largement suffisant et même préféré : la flexibilité est plus utile que la rigueur d'une interface stricte sur des scripts d'analyse ou des pipelines internes. ABC ou Protocol prennent leur sens surtout dans une librairie partagée par plusieurs équipes, où le contrat doit être garanti et documenté.
-
-## Pour la suite
-
----
-
-La prochaine leçon quitte le langage pur pour aborder l'outillage d'un projet Python data : environnements virtuels, gestion des dépendances, structure de projet, et outils de qualité de code, avec des parallèles directs vers Composer et PHPStan déjà connus.

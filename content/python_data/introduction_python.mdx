@@ -4,9 +4,7 @@
 
 Python est aujourd'hui le langage de référence de l'écosystème data et intelligence artificielle. Ce n'est pas un hasard historique : c'est la conséquence directe de choix de conception qui collent particulièrement bien aux besoins de ce domaine.
 
-Cette leçon pose les bases avant d'entrer dans le langage lui-même. Elle est volontairement large : l'objectif est de te donner une carte du territoire, pas de rentrer dans le détail de chaque librairie. Les prochaines leçons du cours approfondiront la syntaxe, la programmation orientée objet, puis les grandes librairies scientifiques (NumPy, pandas, visualisation).
-
-> 💡 Bon à savoir : ton passif PHP/Symfony n'est pas un point de départ à zéro. La logique de programmation (structures de contrôle, fonctions, objets, gestion des dépendances) se transpose directement. Ce qui change, c'est la syntaxe, certaines conventions du langage, et surtout l'écosystème de librairies vers lequel tu vas te tourner.
+> 💡 Bon à savoir : pour un développeur PHP/Symfony, il ne s'agit pas de repartir de zéro. La logique de programmation (structures de contrôle, fonctions, objets, gestion des dépendances) se transpose directement. Ce qui change, c'est la syntaxe, certaines conventions du langage, et surtout l'écosystème de librairies utilisé.
 
 ## Pourquoi Python domine la data et l'IA
 
@@ -19,7 +17,7 @@ Plusieurs facteurs expliquent la position dominante de Python dans ce domaine, e
 - **Un langage généraliste, pas un DSL** : contrairement à R (plus confiné aux statistiques) ou à SQL (limité à l'interrogation de données), Python permet d'écrire un pipeline complet : ingestion, transformation, entraînement de modèle, exposition via une API, orchestration.
 - **Un effet de réseau désormais auto-entretenu** : la recherche académique en IA publie très majoritairement son code en Python, ce qui pousse l'industrie à s'aligner, ce qui pousse à son tour la recherche à continuer de publier en Python.
 
-> 💡 Bon à savoir : ce n'est pas une question de performance brute. Python est plus lent que PHP sur du calcul pur, ligne par ligne. Les librairies comme NumPy contournent ce problème en déléguant les calculs lourds à du code compilé en C ou Fortran, pendant que Python ne fait que l'orchestration. Tu écris du Python, mais la boucle chaude tourne ailleurs.
+> 💡 Bon à savoir : ce n'est pas une question de performance brute. Python est plus lent que PHP sur du calcul pur, ligne par ligne. Les librairies comme NumPy contournent ce problème en déléguant les calculs lourds à du code compilé en C ou Fortran, pendant que Python ne fait que l'orchestration. Le code applicatif reste écrit en Python, mais la boucle chaude tourne ailleurs.
 
 ## Python vs PHP : ce qui change, ce qui reste
 
@@ -34,7 +32,7 @@ Plusieurs facteurs expliquent la position dominante de Python dans ce domaine, e
 | Délimitation des blocs | Accolades `{ }` | Indentation (espaces) |
 | Philosophie | Pragmatique, orienté web depuis l'origine | "Batteries included" : une stdlib large, une syntaxe pensée pour la lisibilité |
 
-Le point le plus déstabilisant au début n'est généralement pas la syntaxe elle-même, mais l'absence d'isolation automatique des dépendances : un projet Composer est isolé par construction (`vendor/`), alors qu'un projet Python partage par défaut l'installation Python du système si on ne crée pas explicitement un environnement virtuel. Ce point est détaillé dans la leçon sur l'environnement et l'outillage.
+Le point le plus déstabilisant au début n'est généralement pas la syntaxe elle-même, mais l'absence d'isolation automatique des dépendances : un projet Composer est isolé par construction (`vendor/`), alors qu'un projet Python partage par défaut l'installation Python du système si on ne crée pas explicitement un environnement virtuel. Ce point est détaillé dans la leçon [Environnement et outillage](/documentations/python_data/environnement_outillage).
 
 La philosophie "batteries included" signifie que la bibliothèque standard de Python couvre déjà beaucoup de terrain sans dépendance externe : manipulation de fichiers, JSON, dates, expressions régulières, structures de données avancées, HTTP basique. PHP a une stdlib comparable en étendue, mais Python pousse cette logique plus loin dans des domaines comme le traitement de texte ou les itérateurs.
 
@@ -44,7 +42,7 @@ La philosophie "batteries included" signifie que la bibliothèque standard de Py
 
 Les deux langages sont interprétés, mais le mode d'exécution typique diffère.
 
-En PHP, le cycle de vie classique est requête HTTP entrante, exécution du script, réponse, fin du processus (le modèle change avec des runtimes comme Swoole ou RoadRunner, mais reste l'exception). En Python data, il n'y a généralement pas de serveur HTTP en jeu : un script s'exécute du début à la fin pour transformer un fichier, entraîner un modèle, ou peupler un entrepôt de données. Beaucoup de travail exploratoire se fait aussi dans un notebook (Jupyter), qui garde un état Python vivant entre les cellules exécutées, un mode de travail sans réel équivalent côté PHP. Cette approche interactive sera vue en détail dans la leçon sur les notebooks.
+En PHP, le cycle de vie classique est requête HTTP entrante, exécution du script, réponse, fin du processus (le modèle change avec des runtimes comme Swoole ou RoadRunner, mais reste l'exception). En Python data, il n'y a généralement pas de serveur HTTP en jeu : un script s'exécute du début à la fin pour transformer un fichier, entraîner un modèle, ou peupler un entrepôt de données. Beaucoup de travail exploratoire se fait aussi dans un notebook (Jupyter), qui garde un état Python vivant entre les cellules exécutées, un mode de travail sans réel équivalent côté PHP. Cette approche interactive fait l'objet de la leçon [Notebooks et workflow data](/documentations/python_data/notebooks_workflow_data).
 
 ```bash
 # Exécution classique d'un script Python
@@ -53,7 +51,7 @@ python3 pipeline.py
 # Lancement d'un interpréteur interactif
 python3
 
-# Lancement d'un notebook Jupyter (vu plus loin dans le cours)
+# Lancement d'un notebook Jupyter
 jupyter notebook
 ```
 
@@ -61,7 +59,7 @@ jupyter notebook
 
 ---
 
-Le tableau suivant donne des repères, pas un inventaire exhaustif. Chaque famille sera détaillée dans une leçon dédiée plus loin dans le cours.
+Le tableau suivant donne des repères, pas un inventaire exhaustif.
 
 | Famille | Rôle | Librairies phares |
 | --- | --- | --- |
@@ -72,13 +70,13 @@ Le tableau suivant donne des repères, pas un inventaire exhaustif. Chaque famil
 | Deep learning | Entraîner des réseaux de neurones | PyTorch, TensorFlow |
 | Accès aux données | Interroger des bases de données et des API depuis Python | SQLAlchemy, requests |
 
-> 💡 Bon à savoir : cette carte rejoue, côté langage, la même logique que le panorama d'outils vu dans le cours data engineer. Là où ce cours-là couvrait l'infrastructure d'un pipeline (orchestration, stockage, traitement distribué), celui-ci couvre l'outil que tu utiliseras concrètement pour écrire la logique métier de ces pipelines : le code Python lui-même.
+> 💡 Bon à savoir : cette carte rejoue, côté langage, la même logique que le panorama d'outils du cours data engineer. Là où celui-ci couvre l'infrastructure d'un pipeline (orchestration, stockage, traitement distribué), la présente carte couvre l'outil utilisé pour écrire la logique métier de ces pipelines : le code Python lui-même.
 
 ## Versions et installation
 
 ---
 
-Le cours part du principe que tu utilises Python 3 (la branche Python 2 est obsolète et non maintenue depuis 2020). Certaines fonctionnalités mentionnées dans ce cours, comme le `match/case`, nécessitent Python 3.10 ou plus récent.
+Python 3 est la seule branche pertinente aujourd'hui (la branche Python 2 est obsolète et non maintenue depuis 2020). Certaines fonctionnalités, comme le `match/case`, nécessitent Python 3.10 ou plus récent.
 
 ```bash
 # Vérifier la version installée
@@ -88,10 +86,4 @@ python3 --version
 sudo apt install python3 python3-pip python3-venv
 ```
 
-La gestion de plusieurs versions de Python en parallèle (utile en entreprise, où différents projets peuvent cibler des versions différentes) est un sujet abordé dans la leçon sur l'environnement et l'outillage, avec des outils comme `pyenv`.
-
-## Pour la suite
-
----
-
-Les prochaines leçons entrent dans le langage lui-même : syntaxe et types de données, structures de contrôle et fonctions, puis programmation orientée objet. Une fois ces bases posées, le cours passe à l'outillage d'un projet Python data avant d'aborder les librairies scientifiques proprement dites (NumPy, pandas, visualisation) et leur intégration avec des sources de données réelles (bases de données, API, notebooks).
+La gestion de plusieurs versions de Python en parallèle (utile en entreprise, où différents projets peuvent cibler des versions différentes) est abordée dans la leçon [Environnement et outillage](/documentations/python_data/environnement_outillage), avec des outils comme `pyenv`.
