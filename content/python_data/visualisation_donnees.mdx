@@ -1,0 +1,189 @@
+## Introduction
+
+---
+
+Avant de modéliser ou de tirer une conclusion sur un jeu de données, il faut d'abord le regarder. Une série de statistiques descriptives (`df.describe()`) donne des chiffres, mais masque des anomalies évidentes à l'œil : une distribution bimodale, des valeurs aberrantes, une corrélation inattendue entre deux colonnes. Ce constat porte un nom dans l'écosystème data : l'**EDA** (Exploratory Data Analysis, analyse exploratoire des données), une étape systématique avant tout traitement ou modèle.
+
+Un exemple classique pour illustrer ce point est le [quartet d'Anscombe](https://en.wikipedia.org/wiki/Anscombe%27s_quartet) : quatre jeux de données aux statistiques descriptives quasiment identiques (moyenne, variance, corrélation), mais dont les tracés révèlent des structures radicalement différentes (une relation linéaire, une courbe, une valeur aberrante qui fausse tout). Sans visualisation, ces différences resteraient invisibles.
+
+> 💡 Bon à savoir : c'est le même réflexe qu'inspecter les logs ou un dashboard de métriques avant de conclure qu'un service fonctionne bien. Un agrégat isolé (temps de réponse moyen) peut masquer une distribution à deux pics, ou quelques requêtes catastrophiques noyées dans la moyenne.
+
+## matplotlib : les bases
+
+---
+
+matplotlib est la bibliothèque de visualisation historique de Python, sur laquelle la plupart des autres bibliothèques (dont pandas et seaborn) s'appuient en interne.
+
+```bash
+pip install matplotlib
+```
+
+```python
+import matplotlib.pyplot as plt
+```
+
+### Figure et axes
+
+---
+
+Deux objets structurent toute visualisation matplotlib :
+
+- **`Figure`** : la fenêtre ou l'image entière, qui peut contenir un ou plusieurs graphiques.
+- **`Axes`** : une zone de tracé individuelle à l'intérieur de la figure, avec ses propres axes X et Y.
+
+```python
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots()
+
+ax.plot([1, 2, 3, 4], [10, 20, 15, 25])
+ax.set_title('Évolution des ventes')
+ax.set_xlabel('Mois')
+ax.set_ylabel('Ventes (k€)')
+
+plt.savefig('graphique_800_500.png')
+plt.show()
+```
+
+`plt.subplots()` retourne toujours un couple `(figure, axes)`. C'est la forme recommandée dès que le graphique doit être personnalisé, plutôt que d'utiliser les raccourcis globaux `plt.plot()` directement, qui deviennent vite ambigus dès qu'on trace plusieurs graphiques dans un même script.
+
+### Plusieurs graphiques dans une figure
+
+---
+
+```python
+fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+axes[0].plot([1, 2, 3], [10, 20, 15])
+axes[0].set_title('Graphique 1')
+
+axes[1].bar(['A', 'B', 'C'], [5, 8, 3])
+axes[1].set_title('Graphique 2')
+
+plt.tight_layout()
+plt.show()
+```
+
+`figsize` fixe la taille en pouces, `tight_layout()` ajuste automatiquement les marges pour éviter que les titres et légendes se chevauchent.
+
+## Types de graphiques courants
+
+---
+
+| Type | Fonction matplotlib | Usage typique |
+| --- | --- | --- |
+| Ligne | `ax.plot()` | Évolution d'une valeur dans le temps |
+| Barres | `ax.bar()` / `ax.barh()` | Comparer des catégories entre elles |
+| Histogramme | `ax.hist()` | Distribution d'une variable numérique |
+| Nuage de points | `ax.scatter()` | Relation entre deux variables numériques |
+| Boîte à moustaches | `ax.boxplot()` | Distribution, médiane, valeurs aberrantes |
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+donnees = np.random.normal(loc=50, scale=10, size=1000)
+
+fig, ax = plt.subplots()
+ax.hist(donnees, bins=30)
+ax.set_title('Distribution des âges simulés')
+plt.show()
+```
+
+```python
+fig, ax = plt.subplots()
+ax.scatter(df['taille'], df['poids'], alpha=0.5)
+ax.set_xlabel('Taille (cm)')
+ax.set_ylabel('Poids (kg)')
+plt.show()
+```
+
+Le paramètre `alpha` (transparence) est utile sur un scatter plot dès que plusieurs points se superposent : il révèle les zones de densité plutôt qu'un nuage uniforme.
+
+### Tracer directement depuis pandas
+
+---
+
+pandas expose une méthode `.plot()` qui délègue à matplotlib en interne, pratique pour un tracé rapide sans repasser par l'API complète :
+
+```python
+df['salaire'].plot(kind='hist', bins=20, title='Distribution des salaires')
+df.groupby('ville')['salaire'].mean().plot(kind='bar')
+```
+
+## seaborn : visualisations statistiques
+
+---
+
+seaborn est construit au-dessus de matplotlib et propose une API plus haut niveau, orientée statistique : il sait directement travailler avec un DataFrame et des noms de colonnes, calcule automatiquement certaines agrégations (moyennes, intervalles de confiance), et applique par défaut un style visuel plus soigné.
+
+```bash
+pip install seaborn
+```
+
+```python
+import seaborn as sns
+import matplotlib.pyplot as plt
+```
+
+### Distribution
+
+---
+
+```python
+sns.histplot(data=df, x='salaire', kde=True)
+plt.show()
+```
+
+`kde=True` superpose une estimation de densité (courbe lissée) à l'histogramme, utile pour visualiser la forme générale de la distribution sans être dépendant du nombre de barres choisi.
+
+### Corrélation
+
+---
+
+```python
+sns.scatterplot(data=df, x='taille', y='poids', hue='ville')
+plt.show()
+
+# Matrice de corrélation entre toutes les colonnes numériques
+correlation = df.select_dtypes(include='number').corr()
+sns.heatmap(correlation, annot=True, cmap='coolwarm')
+plt.show()
+```
+
+Le paramètre `hue` colore automatiquement les points selon une colonne catégorielle, ce qui remplacerait plusieurs lignes de code matplotlib pour le même résultat. `sns.heatmap` sur une matrice de corrélation est un des graphiques les plus utilisés en phase d'exploration : il révèle en un coup d'œil quelles variables sont liées entre elles, une information précieuse avant de construire un modèle.
+
+### Comparaison de distributions par catégorie
+
+---
+
+```python
+sns.boxplot(data=df, x='ville', y='salaire')
+plt.show()
+```
+
+## Quand utiliser l'un ou l'autre
+
+---
+
+| Besoin | Bibliothèque recommandée |
+| --- | --- |
+| Contrôle fin, graphique personnalisé, export précis | matplotlib |
+| Exploration rapide d'un DataFrame, style par défaut soigné | seaborn |
+| Corrélation, distribution statistique, comparaison de groupes | seaborn |
+| Graphique simple depuis une Series pandas | `.plot()` (matplotlib en interne) |
+
+En pratique, les deux se combinent naturellement : seaborn génère le tracé, matplotlib permet d'ajuster ensuite les titres, légendes ou la mise en page, puisque seaborn manipule les mêmes objets `Figure` et `Axes` en arrière-plan.
+
+## Résumé
+
+---
+
+| Concept | Description |
+| --- | --- |
+| EDA | Analyse exploratoire, étape systématique avant modélisation |
+| `Figure` / `Axes` | Conteneur global / zone de tracé individuelle |
+| matplotlib | Bibliothèque bas niveau, contrôle fin |
+| seaborn | Bibliothèque haut niveau, orientée statistique, construite sur matplotlib |
+
+La visualisation ferme la boucle entre les données brutes manipulées avec pandas et la compréhension qu'on en tire, un réflexe à garder avant toute nouvelle étape de traitement ou de modélisation.
