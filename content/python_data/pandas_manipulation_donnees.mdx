@@ -1,0 +1,232 @@
+## Introduction
+
+---
+
+pandas est la bibliothèque de référence pour manipuler des données tabulaires en Python : lire un fichier, filtrer des lignes, agréger, croiser plusieurs sources, gérer les valeurs manquantes. C'est l'outil le plus utilisé au quotidien dans un métier orienté data, au même titre que le SQL au quotidien d'un développeur backend.
+
+pandas s'appuie en interne sur NumPy pour le stockage et le calcul, mais expose une API pensée pour des données étiquetées : des colonnes nommées, un index, des types hétérogènes d'une colonne à l'autre.
+
+```bash
+pip install pandas
+```
+
+```python
+import pandas as pd
+```
+
+## Series et DataFrame
+
+---
+
+pandas repose sur deux structures principales.
+
+- **`Series`** : un tableau unidimensionnel étiqueté, l'équivalent d'une colonne unique avec un index.
+- **`DataFrame`** : une structure tabulaire à deux dimensions, l'équivalent d'une feuille de tableur ou d'une table SQL : des lignes, des colonnes nommées, et un index.
+
+```python
+import pandas as pd
+
+# Series
+s = pd.Series([10, 20, 30], index=['a', 'b', 'c'])
+# a    10
+# b    20
+# c    30
+
+# DataFrame
+df = pd.DataFrame({
+    'nom': ['Alice', 'Bob', 'Chloé'],
+    'age': [30, 25, 35],
+    'ville': ['Paris', 'Lyon', 'Paris'],
+})
+```
+
+Un `DataFrame` peut être vu comme un dictionnaire de `Series`, où chaque colonne est une `Series` partageant le même index.
+
+> 💡 Bon à savoir : l'index d'un DataFrame n'est pas juste un numéro de ligne, c'est une véritable étiquette qui peut être une date, une clé métier, ou un identifiant composite. C'est proche du rôle d'une clé primaire, mais avec un usage plus flexible : on peut réindexer, fusionner ou trier dessus.
+
+## Créer un DataFrame
+
+---
+
+```python
+import pandas as pd
+
+# Depuis un dictionnaire
+df = pd.DataFrame({'nom': ['Alice', 'Bob'], 'age': [30, 25]})
+
+# Depuis une liste de dictionnaires (proche d'un JSON)
+df = pd.DataFrame([
+    {'nom': 'Alice', 'age': 30},
+    {'nom': 'Bob', 'age': 25},
+])
+
+# Depuis un CSV
+df = pd.read_csv('utilisateurs.csv')
+
+# Aperçu rapide
+df.head()      # 5 premières lignes
+df.info()      # types de colonnes, valeurs non nulles, mémoire
+df.describe()  # statistiques descriptives des colonnes numériques
+df.shape       # (nombre_lignes, nombre_colonnes)
+df.columns     # liste des noms de colonnes
+```
+
+## Indexation avec loc et iloc
+
+---
+
+pandas propose deux accesseurs distincts pour sélectionner des lignes et colonnes, une source fréquente de confusion au début.
+
+- **`.loc`** : sélection par étiquette (le nom de l'index ou de la colonne).
+- **`.iloc`** : sélection par position numérique (comme un index de liste Python).
+
+```python
+df = pd.DataFrame({
+    'nom': ['Alice', 'Bob', 'Chloé'],
+    'age': [30, 25, 35],
+}, index=['u1', 'u2', 'u3'])
+
+# Par étiquette
+df.loc['u1']              # la ligne dont l'index vaut 'u1'
+df.loc['u1', 'nom']       # 'Alice'
+df.loc[:, 'nom']          # toute la colonne 'nom'
+df.loc['u1':'u2']         # les lignes de u1 à u2 incluses
+
+# Par position
+df.iloc[0]                # la première ligne
+df.iloc[0, 0]              # première ligne, première colonne
+df.iloc[0:2]               # les deux premières lignes (borne haute exclue)
+```
+
+> 💡 Bon à savoir : `.loc` inclut la borne de fin dans un slice (`'u1':'u2'` inclut `u2`), contrairement à `.iloc` et au slicing Python classique, où la borne haute est exclue. C'est une incohérence connue de pandas, à garder en tête.
+
+## Filtrage de lignes
+
+---
+
+Le filtrage repose sur l'indexation booléenne, le même principe que sur les tableaux NumPy.
+
+```python
+# Une condition
+df[df['age'] > 28]
+
+# Plusieurs conditions : & (et), | (ou), parenthèses obligatoires
+df[(df['age'] > 25) & (df['ville'] == 'Paris')]
+
+# Filtrer sur un ensemble de valeurs
+df[df['ville'].isin(['Paris', 'Lyon'])]
+
+# Négation
+df[~(df['ville'] == 'Paris')]
+```
+
+> 💡 Bon à savoir : `df[condition]` équivaut mentalement à un `WHERE` en SQL. Chaque condition entre parenthèses est l'équivalent d'une clause, combinée avec `AND` / `OR`.
+
+## groupby et agrégations
+
+---
+
+`groupby` regroupe les lignes selon une ou plusieurs colonnes, puis applique une fonction d'agrégation sur chaque groupe, l'équivalent direct d'un `GROUP BY` SQL.
+
+```python
+df = pd.DataFrame({
+    'ville': ['Paris', 'Lyon', 'Paris', 'Lyon', 'Paris'],
+    'age': [30, 25, 35, 40, 22],
+    'salaire': [3000, 2800, 3500, 4000, 2600],
+})
+
+# Moyenne par ville
+df.groupby('ville')['salaire'].mean()
+
+# Plusieurs agrégations à la fois
+df.groupby('ville').agg({
+    'salaire': ['mean', 'max'],
+    'age': 'mean',
+})
+
+# Regroupement sur plusieurs colonnes
+df.groupby(['ville', 'age']).size()
+```
+
+## merge et join
+
+---
+
+`merge` combine deux DataFrames selon une ou plusieurs colonnes communes, l'équivalent direct d'un `JOIN` SQL.
+
+```python
+utilisateurs = pd.DataFrame({
+    'id': [1, 2, 3],
+    'nom': ['Alice', 'Bob', 'Chloé'],
+})
+
+commandes = pd.DataFrame({
+    'id_utilisateur': [1, 1, 2],
+    'montant': [50, 30, 80],
+})
+
+pd.merge(
+    utilisateurs,
+    commandes,
+    left_on='id',
+    right_on='id_utilisateur',
+    how='inner',
+)
+```
+
+Le paramètre `how` correspond directement au type de jointure SQL :
+
+| `how` | Équivalent SQL | Comportement |
+| --- | --- | --- |
+| `inner` | `INNER JOIN` | Ne garde que les lignes présentes dans les deux DataFrames |
+| `left` | `LEFT JOIN` | Garde toutes les lignes du DataFrame de gauche, complète avec `NaN` si absent à droite |
+| `right` | `RIGHT JOIN` | Garde toutes les lignes du DataFrame de droite |
+| `outer` | `FULL OUTER JOIN` | Garde toutes les lignes des deux côtés |
+
+`df.join()` est une variante de `merge` optimisée pour joindre sur l'index plutôt que sur une colonne.
+
+## Gestion des valeurs manquantes
+
+---
+
+Une valeur manquante est représentée par `NaN` (Not a Number), un marqueur spécial de type flottant. C'est une réalité quasi systématique sur des données réelles : champs optionnels, erreurs de saisie, jointures incomplètes.
+
+```python
+df = pd.DataFrame({
+    'nom': ['Alice', 'Bob', None],
+    'age': [30, None, 35],
+})
+
+# Détecter les valeurs manquantes
+df.isna()          # DataFrame de booléens
+df.isna().sum()    # nombre de NaN par colonne
+
+# Supprimer les lignes contenant au moins un NaN
+df.dropna()
+
+# Supprimer uniquement si une colonne précise est vide
+df.dropna(subset=['nom'])
+
+# Remplacer les valeurs manquantes
+df.fillna(0)
+df['age'] = df['age'].fillna(df['age'].mean())
+```
+
+> 💡 Bon à savoir : contrairement à une contrainte `NOT NULL` en base de données qui empêche l'insertion d'une valeur manquante, pandas ne bloque jamais rien à l'écriture. La gestion des `NaN` est entièrement à la charge du code d'analyse, ce qui en fait une étape systématique avant tout calcul ou modèle.
+
+## Résumé
+
+---
+
+| Opération | Méthode pandas | Équivalent connu |
+| --- | --- | --- |
+| Sélection par étiquette | `.loc[]` | `SELECT ... WHERE id = ...` |
+| Sélection par position | `.iloc[]` | Index de tableau |
+| Filtrage | `df[condition]` | `WHERE` |
+| Agrégation par groupe | `.groupby().agg()` | `GROUP BY` |
+| Jointure | `pd.merge()` | `JOIN` |
+| Détection de valeurs manquantes | `.isna()` | `IS NULL` |
+| Suppression de lignes incomplètes | `.dropna()` | `WHERE colonne IS NOT NULL` |
+| Remplacement de valeurs manquantes | `.fillna()` | `COALESCE()` |
+
+pandas transpose en Python la plupart des réflexes déjà acquis en SQL, avec l'avantage de rester dans le même langage que le reste du pipeline de traitement.
