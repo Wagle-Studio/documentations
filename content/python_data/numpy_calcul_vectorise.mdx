@@ -1,0 +1,182 @@
+## Introduction
+
+---
+
+Une liste Python classique est une structure généraliste : elle peut contenir n'importe quel type d'objet, mélangés, et chaque élément est en réalité un pointeur vers un objet Python à part entière quelque part en mémoire. Cette flexibilité a un coût : parcourir une liste de 10 millions de nombres pour les additionner deux à deux implique 10 millions d'allers-retours dans l'interpréteur Python, chacun avec sa propre vérification de type.
+
+NumPy (Numerical Python) résout ce problème en proposant une structure de tableau typée et contiguë en mémoire, sur laquelle les opérations s'exécutent en code C compilé plutôt qu'en boucle Python interprétée. C'est la fondation numérique de tout l'écosystème data en Python : pandas, scikit-learn, TensorFrow et PyTorch reposent tous, directement ou indirectement, sur les tableaux NumPy.
+
+> 💡 Bon à savoir : c'est un peu le même raisonnement qui pousse à déléguer un calcul d'agrégation à une requête SQL plutôt qu'à une boucle PHP sur les résultats. On confie le travail lourd à une couche optimisée plutôt qu'à l'interpréteur du langage hôte.
+
+## Installation
+
+---
+
+```bash
+pip install numpy
+```
+
+Convention universelle d'import, à respecter systématiquement :
+
+```python
+import numpy as np
+```
+
+## Le ndarray
+
+---
+
+La structure centrale de NumPy est le `ndarray` (N-dimensional array), un tableau à N dimensions dont tous les éléments partagent le même type.
+
+### Création de tableaux
+
+---
+
+```python
+import numpy as np
+
+# Depuis une liste Python
+a = np.array([1, 2, 3, 4, 5])
+
+# Tableau à deux dimensions (matrice)
+b = np.array([[1, 2, 3], [4, 5, 6]])
+
+# Tableaux préremplis
+zeros = np.zeros((3, 4))        # matrice 3x4 de zéros
+ones = np.ones((2, 2))          # matrice 2x2 de uns
+identite = np.eye(3)            # matrice identité 3x3
+
+# Séquences
+sequence = np.arange(0, 10, 2)  # [0, 2, 4, 6, 8]
+lineaire = np.linspace(0, 1, 5) # 5 valeurs régulières entre 0 et 1
+```
+
+### Propriétés essentielles
+
+---
+
+Chaque `ndarray` expose des propriétés qui décrivent sa structure :
+
+```python
+a = np.array([[1, 2, 3], [4, 5, 6]])
+
+a.shape    # (2, 3) : 2 lignes, 3 colonnes
+a.ndim     # 2 : nombre de dimensions
+a.dtype    # dtype('int64') : type des éléments
+a.size     # 6 : nombre total d'éléments
+```
+
+Le `dtype` (data type) est ce qui rend le tableau compact et rapide : contrairement à une liste Python où chaque élément est un objet avec ses propres métadonnées, tous les éléments d'un `ndarray` partagent le même type primitif (`int64`, `float64`, `bool`, etc.), stocké de façon contiguë en mémoire, comme un tableau en C.
+
+```python
+# Forcer un type précis
+entiers = np.array([1, 2, 3], dtype=np.int32)
+flottants = np.array([1, 2, 3], dtype=np.float64)
+```
+
+## Indexation et slicing
+
+---
+
+L'indexation ressemble à celle des listes Python, mais s'étend naturellement aux tableaux multidimensionnels.
+
+```python
+a = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+
+a[0, 0]      # 1 : première ligne, première colonne
+a[1, :]      # [4, 5, 6] : toute la deuxième ligne
+a[:, 2]      # [3, 6, 9] : toute la troisième colonne
+a[0:2, 0:2]  # sous-matrice 2x2 en haut à gauche
+
+# Indexation booléenne : filtrer selon une condition
+a[a > 5]     # [6, 7, 8, 9] : tous les éléments strictement supérieurs à 5
+```
+
+L'indexation booléenne est un des outils les plus utilisés en pratique : elle permet de filtrer un tableau sans écrire de boucle explicite.
+
+> 💡 Bon à savoir : contrairement au slicing sur une liste Python, un slice NumPy retourne généralement une vue (view) sur le tableau d'origine, pas une copie. Modifier le résultat d'un slice modifie donc le tableau original. Pour obtenir une copie indépendante, il faut appeler explicitement `.copy()`.
+
+## Opérations vectorisées vs boucles Python
+
+---
+
+Le cœur de la performance de NumPy tient à la **vectorisation** : appliquer une opération à un tableau entier en une seule instruction, sans boucle Python explicite.
+
+```python
+import numpy as np
+
+a = np.arange(1_000_000)
+
+# Approche vectorisée (NumPy)
+resultat = a * 2
+
+# Approche équivalente en boucle Python pure
+resultat_boucle = [x * 2 for x in a]
+```
+
+Ces deux approches produisent le même résultat, mais leur exécution est radicalement différente en interne :
+
+| Approche | Où s'exécute la boucle | Ordre de grandeur |
+| --- | --- | --- |
+| Boucle Python (`for`, compréhension) | Dans l'interpréteur Python, élément par élément | Référence (1x) |
+| Opération vectorisée NumPy | Dans du code C compilé, sur le tableau entier | 10x à 100x plus rapide |
+
+La différence vient du fait que la version vectorisée délègue toute la boucle à une implémentation C optimisée, alors que la version Python doit repasser par l'interpréteur (vérification de type, appel de méthode, gestion mémoire) à chaque itération.
+
+```python
+# Comparaison, addition, et toutes les opérations arithmétiques
+# se vectorisent naturellement
+a = np.array([1, 2, 3, 4, 5])
+b = np.array([10, 20, 30, 40, 50])
+
+a + b        # [11, 22, 33, 44, 55]
+a * b        # [10, 40, 90, 160, 250]
+a > 3        # [False, False, False, True, True]
+np.sqrt(a)   # racine carrée élément par élément
+
+# Agrégations
+a.sum()      # 15
+a.mean()     # 3.0
+a.max()      # 5
+a.std()      # écart-type
+```
+
+## Broadcasting
+
+---
+
+Le broadcasting est le mécanisme qui permet à NumPy d'appliquer une opération entre deux tableaux de formes différentes, en étendant virtuellement le plus petit pour qu'il corresponde au plus grand, sans dupliquer physiquement la donnée en mémoire.
+
+```python
+a = np.array([[1, 2, 3], [4, 5, 6]])  # shape (2, 3)
+b = np.array([10, 20, 30])            # shape (3,)
+
+a + b
+# [[11, 22, 33],
+#  [14, 25, 36]]
+```
+
+Ici, `b` est appliqué à chaque ligne de `a` sans qu'il soit besoin de le répéter explicitement. La règle générale : deux dimensions sont compatibles si elles sont égales, ou si l'une des deux vaut 1.
+
+```python
+# Cas d'usage courant : normaliser chaque colonne
+donnees = np.array([[1, 100], [2, 200], [3, 300]])
+moyenne = donnees.mean(axis=0)   # moyenne de chaque colonne, shape (2,)
+normalise = donnees - moyenne    # broadcasting automatique
+```
+
+Le paramètre `axis` mérite d'être retenu : `axis=0` agrège verticalement (résultat par colonne), `axis=1` agrège horizontalement (résultat par ligne). C'est une source d'erreur fréquente au début.
+
+## Résumé
+
+---
+
+| Concept | Description |
+| --- | --- |
+| `ndarray` | Tableau typé, contigu en mémoire, à N dimensions |
+| `shape` | Dimensions du tableau (lignes, colonnes, ...) |
+| `dtype` | Type unique partagé par tous les éléments |
+| Vectorisation | Appliquer une opération à tout le tableau sans boucle Python explicite |
+| Broadcasting | Étendre virtuellement un tableau pour l'aligner sur un autre de forme différente |
+
+NumPy n'est presque jamais utilisé seul en pratique : il sert de fondation à des bibliothèques de plus haut niveau. La plus utilisée au quotidien pour manipuler des données tabulaires est pandas, qui construit ses structures (`Series`, `DataFrame`) directement sur des tableaux NumPy en interne, tout en offrant une API pensée pour des données étiquetées (colonnes nommées, index).
