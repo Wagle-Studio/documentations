@@ -27,6 +27,9 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Documentations",
   description: "Documentations",
+  icons: {
+    icon: "/emoji/books.png",
+  },
 };
 
 export default function RootLayout({
