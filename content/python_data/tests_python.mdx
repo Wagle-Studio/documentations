@@ -1,0 +1,233 @@
+## Introduction
+
+---
+
+Les fondations générales des tests (unitaire, fonctionnel, E2E) vues avec PHPUnit dans le cours php_tests ne changent pas en passant à Python : ce qui change, c'est l'outil et quelques idiomes du langage. pytest est le framework de test de référence en Python, avec ses spécificités appliquées à du code de traitement de données.
+
+## pytest et sa philosophie
+
+---
+
+```bash
+pip install pytest
+```
+
+pytest repose sur un principe différent de PHPUnit : pas de classe à hériter, pas de méthode `setUp()` obligatoire, pas de préfixe `test` sur une méthode d'une classe `TestCase`. Un test est une simple fonction Python, dont le nom commence par `test_`, qui utilise `assert` nativement.
+
+```python
+# test_calculs.py
+def additionner(a: int, b: int) -> int:
+    return a + b
+
+def test_additionner_deux_nombres_positifs():
+    resultat = additionner(2, 3)
+    assert resultat == 5
+```
+
+```bash
+pytest
+pytest test_calculs.py
+pytest -v                    # mode verbeux, liste chaque test
+pytest -k "additionner"      # ne lance que les tests dont le nom matche
+```
+
+> 💡 Bon à savoir : là où PHPUnit impose `$this->assertSame($attendu, $reel)` avec une méthode dédiée par type de comparaison, pytest se contente du mot-clé `assert` natif de Python. C'est pytest qui, en cas d'échec, réintrospecte l'expression pour afficher un message d'erreur détaillé (valeurs comparées, différence), sans que le développeur ait à choisir la bonne méthode d'assertion.
+
+```python
+def test_echec_avec_message_detaille():
+    resultat = additionner(2, 3)
+    assert resultat == 6
+    # AssertionError: assert 5 == 6
+```
+
+## Structure d'un test
+
+---
+
+pytest découvre automatiquement les tests selon une convention de nommage : les fichiers `test_*.py` ou `*_test.py`, et à l'intérieur les fonctions `test_*` (ou les méthodes `test_*` dans une classe `Test*`, sans besoin d'hériter de quoi que ce soit).
+
+```python
+# test_transformations.py
+import pandas as pd
+from transformations import nettoyer_ventes
+
+def test_nettoyer_ventes_supprime_les_montants_negatifs():
+    # Arrange
+    df = pd.DataFrame({'montant': [10, -5, 20]})
+
+    # Act
+    resultat = nettoyer_ventes(df)
+
+    # Assert
+    assert (resultat['montant'] > 0).all()
+    assert len(resultat) == 2
+```
+
+Le même schéma Arrange / Act / Assert que côté PHPUnit s'applique directement, seule la syntaxe change.
+
+## Fixtures
+
+---
+
+Une fixture pytest prépare des données ou des ressources réutilisables entre plusieurs tests, l'équivalent du `setUp()` de PHPUnit, mais sous forme de fonction injectée par nom plutôt que de méthode de cycle de vie.
+
+```python
+import pytest
+import pandas as pd
+
+@pytest.fixture
+def df_ventes():
+    return pd.DataFrame({
+        'produit': ['A', 'B', 'C'],
+        'montant': [100, -20, 50],
+    })
+
+def test_nettoyer_supprime_les_montants_negatifs(df_ventes):
+    resultat = nettoyer_ventes(df_ventes)
+    assert len(resultat) == 2
+
+def test_nettoyer_conserve_les_colonnes(df_ventes):
+    resultat = nettoyer_ventes(df_ventes)
+    assert list(resultat.columns) == ['produit', 'montant']
+```
+
+Chaque test qui déclare `df_ventes` comme paramètre reçoit automatiquement le résultat de la fixture, réexécutée à chaque test pour garantir l'isolation (pas d'état partagé entre les tests, contrairement à une variable de classe qu'on réutiliserait par erreur).
+
+> 💡 Bon à savoir : contrairement au `setUp()` de PHPUnit, exécuté implicitement avant chaque méthode d'une classe de test, une fixture pytest doit être explicitement demandée en paramètre. Un test qui n'en a pas besoin ne la charge simplement pas, ce qui rend les dépendances de chaque test visibles dans sa signature.
+
+Une fixture peut aussi gérer un cycle de vie complet (préparation puis nettoyage), avec `yield` à la place d'un `return` :
+
+```python
+@pytest.fixture
+def connexion_db():
+    connexion = creer_connexion_test()
+    yield connexion          # fourni au test
+    connexion.close()        # exécuté après le test, même en cas d'échec
+```
+
+## Paramétrage de tests
+
+---
+
+`@pytest.mark.parametrize` exécute le même test plusieurs fois avec des jeux de données différents, sans dupliquer le code du test.
+
+```python
+import pytest
+
+@pytest.mark.parametrize('a, b, attendu', [
+    (2, 3, 5),
+    (-1, 1, 0),
+    (0, 0, 0),
+    (100, 200, 300),
+])
+def test_additionner(a, b, attendu):
+    assert additionner(a, b) == attendu
+```
+
+pytest exécute ici quatre tests distincts, rapportés individuellement en cas d'échec, ce qui évite d'écrire quatre fonctions de test quasiment identiques ou une boucle `for` qui masquerait quel cas précis a échoué.
+
+## Tester du code data
+
+---
+
+### Tester une fonction de transformation
+
+---
+
+Le cas le plus fréquent en data : vérifier qu'une fonction de transformation, prenant un DataFrame en entrée, produit exactement le DataFrame attendu en sortie.
+
+```python
+# transformations.py
+import pandas as pd
+
+def normaliser_colonnes(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df.columns = [col.strip().lower() for col in df.columns]
+    return df
+```
+
+```python
+# test_transformations.py
+import pandas as pd
+from pandas.testing import assert_frame_equal
+from transformations import normaliser_colonnes
+
+def test_normaliser_colonnes_met_les_noms_en_minuscule():
+    # Arrange
+    entree = pd.DataFrame({'Nom ': ['Alice'], ' AGE': [30]})
+    attendu = pd.DataFrame({'nom': ['Alice'], 'age': [30]})
+
+    # Act
+    resultat = normaliser_colonnes(entree)
+
+    # Assert
+    assert_frame_equal(resultat, attendu)
+```
+
+`pandas.testing.assert_frame_equal` est l'outil dédié pour comparer deux DataFrames : un simple `==` produirait une comparaison élément par élément difficile à interpréter, alors que `assert_frame_equal` compare structure, types et valeurs, et lève une erreur lisible en cas de différence.
+
+### Mocker un appel API ou base de données
+
+---
+
+Un test unitaire ne doit pas dépendre d'un réseau ou d'une base réelle : lent, non déterministe (le service externe peut être en panne ou renvoyer des données différentes), et hors du périmètre de ce qu'on veut réellement vérifier. Le module `unittest.mock`, disponible nativement en Python, permet de simuler ces dépendances externes.
+
+```python
+# client_api.py
+import requests
+
+def recuperer_taux_change(devise: str) -> float:
+    reponse = requests.get(f'https://api.exemple.com/taux/{devise}')
+    reponse.raise_for_status()
+    return reponse.json()['taux']
+```
+
+```python
+# test_client_api.py
+from unittest.mock import patch, Mock
+from client_api import recuperer_taux_change
+
+def test_recuperer_taux_change_retourne_le_taux():
+    reponse_simulee = Mock()
+    reponse_simulee.json.return_value = {'taux': 0.92}
+    reponse_simulee.raise_for_status.return_value = None
+
+    with patch('client_api.requests.get', return_value=reponse_simulee) as mock_get:
+        taux = recuperer_taux_change('EUR')
+
+        assert taux == 0.92
+        mock_get.assert_called_once_with('https://api.exemple.com/taux/EUR')
+```
+
+`patch()` remplace temporairement `requests.get` par un objet simulé (`Mock`) le temps du test, sans jamais effectuer de véritable requête réseau. `mock_get.assert_called_once_with(...)` vérifie en plus que la fonction testée a appelé l'API avec les bons paramètres, pas seulement que le résultat final est correct.
+
+> 💡 Bon à savoir : le principe est identique à un mock PHPUnit sur une dépendance injectée (`$this->createMock(HttpClientInterface::class)`). La différence tient au mécanisme : Python n'a pas d'interfaces à typer explicitement pour permettre le mock, `patch()` remplace directement l'attribut ciblé (ici `requests.get`) à l'endroit précis où il est utilisé, le temps du bloc `with`.
+
+Le même principe s'applique à une connexion base de données : on mocke la session ou la fonction d'exécution de requête, pour vérifier que le code appelant se comporte correctement sans dépendre d'une vraie base.
+
+```python
+def test_recuperer_livre_leve_une_erreur_si_introuvable():
+    session_simulee = Mock()
+    session_simulee.scalar.return_value = None
+
+    with pytest.raises(ValueError):
+        recuperer_livre(session_simulee, id_livre=999)
+```
+
+`pytest.raises(...)` vérifie qu'une exception précise est bien levée, l'équivalent de `$this->expectException(...)` côté PHPUnit.
+
+## Résumé
+
+---
+
+| Concept pytest | Équivalent PHPUnit |
+| --- | --- |
+| Fonction `test_*` | Méthode `test*` d'une classe `TestCase` |
+| `assert` natif | `$this->assertSame(...)` et variantes |
+| `@pytest.fixture` | `setUp()` / fixtures |
+| `@pytest.mark.parametrize` | `@dataProvider` |
+| `pytest.raises(...)` | `$this->expectException(...)` |
+| `unittest.mock.patch` | `$this->createMock(...)` |
+| `assert_frame_equal` | Comparaison de structures de données complexes |
+
+Les principes fondamentaux des tests (isolation, lisibilité, pyramide de tests, mock des dépendances externes) restent identiques d'un langage à l'autre. Ce qui change, c'est la syntaxe et quelques outils spécifiques au traitement de données, comme `assert_frame_equal` pour valider une transformation pandas.
