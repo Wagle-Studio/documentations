@@ -862,6 +862,18 @@ const lessons: Lesson[] = [
     updated: "8 août 2026",
   },
   {
+    id: 86,
+    index: 11,
+    paths: ["data_engineer", "proprietes_acid.mdx"],
+    label: "Les propriétés ACID",
+    slug: "proprietes_acid",
+    course_id: 11,
+    description:
+      "Atomicité, cohérence, isolation, durabilité : ce que garantit vraiment une transaction, et pourquoi le lakehouse a dû réinventer ces garanties pour le data lake.",
+    created: "24 août 2026",
+    updated: "24 août 2026",
+  },
+  {
     id: 74,
     index: 1,
     paths: ["python_data", "introduction_python.mdx"],

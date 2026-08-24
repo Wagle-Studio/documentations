@@ -1,0 +1,67 @@
+## Introduction
+
+---
+
+Dès qu'une opération touche plusieurs lignes, ou plusieurs tables, une question se pose : que se passe-t-il si le programme plante au milieu ? Et si deux utilisateurs modifient la même donnée au même instant ? L'acronyme **ACID** (Atomicité, Cohérence, Isolation, Durabilité) décrit les quatre garanties qu'une base de données transactionnelle offre pour répondre à ces deux problèmes : les pannes et la concurrence.
+
+## Le problème qu'une transaction résout
+
+---
+
+Prenons un virement bancaire : débiter un compte de 100€ puis créditer un autre compte de 100€. Ce sont deux écritures distinctes, mais elles doivent former une seule unité logique : si la deuxième écriture échoue après que la première a réussi, l'argent disparaît. Une **transaction** regroupe plusieurs opérations en un bloc unique, pour que la base puisse garantir les propriétés ACID sur l'ensemble du bloc, pas seulement sur chaque opération prise isolément.
+
+## Atomicité
+
+---
+
+L'**atomicité** garantit qu'une transaction s'exécute intégralement ou pas du tout. Si une des opérations du bloc échoue (contrainte violée, panne serveur, connexion coupée), toutes les opérations déjà effectuées sont annulées (**rollback**), comme si la transaction n'avait jamais eu lieu.
+
+Dans l'exemple du virement, l'atomicité interdit l'état intermédiaire où le compte source est débité sans que le compte destinataire soit crédité.
+
+## Cohérence
+
+---
+
+La **cohérence** garantit qu'une transaction fait passer la base d'un état valide à un autre état valide, en respectant toutes les contraintes définies (clés étrangères, contraintes d'unicité, contraintes métier). Une transaction qui violerait une contrainte, un solde négatif sur un compte qui l'interdit par exemple, est rejetée dans son ensemble plutôt que d'être appliquée partiellement.
+
+Contrairement aux trois autres lettres, la cohérence n'est pas un mécanisme technique que le moteur de base de données implémente seul : elle dépend directement des contraintes que l'application ou le schéma définissent. L'atomicité, l'isolation et la durabilité sont des garanties du moteur ; la cohérence est la conséquence des trois autres, combinées à un schéma correctement contraint.
+
+## Isolation
+
+---
+
+L'**isolation** garantit que des transactions concurrentes n'interfèrent pas entre elles : chacune doit produire le même résultat que si elle s'exécutait seule, même si d'autres transactions tournent en parallèle. C'est la propriété la plus coûteuse à garantir pleinement, d'où l'existence de plusieurs niveaux, du plus permissif au plus strict.
+
+| Niveau d'isolation | Ce qu'il empêche |
+| --- | --- |
+| Read uncommitted | Rien : une transaction peut lire des données non validées par une autre (dirty read) |
+| Read committed | Le dirty read : impossible de lire une donnée non encore validée |
+| Repeatable read | En plus, le non-repeatable read : une même ligne relue deux fois dans la transaction renvoie toujours la même valeur |
+| Serializable | En plus, le phantom read : le résultat d'une requête répétée ne peut pas changer, même pour de nouvelles lignes insérées entre-temps |
+
+Plus le niveau d'isolation est strict, plus le moteur doit verrouiller ou dupliquer des données pour le garantir, au prix d'un débit de transactions plus faible. En pratique, `read committed` est le niveau par défaut de la plupart des moteurs (PostgreSQL, Oracle), un compromis jugé suffisant pour la majorité des cas d'usage applicatifs.
+
+## Durabilité
+
+---
+
+La **durabilité** garantit qu'une transaction validée (committed) le reste, même en cas de panne immédiatement après (coupure électrique, crash du serveur). Concrètement, le moteur écrit d'abord la transaction dans un journal persistant sur disque (le write-ahead log déjà évoqué dans la [leçon sur le CDC](/documentations/data_engineer/cdc_replication)) avant de confirmer la validation au client, de façon à pouvoir rejouer ce journal et reconstruire l'état correct si le processus redémarre juste après.
+
+## ACID et data engineering
+
+---
+
+Les propriétés ACID ont été pensées pour les bases relationnelles **OLTP** (voir la [leçon OLTP vs OLAP](/documentations/data_engineer/oltp_vs_olap)), où de nombreuses petites transactions concurrentes doivent rester fiables. Un entrepôt analytique classique, alimenté par des chargements batch contrôlés plutôt que par des écritures concurrentes en continu, n'a historiquement pas eu besoin des mêmes garanties : un data lake brut (fichiers Parquet sur du stockage objet) n'offre nativement aucune des quatre propriétés, un job qui échoue à mi-parcours peut laisser des fichiers partiels ou incohérents.
+
+> 💡 Bon à savoir : c'est précisément ce que corrigent les formats de table du **lakehouse** (Delta Lake, Apache Iceberg, Apache Hudi), déjà mentionnés dans l'[introduction au métier](/documentations/data_engineer/introduction_metier_data_engineer) comme la brique qui apporte au data lake « les garanties transactionnelles du data warehouse ». Concrètement, ils ajoutent une couche de métadonnées transactionnelles au-dessus des fichiers Parquet, pour offrir l'atomicité (un job qui écrit partiellement puis échoue n'affecte jamais les lecteurs) et l'isolation (une lecture concurrente à une écriture voit toujours une version cohérente des données) sur un espace de stockage qui, nativement, n'a aucune notion de transaction.
+
+## Résumé
+
+---
+
+| Lettre | Garantie | Exemple de violation évitée |
+| --- | --- | --- |
+| **A**tomicité | Tout ou rien | Un virement à moitié effectué |
+| **C**ohérence | Les contraintes du schéma sont toujours respectées | Un solde négatif sur un compte qui l'interdit |
+| **I**solation | Les transactions concurrentes n'interfèrent pas | Une transaction qui lit une donnée non validée par une autre |
+| **D**urabilité | Une transaction validée survit à une panne | Une transaction confirmée au client, perdue après un crash |
