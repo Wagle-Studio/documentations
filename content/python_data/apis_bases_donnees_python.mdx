@@ -1,0 +1,250 @@
+## Introduction
+
+---
+
+Un pipeline ou un script data ne travaille presque jamais en circuit fermé : il va chercher de la donnée à l'extérieur, que ce soit une API tierce ou une base de données relationnelle. Les deux outils Python de référence pour ça sont `requests` pour consommer une API REST, et SQLAlchemy pour dialoguer avec une base relationnelle. Les deux réutilisent des concepts déjà vus dans les cours API REST et Symfony, avec un vocabulaire et des mécanismes très proches.
+
+## Consommer une API REST avec requests
+
+---
+
+```bash
+pip install requests
+```
+
+`requests` est la bibliothèque HTTP de référence en Python : elle enveloppe la construction de la requête, l'envoi et le parsing de la réponse dans une API simple.
+
+### Méthodes HTTP
+
+---
+
+Les mêmes méthodes que celles du modèle BREAD vu dans le cours API REST se retrouvent telles quelles :
+
+```python
+import requests
+
+# GET : récupérer une ressource
+reponse = requests.get('https://api.exemple.com/livres')
+
+# GET avec paramètres de requête (?auteur=Asimov)
+reponse = requests.get(
+    'https://api.exemple.com/livres',
+    params={'auteur': 'Asimov'},
+)
+
+# POST : créer une ressource
+reponse = requests.post(
+    'https://api.exemple.com/livres',
+    json={'titre': 'Fondation', 'auteur': 'Isaac Asimov'},
+)
+
+# PATCH / PUT : mettre à jour
+reponse = requests.patch(
+    'https://api.exemple.com/livres/3',
+    json={'titre': 'Fondation et Empire'},
+)
+
+# DELETE : supprimer
+reponse = requests.delete('https://api.exemple.com/livres/3')
+```
+
+Le paramètre `json=` sérialise automatiquement le dictionnaire en JSON et positionne l'en-tête `Content-Type: application/json`, l'équivalent de ce qui serait fait manuellement en construisant une requête HTTP côté client.
+
+### Codes de statut et gestion des erreurs
+
+---
+
+```python
+reponse = requests.get('https://api.exemple.com/livres/3')
+
+reponse.status_code   # 200, 404, 500, ...
+reponse.ok             # True si status_code < 400
+reponse.json()         # corps de la réponse désérialisé en dict/liste
+reponse.headers        # en-têtes de la réponse
+
+# Lever une exception si le code indique une erreur (4xx ou 5xx)
+reponse.raise_for_status()
+```
+
+```python
+import requests
+
+def recuperer_livre(id_livre: int) -> dict:
+    reponse = requests.get(f'https://api.exemple.com/livres/{id_livre}')
+
+    if reponse.status_code == 404:
+        raise ValueError(f"Livre {id_livre} introuvable")
+
+    reponse.raise_for_status()
+    return reponse.json()
+```
+
+> 💡 Bon à savoir : les mêmes codes de statut que ceux manipulés côté serveur en PHP/Symfony (200, 201, 204, 400, 401, 404, 500) se retrouvent à l'identique côté client Python. Aucune notion nouvelle ici, seulement une inversion de perspective : consommer l'API plutôt que la construire.
+
+### Authentification
+
+---
+
+```python
+# Authentification Basic
+reponse = requests.get(
+    'https://api.exemple.com/livres',
+    auth=('utilisateur', 'mot_de_passe'),
+)
+
+# Token Bearer (JWT ou autre), via les en-têtes
+reponse = requests.get(
+    'https://api.exemple.com/livres',
+    headers={'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9...'},
+)
+```
+
+### Timeout et fiabilité
+
+---
+
+Sans timeout explicite, une requête peut rester bloquée indéfiniment si le serveur distant ne répond pas.
+
+```python
+try:
+    reponse = requests.get(
+        'https://api.exemple.com/livres',
+        timeout=5,  # secondes
+    )
+except requests.exceptions.Timeout:
+    print("L'API n'a pas répondu à temps")
+except requests.exceptions.ConnectionError:
+    print("Impossible de joindre l'API")
+```
+
+Fixer systématiquement un timeout est une bonne pratique à prendre dès le début, surtout dans un pipeline automatisé où un script bloqué peut geler toute une chaîne de traitement.
+
+## Bases de données relationnelles avec SQLAlchemy
+
+---
+
+```bash
+pip install sqlalchemy
+```
+
+SQLAlchemy est l'ORM (Object-Relational Mapper) de référence en Python, l'équivalent direct de Doctrine ORM côté Symfony. Il propose deux niveaux d'usage : le **Core**, proche du SQL brut avec une couche d'abstraction légère, et l'**ORM**, qui mappe des classes Python à des tables comme le fait Doctrine avec ses entités.
+
+### Connexion
+
+---
+
+```python
+from sqlalchemy import create_engine
+
+# SQLite (fichier local, pratique pour prototyper)
+engine = create_engine('sqlite:///donnees.db')
+
+# PostgreSQL
+engine = create_engine('postgresql://utilisateur:motdepasse@localhost:5432/ma_base')
+```
+
+L'`engine` est l'équivalent du gestionnaire de connexion : il ne se connecte pas immédiatement, mais gère un pool de connexions ouvertes à la demande.
+
+### Définir un modèle
+
+---
+
+```python
+from sqlalchemy import String, Integer, ForeignKey
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+class Base(DeclarativeBase):
+    pass
+
+class Auteur(Base):
+    __tablename__ = 'auteurs'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nom: Mapped[str] = mapped_column(String(100))
+    livres: Mapped[list['Livre']] = relationship(back_populates='auteur')
+
+class Livre(Base):
+    __tablename__ = 'livres'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    titre: Mapped[str] = mapped_column(String(200))
+    auteur_id: Mapped[int] = mapped_column(ForeignKey('auteurs.id'))
+    auteur: Mapped['Auteur'] = relationship(back_populates='livres')
+```
+
+> 💡 Bon à savoir : la structure rappelle directement une entité Doctrine avec ses attributs `#[ORM\Column]` et `#[ORM\ManyToOne]`. `Mapped[...]` avec `mapped_column()` joue le même rôle que les attributs PHP : typer et mapper une colonne. `relationship()` correspond aux `OneToMany` / `ManyToOne` de Doctrine.
+
+### Session et requêtes
+
+---
+
+La `Session` de SQLAlchemy est l'équivalent de l'`EntityManager` de Doctrine : elle suit les objets chargés et regroupe les écritures.
+
+```python
+from sqlalchemy.orm import Session
+from sqlalchemy import select
+
+with Session(engine) as session:
+    # Créer
+    auteur = Auteur(nom='Isaac Asimov')
+    session.add(auteur)
+    session.commit()
+
+    # Lire
+    stmt = select(Livre).where(Livre.titre == 'Fondation')
+    livre = session.scalar(stmt)
+
+    # Lire plusieurs résultats
+    stmt = select(Livre).where(Livre.auteur_id == auteur.id)
+    livres = session.scalars(stmt).all()
+
+    # Mettre à jour
+    livre.titre = 'Fondation et Empire'
+    session.commit()
+
+    # Supprimer
+    session.delete(livre)
+    session.commit()
+```
+
+`session.commit()` joue le rôle de `$em->flush()` côté Doctrine : c'est le moment où les changements suivis en mémoire sont réellement traduits en SQL et envoyés à la base.
+
+### Requêtes paramétrées et injection SQL
+
+---
+
+Que ce soit via l'ORM ou en SQL brut, ne jamais construire une requête par concaténation de chaînes avec une valeur venant de l'utilisateur : c'est la porte ouverte à l'injection SQL.
+
+```python
+from sqlalchemy import text
+
+# DANGEREUX : injection SQL possible
+titre_utilisateur = "Fondation'; DROP TABLE livres; --"
+requete = f"SELECT * FROM livres WHERE titre = '{titre_utilisateur}'"  # à ne jamais faire
+
+# SÛR : requête paramétrée, la valeur est liée séparément du SQL
+with engine.connect() as connexion:
+    resultat = connexion.execute(
+        text('SELECT * FROM livres WHERE titre = :titre'),
+        {'titre': titre_utilisateur},
+    )
+```
+
+Le principe est identique à celui des requêtes préparées avec PDO ou Doctrine côté PHP : la valeur est transmise séparément de la structure de la requête, ce qui empêche toute donnée utilisateur d'être interprétée comme du SQL. Utiliser l'ORM (`select(Livre).where(...)`) protège automatiquement contre ce risque, puisque SQLAlchemy paramètre les requêtes en interne ; le danger n'existe vraiment qu'en cas de construction manuelle de SQL par concaténation.
+
+## Résumé
+
+---
+
+| Concept Python | Équivalent connu |
+| --- | --- |
+| `requests.get/post/patch/delete` | Méthodes HTTP du modèle BREAD |
+| `reponse.status_code` | Code de statut HTTP |
+| `reponse.raise_for_status()` | Gestion d'erreur sur la réponse HTTP |
+| `create_engine()` | Gestionnaire de connexion |
+| Classe SQLAlchemy + `Mapped` | Entité Doctrine + attributs `#[ORM\Column]` |
+| `Session` | `EntityManager` |
+| `session.commit()` | `$em->flush()` |
+| Requête paramétrée (`text()` + dict) | Requête préparée PDO / Doctrine |
+
+Avec ces deux briques, un script Python peut aussi bien consommer une API externe que lire ou écrire dans une base relationnelle, les deux sources de données les plus courantes en dehors des fichiers plats déjà vus.
