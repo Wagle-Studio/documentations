@@ -1,0 +1,137 @@
+## Introduction
+
+---
+
+Un script Python s'exécute de la même façon qu'un script PHP classique : un fichier, exécuté du début à la fin, qui produit un résultat. Le monde data utilise très largement un autre format d'exécution, le **notebook**, qui casse ce modèle linéaire, avec ses propres bénéfices et ses propres limites face à du code productif classique.
+
+## Qu'est-ce que Jupyter
+
+---
+
+Jupyter est un environnement qui permet d'exécuter du code par **cellules** indépendantes, dans un ordre non forcément séquentiel, avec le résultat de chaque cellule affiché directement en dessous : un tableau, un graphique, une erreur, du texte.
+
+```bash
+pip install notebook
+jupyter notebook
+```
+
+Un fichier notebook (extension `.ipynb`) mélange trois types de contenu dans un même document :
+
+- **Cellules de code** : du Python exécutable, cellule par cellule.
+- **Cellules markdown** : du texte formaté, pour documenter le raisonnement au fil de l'analyse.
+- **Sorties (outputs)** : le résultat de chaque cellule, conservé dans le fichier (texte, tableau, graphique).
+
+```python
+# Cellule 1
+import pandas as pd
+df = pd.read_csv('ventes.csv')
+df.head()
+```
+
+```python
+# Cellule 2, exécutée après la 1, réutilise df directement
+df.groupby('categorie')['montant'].sum().plot(kind='bar')
+```
+
+Chaque cellule s'exécute dans le même processus Python, appelé **kernel**. Les variables définies dans une cellule restent disponibles dans toutes les cellules suivantes, exécutées dans le même kernel, un peu comme une session REPL persistante.
+
+> 💡 Bon à savoir : JupyterLab et VS Code (avec l'extension Python) permettent d'ouvrir et d'exécuter des notebooks sans lancer de serveur Jupyter séparé, avec une expérience proche d'un IDE classique.
+
+## Pourquoi ce format existe
+
+---
+
+Le notebook répond à un besoin spécifique au travail exploratoire sur de la donnée, différent du développement d'une application.
+
+- **Itération rapide** : charger un fichier volumineux une seule fois, puis tester dix approches de transformation différentes sans le recharger à chaque essai.
+- **Feedback immédiat** : voir tout de suite le résultat d'une ligne de code (un tableau, un graphique), sans ajouter de `print()` ni relancer tout un script.
+- **Récit d'analyse** : documenter le raisonnement au fil de l'eau (pourquoi cette hypothèse, ce filtre, cette visualisation), ce qui en fait un support de communication autant qu'un outil de calcul.
+
+C'est un usage centré sur la découverte, pas sur la construction d'un système fiable et reproductible : on explore une hypothèse, on regarde le résultat, on ajuste, on recommence.
+
+## Différence avec le workflow PHP classique
+
+---
+
+Le réflexe PHP habituel repose sur un modèle requête/réponse : une requête HTTP arrive, un contrôleur l'exécute du début à la fin de façon prévisible, et une réponse repart. Chaque exécution part d'un état propre.
+
+Le notebook ne répond à aucune requête et ne suit aucun cycle de vie fixe : c'est un espace de travail interactif, sans serveur HTTP, où l'exécution est pilotée manuellement, cellule par cellule, et où l'état s'accumule au fil des exécutions plutôt que de repartir à zéro.
+
+| Aspect | Application PHP classique | Notebook Jupyter |
+| --- | --- | --- |
+| Déclencheur | Une requête HTTP | Une exécution manuelle de cellule |
+| Ordre d'exécution | Toujours le même, de haut en bas | Libre, potentiellement hors ordre |
+| État | Réinitialisé à chaque requête | Persiste dans le kernel entre les cellules |
+| Objectif | Produire une réponse fiable et reproductible | Explorer, itérer, comprendre |
+
+## Pièges classiques et bonnes pratiques
+
+---
+
+### État caché entre les cellules
+
+---
+
+Comme les cellules peuvent être exécutées dans n'importe quel ordre, un notebook peut donner un résultat cohérent à l'écran tout en étant, en réalité, dans un état impossible à reproduire en relançant le fichier du début à la fin.
+
+```python
+# Cellule 3, exécutée en premier par erreur
+df_filtre = df[df['montant'] > seuil]  # 'seuil' n'existe pas encore : erreur
+
+# Cellule 1, exécutée ensuite
+seuil = 100
+
+# Cellule 2, exécutée en dernier
+df = pd.read_csv('ventes.csv')
+```
+
+Si l'utilisateur exécute les cellules dans le désordre, corrige une erreur ponctuellement dans une cellule au milieu du notebook, ou supprime une cellule après coup, l'état du kernel diverge silencieusement du contenu affiché du fichier. Un collègue qui rouvre le notebook et clique sur "Exécuter tout" peut alors obtenir une erreur, ou pire, un résultat différent, sans qu'aucune ligne de code n'ait changé.
+
+> 💡 Bon à savoir : ce risque n'a pas d'équivalent direct côté PHP, où chaque requête part d'un état neuf. C'est une classe de bug propre au modèle d'exécution par cellules.
+
+**Bonne pratique** : redémarrer régulièrement le kernel et exécuter tout le notebook du haut vers le bas ("Restart & Run All") avant de considérer une analyse comme terminée ou de la partager. C'est le seul moyen de garantir que le résultat affiché correspond réellement à une exécution linéaire et reproductible du fichier.
+
+### Code jetable qui finit en production
+
+---
+
+Un notebook est optimisé pour l'exploration, pas pour la fiabilité : pas de tests, pas de typage strict imposé, pas de séparation claire des responsabilités. Le copier-coller direct d'une cellule de notebook vers un système en production est une source classique de bugs et de dette technique, précisément parce que le code n'a jamais été conçu, ni vérifié, pour tourner de façon autonome et répétée.
+
+**Bonne pratique** : séparer clairement deux usages.
+
+- **Exploration** : le notebook, pour tester des hypothèses, visualiser, comprendre les données.
+- **Code productif** : des modules Python classiques (`.py`), avec des fonctions nommées, typées, testées, importées dans le notebook au besoin plutôt que dupliquées dedans.
+
+```python
+# transformations.py, un module productif classique
+import pandas as pd
+
+def nettoyer_ventes(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.dropna(subset=['montant'])
+    df = df[df['montant'] > 0]
+    return df
+```
+
+```python
+# Dans le notebook, on importe la fonction déjà testée plutôt que de la redéfinir
+from transformations import nettoyer_ventes
+
+df = pd.read_csv('ventes.csv')
+df_propre = nettoyer_ventes(df)
+```
+
+Une fois qu'une transformation a fait ses preuves dans un notebook, elle mérite d'être extraite dans un module `.py`, couverte par des tests, puis simplement importée. Le notebook redevient alors un espace de démonstration et d'exploration, pas un lieu où vit la logique métier.
+
+## Résumé
+
+---
+
+| Concept | Description |
+| --- | --- |
+| Kernel | Processus Python qui exécute les cellules et conserve leur état |
+| Cellule de code / markdown | Unité d'exécution / unité de documentation dans le notebook |
+| État caché | Divergence entre l'ordre d'exécution réel et l'ordre affiché des cellules |
+| Restart & Run All | Vérification qu'un notebook s'exécute correctement de façon linéaire |
+| Séparation exploration / production | Notebook pour explorer, modules `.py` testés pour la logique productive |
+
+Le notebook est un excellent outil d'exploration, pas un environnement de production. Garder cette frontière claire, entre code jetable et code productif, est ce qui distingue un usage sain de Jupyter d'un notebook de 300 cellules impossible à relancer.
