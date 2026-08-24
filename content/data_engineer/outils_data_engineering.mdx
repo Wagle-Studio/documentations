@@ -1,0 +1,124 @@
+## Introduction
+
+---
+
+L'[introduction au métier](/documentations/data_engineer/introduction_metier_data_engineer) donnait un premier tableau de repères sur l'écosystème d'outils. Cette leçon reprend ce panorama en détail, catégorie par catégorie, pour donner un vocabulaire commun : à quoi sert chaque outil, dans quelle famille il se range, et à quel autre outil il est généralement comparé. L'objectif n'est pas de maîtriser chaque outil, mais de savoir le situer quand il apparaît dans une offre d'emploi, une architecture ou une conversation d'équipe.
+
+## Ingestion et Change Data Capture
+
+---
+
+Cette famille collecte la donnée depuis ses sources (bases applicatives, API, fichiers) pour l'amener dans le pipeline.
+
+- **Kafka** : file de messages distribuée, référence pour transporter des flux d'événements en continu entre systèmes.
+- **Debezium** : implémentation open-source du CDC, déjà détaillée dans la [leçon dédiée](/documentations/data_engineer/cdc_replication), qui publie les changements d'une base source dans Kafka.
+- **Fivetran** et **Airbyte** : connecteurs d'ingestion clé en main (SaaS pour le premier, open-source pour le second) qui répliquent des sources tierces (API, bases, fichiers) vers un entrepôt sans code à écrire, typiques d'une approche ELT.
+- **Apache NiFi** : outil plus ancien de routage et transformation de flux de données, avec une interface graphique de conception de pipeline.
+
+## Orchestration de pipelines
+
+---
+
+Un pipeline de données est rarement une seule étape : il s'agit d'enchaîner des tâches dépendantes (extraire, puis transformer, puis charger), avec des reprises en cas d'échec. C'est le rôle d'un orchestrateur.
+
+- **Airflow** : l'orchestrateur historique et le plus répandu, où chaque pipeline (DAG) est défini en Python sous forme de graphe de tâches.
+- **Dagster** : orchestrateur plus récent, pensé autour des données produites par chaque tâche plutôt que des tâches elles-mêmes, avec une meilleure testabilité locale.
+- **Prefect** : alternative à Airflow avec une API Python jugée plus légère, positionnée sur la simplicité de mise en œuvre.
+
+## Traitement distribué : batch et streaming
+
+---
+
+Ces moteurs transforment de gros volumes de données en répartissant le calcul sur plusieurs machines (voir la [leçon sur le traitement distribué](/documentations/data_engineer/traitement_distribue_concepts)).
+
+- **Spark** : moteur de traitement distribué de référence, capable de traiter aussi bien du batch que du streaming (Spark Structured Streaming), avec des API Python, Scala et SQL.
+- **Flink** : moteur pensé nativement pour le streaming avec une latence plus faible que Spark, utilisé quand le temps réel est une exigence forte.
+- **Apache Beam** : couche d'abstraction qui unifie l'écriture de pipelines batch et streaming, exécutable ensuite sur Spark, Flink ou Google Cloud Dataflow selon le moteur choisi.
+
+## Transformation et modélisation en entrepôt
+
+---
+
+Une fois la donnée brute chargée dans l'entrepôt (approche ELT), il faut la transformer en tables prêtes à l'usage.
+
+- **dbt** (data build tool) : outil de référence pour écrire ces transformations en SQL versionné, testé et documenté, directement dans l'entrepôt cible.
+- **SQLMesh** : alternative plus récente à dbt, avec une gestion plus fine des environnements et un calcul automatique des changements à propager.
+
+## Entrepôts cloud
+
+---
+
+Ce sont les systèmes **OLAP** cibles du pipeline (voir la [leçon OLTP vs OLAP](/documentations/data_engineer/oltp_vs_olap)), pensés pour l'agrégation de gros volumes plutôt que la transaction.
+
+- **Snowflake** : entrepôt cloud qui a popularisé la séparation entre stockage et calcul, facturés indépendamment.
+- **BigQuery** : entrepôt serverless de Google Cloud, facturé principalement à la donnée scannée par requête.
+- **Redshift** : entrepôt cloud d'AWS, historiquement plus proche d'un cluster à dimensionner que ses concurrents serverless.
+- **Databricks SQL** : couche d'interrogation SQL au-dessus de la plateforme Databricks, positionnée sur le lakehouse plutôt que sur l'entrepôt classique.
+
+## Stockage brut et lakehouse
+
+---
+
+En amont ou en complément de l'entrepôt, la donnée peut être déposée telle quelle sur du stockage objet bon marché.
+
+- **S3** (AWS) et **Google Cloud Storage** : stockage objet massif, brique de base d'un data lake.
+- **HDFS** : système de fichiers distribué historique de l'écosystème Hadoop, largement supplanté aujourd'hui par le stockage objet cloud.
+- **Delta Lake**, **Apache Iceberg**, **Apache Hudi** : formats de table qui ajoutent une couche transactionnelle au-dessus de fichiers Parquet stockés sur du stockage objet, pour apporter au data lake les garanties **ACID** détaillées dans la [leçon dédiée](/documentations/data_engineer/proprietes_acid). C'est la brique technique concrète derrière le terme **lakehouse**.
+
+## Requêtage sur data lake
+
+---
+
+Ces moteurs interrogent en SQL des fichiers stockés sur un data lake, sans avoir à les charger au préalable dans un entrepôt.
+
+- **Presto** et son fork **Trino** : moteurs de requêtage distribué capables d'interroger simultanément plusieurs sources (data lake, bases relationnelles) via un unique SQL fédéré.
+- **Athena** : service serverless d'AWS basé sur Trino, qui interroge directement des fichiers S3 sans infrastructure à gérer.
+- **Hive** : l'un des premiers moteurs à avoir offert une interface SQL au-dessus de fichiers distribués (Hadoop), aujourd'hui surtout connu pour son metastore, encore utilisé comme catalogue de tables par d'autres outils.
+
+## Qualité et observabilité de la donnée
+
+---
+
+Cette famille détecte les anomalies dans la donnée elle-même, sujet développé dans la [leçon qualité et observabilité](/documentations/data_engineer/qualite_observabilite_donnee).
+
+- **Great Expectations** : bibliothèque Python pour définir des règles de validation de données (unicité, plages de valeurs, non-nullité) et les exécuter comme des tests.
+- **Soda** : outil similaire, avec un langage de règles déclaratif (YAML) pensé pour être lisible par des non-développeurs.
+- **Monte Carlo** : plateforme SaaS d'observabilité de la donnée, positionnée sur la détection automatique d'anomalies sans règle à écrire manuellement.
+- **Tests dbt** : dbt embarque son propre système de tests légers (unicité, non-nullité, valeurs acceptées) directement sur les modèles de transformation.
+
+## Catalogage et gouvernance
+
+---
+
+Ces outils rendent la donnée d'une organisation découvrable et traçable, thème de la [leçon gouvernance et catalogage](/documentations/data_engineer/gouvernance_catalogage_donnee).
+
+- **DataHub** et **Amundsen** : catalogues de données open-source, qui indexent tables, colonnes et propriétaires pour rendre la donnée cherchable.
+- **Atlan** et **Collibra** : équivalents commerciaux, avec davantage de fonctionnalités de gouvernance (workflows de validation, gestion des accès).
+- **OpenLineage** : standard ouvert pour capturer le data lineage (quelle table a été produite à partir de quelles autres) de façon uniforme entre outils.
+
+## Visualisation et BI
+
+---
+
+En bout de chaîne, ces outils exposent la donnée transformée à des utilisateurs métier sous forme de tableaux de bord.
+
+- **Looker** : outil de BI de Google Cloud, structuré autour d'une couche de modélisation (LookML) partagée entre tous les tableaux de bord.
+- **Tableau** et **Power BI** : outils de BI historiques, respectivement de Salesforce et Microsoft, très répandus en entreprise.
+- **Metabase** et **Superset** : alternatives open-source, plus légères à déployer pour une équipe qui démarre.
+
+## Résumé
+
+---
+
+| Catégorie | Outils de référence |
+| --- | --- |
+| Ingestion / CDC | Kafka, Debezium, Fivetran, Airbyte |
+| Orchestration | Airflow, Dagster, Prefect |
+| Traitement distribué | Spark, Flink, Beam |
+| Transformation en entrepôt | dbt, SQLMesh |
+| Entrepôt cloud | Snowflake, BigQuery, Redshift |
+| Stockage brut / lakehouse | S3, Delta Lake, Iceberg, Hudi |
+| Requêtage sur data lake | Trino, Athena, Hive |
+| Qualité / observabilité | Great Expectations, Soda, Monte Carlo |
+| Catalogage / gouvernance | DataHub, Amundsen, OpenLineage |
+| Visualisation / BI | Looker, Tableau, Power BI, Metabase, Superset |

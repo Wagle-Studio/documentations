@@ -874,6 +874,18 @@ const lessons: Lesson[] = [
     updated: "24 août 2026",
   },
   {
+    id: 87,
+    index: 12,
+    paths: ["data_engineer", "outils_data_engineering.mdx"],
+    label: "Les outils du data engineering",
+    slug: "outils_data_engineering",
+    course_id: 11,
+    description:
+      "Ingestion, orchestration, traitement distribué, entrepôts, lakehouse, qualité, gouvernance, BI : panorama détaillé des outils de référence par catégorie.",
+    created: "24 août 2026",
+    updated: "24 août 2026",
+  },
+  {
     id: 74,
     index: 1,
     paths: ["python_data", "introduction_python.mdx"],
