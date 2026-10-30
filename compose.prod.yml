@@ -1,5 +1,6 @@
 services:
   web:
     image: ${GHCR_NAMESPACE}
+    restart: unless-stopped
     ports:
       - 127.0.0.1:${REMOTE_DIST_PORT}:3000
